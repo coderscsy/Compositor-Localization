@@ -1,8 +1,8 @@
-# Compositor project format, versions 1–24
+# Compositor project format, versions 1–25
 
 A `.comp` file is a macOS document package containing `manifest.json` and an `images/` directory of `<layer UUID>.png` assets.
 
-The manifest identifies `com.compositor.project`, version `24` for new saves (versions `1`–`23` remain readable), and the sRGB working space. It stores document UUID, pixel dimensions, active layer UUID, and layers in bottom-to-top order. Each layer stores its UUID, name, visibility, transform (origin, size, clockwise rotation, flips, sampling), and optional image filename. Blank layers have no image asset.
+The manifest identifies `com.compositor.project`, version `25` for new saves (versions `1`–`24` remain readable), and the sRGB working space. It stores document UUID, pixel dimensions, active layer UUID, and layers in bottom-to-top order. Each layer stores its UUID, name, visibility, transform (origin, size, clockwise rotation, flips, sampling), and optional image filename. Blank layers have no image asset.
 
 Embedded PNGs preserve source pixels and transparency; transforms remain separate. Projects survive moving or deleting imported source photos. Saving uses a coordinated atomic package replacement. Unsupported versions, invalid metadata, missing assets, unsafe paths, and oversized data are rejected before replacing the live document.
 
@@ -76,3 +76,5 @@ Version 22 lets a rectangle or ellipse carry an inside stroke on its `shape` sty
 Version 23 adds optional per-layer `lock` metadata: an object with optional boolean flags `transparent` (lock transparent pixels), `pixels` (lock image pixels), `position` (lock position) and `all` (lock all). Omitted when all flags are false. Folders and adjustment layers cannot set `transparent`. Folder locks propagate `pixels`, `position` and `all` to their descendants. Files declaring versions 1–22 cannot contain a non-empty `lock`, and older app builds reject v23.
 
 Version 24 adds optional per-layer `fillOpacity` (finite `0`–`1`, omitted when `1`) on non-group layers: like Photoshop's Fill slider, it scales the layer's own interior pixels independently of its layer effects (stroke, drop shadow, glow, color overlay and inner shadow stay at their own opacities, scaled only by `opacity`). Files declaring versions 1–23 cannot contain `fillOpacity`, and older app builds reject v24.
+
+Version 25 adds seven adjustment/filter layer kinds: `Brightness/Contrast` (`brightnessContrastSettings`), `Vibrance` (`vibranceSettings`), `Selective Color` (`selectiveColorSettings`), `Color Lookup` (`colorLookupSettings`, supporting built-in looks or embedded 3D `.cube` tables), `Threshold` (`thresholdSettings`), `Posterize` (`posterizeSettings`), and `High Pass` (`filterLayerSettings.highPass`). Files declaring versions 1–24 cannot contain these kinds or settings, and older app builds reject v25.

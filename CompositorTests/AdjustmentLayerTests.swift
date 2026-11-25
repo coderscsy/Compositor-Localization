@@ -189,13 +189,21 @@ import Testing
             session.updateFilter(settings, preview: true)
             #expect(session.activeLayer?.adjustment?.curves == settings.curves)
             await session.commitFilter()
-        case .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-             .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:
+        case .exposure, .gradientMap, .grain, .blackWhite, .colorBalance,
+             .brightnessContrast, .vibrance, .selectiveColor, .colorLookup, .threshold, .posterize,
+             .gaussianBlur, .motionBlur, .addNoise,
+             .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .highPass, .reduceNoise:
             #expect(session.filterEdit?.kind == kind.filterKind)
             var settings = try #require(session.filterEdit).settings
             switch kind {
             case .blackWhite: settings.blackWhite.reds = 100
             case .colorBalance: settings.colorBalance.midCyanRed = 50
+            case .brightnessContrast: settings.brightnessContrast.brightness = 40; settings.brightnessContrast.contrast = 20
+            case .vibrance: settings.vibrance.vibrance = 60; settings.vibrance.saturation = 15
+            case .selectiveColor: settings.selectiveColor.reds.cyan = -40; settings.selectiveColor.relative = false
+            case .colorLookup: settings.colorLookup.preset = .tealOrange; settings.colorLookup.intensity = 75
+            case .threshold: settings.threshold.level = 96
+            case .posterize: settings.posterize.levels = 5
             case .exposure: settings.exposure.exposure = 1
             case .gradientMap: settings.gradientMap.reversed = true
             case .gaussianBlur: settings.radius = 24
@@ -208,12 +216,19 @@ import Testing
             case .tonalContrast: settings.tonalAmount = 80; settings.tonalRadius = 30
             case .lensEffects: settings.lens.effect = .bokeh; settings.lens.bokehShape = .hexagon
             case .sharpen: settings.sharpenAmount = 150; settings.sharpenRadius = 2.5
+            case .highPass: settings.highPassRadius = 6.5
             case .reduceNoise: settings.reduceNoiseLuminance = 80; settings.reduceNoiseColor = 20
             default: settings.grain.amount = 70
             }
             session.updateFilter(settings, preview: true)
             let live = try #require(session.activeLayer?.adjustment)
             #expect(live.exposure == settings.exposure && live.gradientMap == settings.gradientMap && live.grain == settings.grain)
+            if kind == .brightnessContrast { #expect(live.brightnessContrast == settings.brightnessContrast) }
+            if kind == .vibrance { #expect(live.vibrance == settings.vibrance) }
+            if kind == .selectiveColor { #expect(live.selectiveColor == settings.selectiveColor) }
+            if kind == .colorLookup { #expect(live.colorLookup == settings.colorLookup) }
+            if kind == .threshold { #expect(live.threshold == settings.threshold) }
+            if kind == .posterize { #expect(live.posterize == settings.posterize) }
             if kind == .gaussianBlur { #expect(live.gaussianRadius == 24) }
             if kind == .motionBlur { #expect(live.resolvedMotionAngle == 35 && live.resolvedMotionDistance == 48) }
             if kind == .addNoise {
@@ -228,6 +243,7 @@ import Testing
             if kind == .tonalContrast { #expect(live.filterLayer.tonal?.amount == 80 && live.filterLayer.tonal?.radius == 30) }
             if kind == .lensEffects { #expect(live.filterLayer.lens?.effect == .bokeh && live.filterLayer.lens?.bokehShape == .hexagon) }
             if kind == .sharpen { #expect(live.filterLayer.sharpen?.amount == 150 && live.filterLayer.sharpen?.radius == 2.5) }
+            if kind == .highPass { #expect(live.filterLayer.highPass?.radius == 6.5) }
             if kind == .reduceNoise { #expect(live.filterLayer.reduceNoise?.strength == 80 && live.filterLayer.reduceNoise?.color == 20) }
             await session.commitFilter()
         case .hsv:
@@ -254,26 +270,31 @@ import Testing
             #expect(session.levels?.settings == saved.levels)
             session.updateLevels(LevelsSettings(), preview: true)
             session.cancelLevels()
-        case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-             .progressiveBlur, .bloomGlow, .rgbSplit:
+        case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance,
+             .brightnessContrast, .vibrance, .selectiveColor, .colorLookup, .threshold, .posterize,
+             .gaussianBlur, .motionBlur, .addNoise, .progressiveBlur, .bloomGlow, .rgbSplit:
             let reopened = try #require(session.filterEdit).settings
             #expect(FilterLayerSettings(reopened) == saved.filterLayer)
             #expect(reopened.curves == saved.curves && reopened.exposure == saved.exposure
                     && reopened.gradientMap == saved.gradientMap && reopened.grain == saved.grain
-                    && reopened.blackWhite == saved.blackWhite && reopened.colorBalance == saved.colorBalance)
+                    && reopened.blackWhite == saved.blackWhite && reopened.colorBalance == saved.colorBalance
+                    && reopened.brightnessContrast == saved.brightnessContrast && reopened.vibrance == saved.vibrance
+                    && reopened.selectiveColor == saved.selectiveColor && reopened.colorLookup == saved.colorLookup
+                    && reopened.threshold == saved.threshold && reopened.posterize == saved.posterize)
             #expect(reopened.radius == saved.gaussianRadius && reopened.angle == saved.resolvedMotionAngle
                     && reopened.distance == saved.resolvedMotionDistance)
             #expect(reopened.amount == saved.resolvedNoiseAmount && reopened.gaussian == saved.resolvedNoiseGaussian
                     && reopened.monochromatic == saved.resolvedNoiseMonochromatic)
             session.updateFilter(FilterSettings(), preview: true)
             session.cancelFilter()
-        case .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:
+        case .vignette, .lensEffects, .tonalContrast, .sharpen, .highPass, .reduceNoise:
             // Their settings reopen in the filter's panel as they were saved.
             let reopened = try #require(session.filterEdit).settings
             switch kind {
             case .vignette: #expect(VignetteLayerSettings(reopened) == saved.filterLayer.vignette)
             case .tonalContrast: #expect(TonalLayerSettings(reopened) == saved.filterLayer.tonal)
             case .sharpen: #expect(SharpenLayerSettings(reopened) == saved.filterLayer.sharpen)
+            case .highPass: #expect(HighPassLayerSettings(reopened) == saved.filterLayer.highPass)
             case .reduceNoise: #expect(ReduceNoiseLayerSettings(reopened) == saved.filterLayer.reduceNoise)
             default: #expect(reopened.lens.normalized == saved.filterLayer.lens)
             }

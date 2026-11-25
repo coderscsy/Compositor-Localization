@@ -9,6 +9,8 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     case motionBlur = "Motion Blur"
     case progressiveBlur = "Progressive Blur"
     case sharpen = "Sharpen"
+    case highPass = "High Pass"
+    case offset = "Offset"
     case reduceNoise = "Reduce Noise"
     case addNoise = "Add Noise"
     case vignette = "Vignette"
@@ -30,6 +32,12 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     case grain = "Grain"
     case blackWhite = "Black & White"
     case colorBalance = "Color Balance"
+    case brightnessContrast = "Brightness/Contrast"
+    case vibrance = "Vibrance"
+    case selectiveColor = "Selective Color"
+    case colorLookup = "Color Lookup"
+    case threshold = "Threshold"
+    case posterize = "Posterize"
     var isAutomatic: Bool { self == .contentAwareFill || self == .removeBackground }
     /// The Filter menu's own filters, which Last Filter can run again; not Content-Aware Fill or the Image menu's.
     var repeatsAsLastFilter: Bool { self != .contentAwareFill && !isImageAdjustment }
@@ -41,7 +49,10 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     }
     /// Filters whose output channels each depend on all three input channels (Camera Raw's color, and the ones that work
     /// from brightness), which a 16-bit layer runs the slower, channel-by-channel way (`DeepLayer.run`).
-    var mixesChannels: Bool { self == .cameraRaw || self == .tonalContrast || self == .scanlines || self == .reduceNoise }
+    var mixesChannels: Bool {
+        self == .cameraRaw || self == .tonalContrast || self == .scanlines || self == .reduceNoise
+            || self == .highPass || self == .vibrance || self == .selectiveColor || self == .colorLookup || self == .threshold
+    }
     /// For the color adjustments whose channels mix, their color lookup, to apply to a 16-bit layer
     /// (`LayerAdjustment.sixteenBitLookup`); nil for the rest.
     func sixteenBitLookup(_ settings: FilterSettings) -> (cube: Data, dimension: Int)? {
@@ -50,6 +61,9 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
         case .blackWhite: adjustment = LayerAdjustment(kind: .blackWhite); adjustment.blackWhite = settings.blackWhite
         case .colorBalance: adjustment = LayerAdjustment(kind: .colorBalance); adjustment.colorBalance = settings.colorBalance
         case .gradientMap: adjustment = LayerAdjustment(kind: .gradientMap); adjustment.gradientMap = settings.gradientMap
+        case .vibrance: adjustment = LayerAdjustment(kind: .vibrance); adjustment.vibrance = settings.vibrance
+        case .selectiveColor: adjustment = LayerAdjustment(kind: .selectiveColor); adjustment.selectiveColor = settings.selectiveColor
+        case .colorLookup: adjustment = LayerAdjustment(kind: .colorLookup); adjustment.colorLookup = settings.colorLookup
         default: return nil
         }
         return adjustment.sixteenBitLookup
@@ -58,6 +72,8 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     var isImageAdjustment: Bool {
         self == .curves || self == .exposure || self == .gradientMap || self == .grain
             || self == .blackWhite || self == .colorBalance
+            || self == .brightnessContrast || self == .vibrance || self == .selectiveColor
+            || self == .colorLookup || self == .threshold || self == .posterize
     }
 }
 
@@ -145,6 +161,14 @@ nonisolated struct FilterSettings: Equatable, Sendable {
     var grain = GrainSettings()
     var blackWhite = BlackWhiteSettings()
     var colorBalance = ColorBalanceSettings()
+    var brightnessContrast = BrightnessContrastSettings()
+    var vibrance = VibranceSettings()
+    var selectiveColor = SelectiveColorSettings()
+    var colorLookup = ColorLookupSettings()
+    var threshold = ThresholdSettings()
+    var posterize = PosterizeSettings()
+    var highPassRadius: Double = 10
+    var offset = OffsetSettings()
     var dither = DitherSettings()
     var scanlines = ScanlinesSettings()
     var cameraRaw = CameraRawSettings()
@@ -176,6 +200,14 @@ nonisolated struct FilterSettings: Equatable, Sendable {
         result.bloomAmount = clamp(bloomAmount, 0...100, 40)
         result.sharpenAmount = clamp(sharpenAmount, 0...300, 100)
         result.sharpenRadius = clamp(sharpenRadius, 0.1...20, 1)
+        result.highPassRadius = clamp(highPassRadius, HighPassLayerSettings.radiusRange, 10)
+        result.brightnessContrast = brightnessContrast.normalized
+        result.vibrance = vibrance.normalized
+        result.selectiveColor = selectiveColor.normalized
+        result.colorLookup = colorLookup.normalized
+        result.threshold = threshold.normalized
+        result.posterize = posterize.normalized
+        result.offset = offset.normalized
         result.reduceNoiseLuminance = clamp(reduceNoiseLuminance, 0...100, 50)
         result.reduceNoiseDetail = clamp(reduceNoiseDetail, 0...100, 50)
         result.reduceNoiseColor = clamp(reduceNoiseColor, 0...100, 50)
@@ -353,6 +385,27 @@ nonisolated enum PixelFilter {
         case .gradientMap: image = try settings.gradientMap.apply(job.image)
         case .blackWhite: image = try settings.blackWhite.apply(job.image)
         case .colorBalance: image = try settings.colorBalance.apply(job.image)
+        case .brightnessContrast: image = try settings.brightnessContrast.apply(job.image)
+        case .vibrance: image = try settings.vibrance.apply(job.image)
+        case .selectiveColor: image = try settings.selectiveColor.apply(job.image)
+        case .colorLookup: image = try settings.colorLookup.apply(job.image)
+        case .threshold: image = try settings.threshold.apply(job.image)
+        case .posterize: image = try settings.posterize.apply(job.image)
+        case .highPass:
+            let sigma = settings.highPassRadius * job.scale
+            let blurredCI = edges.clampedToExtent().applyingGaussianBlur(sigma: sigma).cropped(to: extent)
+            let blurredImg = try PixelAdjust.render(blurredCI, width: width, height: height, isMask: false)
+            let context = try BrushRaster.context(width: width, height: height, mask: false)
+            let blurCtx = try BrushRaster.context(width: width, height: height, mask: false)
+            BrushRaster.draw(job.image, in: extent, mask: false, context: context)
+            BrushRaster.draw(blurredImg, in: extent, mask: false, context: blurCtx)
+            guard let data = context.data, let blurData = blurCtx.data else { throw ExportError.render }
+            filter_high_pass(data.assumingMemoryBound(to: UInt8.self), blurData.assumingMemoryBound(to: UInt8.self),
+                             width, height, context.bytesPerRow, blurCtx.bytesPerRow)
+            guard let hp = context.makeImage() else { throw ExportError.render }
+            image = hp
+        case .offset:
+            image = try settings.offset.apply(job.image, scale: job.scale)
         case .cameraRaw: image = try settings.cameraRaw.apply(job.image, clipping: job.cameraRawClipping, scale: job.scale, seed: job.seed,
                                                                 visualizePointColor: job.visualizesPointColor, sharpenMask: job.showsSharpenMask,
                                                                 brightness: job.cameraRawBrightness, usesGPU: job.cameraRawUsesGPU)

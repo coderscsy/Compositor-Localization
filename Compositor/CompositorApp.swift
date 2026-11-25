@@ -327,7 +327,7 @@ struct CompositorApp: App {
                         .configuredKeyboardShortcut("l").disabled(!session.canAdjustColors || session.hueSaturation != nil)
                     Button("Hue/Saturation…") { session.beginHueSaturation() }
                         .configuredKeyboardShortcut("u").disabled(!session.canAdjustColors)
-                    ForEach([FilterKind.blackWhite, .colorBalance, .exposure, .gradientMap, .grain], id: \.self) { kind in
+                    ForEach([FilterKind.brightnessContrast, .vibrance, .blackWhite, .colorBalance, .selectiveColor, .colorLookup, .exposure, .gradientMap, .grain, .posterize, .threshold], id: \.self) { kind in
                         filterMenuItem(kind)
                     }
                     Button(L10n.text(session.isMaskSelected ? "Invert Mask" : "Invert")) { Task { await session.invertPixels() } }

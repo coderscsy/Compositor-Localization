@@ -40,8 +40,10 @@ extension EditorSession {
                 let edit = try HueSaturationEdit(layerID: layer.id, original: asset, selection: nil, transform: layer.transform)
                 edit.settings = original.resolvedHSV
                 hueSaturation = edit
-            case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-                 .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:
+            case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance,
+                 .brightnessContrast, .vibrance, .selectiveColor, .colorLookup, .threshold, .posterize,
+                 .gaussianBlur, .motionBlur, .addNoise,
+                 .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .highPass, .reduceNoise:
                 var settings = original.filterLayer.applied(to: FilterSettings())
                 settings.curves = original.curves
                 settings.exposure = original.exposure
@@ -49,6 +51,12 @@ extension EditorSession {
                 settings.grain = original.grain
                 settings.blackWhite = original.blackWhite
                 settings.colorBalance = original.colorBalance
+                settings.brightnessContrast = original.brightnessContrast
+                settings.vibrance = original.vibrance
+                settings.selectiveColor = original.selectiveColor
+                settings.colorLookup = original.colorLookup
+                settings.threshold = original.threshold
+                settings.posterize = original.posterize
                 settings.radius = original.gaussianRadius
                 settings.angle = original.resolvedMotionAngle
                 settings.distance = original.resolvedMotionDistance
@@ -77,8 +85,10 @@ extension EditorSession {
         case .hsv:
             guard let hueSaturation else { return nil }
             value.hsvSettings = hueSaturation.settings
-        case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-             .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:
+        case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance,
+             .brightnessContrast, .vibrance, .selectiveColor, .colorLookup, .threshold, .posterize,
+             .gaussianBlur, .motionBlur, .addNoise,
+             .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .highPass, .reduceNoise:
             guard let filterEdit else { return nil }
             switch value.kind {
             case .exposure: value.exposure = filterEdit.settings.exposure
@@ -86,6 +96,12 @@ extension EditorSession {
             case .grain: value.grain = filterEdit.settings.grain
             case .blackWhite: value.blackWhite = filterEdit.settings.blackWhite
             case .colorBalance: value.colorBalance = filterEdit.settings.colorBalance
+            case .brightnessContrast: value.brightnessContrast = filterEdit.settings.brightnessContrast
+            case .vibrance: value.vibrance = filterEdit.settings.vibrance
+            case .selectiveColor: value.selectiveColor = filterEdit.settings.selectiveColor
+            case .colorLookup: value.colorLookup = filterEdit.settings.colorLookup
+            case .threshold: value.threshold = filterEdit.settings.threshold
+            case .posterize: value.posterize = filterEdit.settings.posterize
             case .gaussianBlur: value.gaussianRadius = filterEdit.settings.radius
             case .motionBlur:
                 value.resolvedMotionAngle = filterEdit.settings.angle
@@ -99,6 +115,7 @@ extension EditorSession {
             case .tonalContrast: value.filterLayer.tonal = TonalLayerSettings(filterEdit.settings)
             case .lensEffects: value.filterLayer.lens = filterEdit.settings.lens.normalized
             case .sharpen: value.filterLayer.sharpen = SharpenLayerSettings(filterEdit.settings)
+            case .highPass: value.filterLayer.highPass = HighPassLayerSettings(filterEdit.settings)
             case .reduceNoise: value.filterLayer.reduceNoise = ReduceNoiseLayerSettings(filterEdit.settings)
             default: value.curves = filterEdit.settings.curves
             }

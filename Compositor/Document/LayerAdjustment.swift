@@ -7,13 +7,17 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
     case gaussianBlur = "Gaussian Blur", motionBlur = "Motion Blur"
     case invert = "Invert"
     case blackWhite = "Black & White", colorBalance = "Color Balance"
+    case brightnessContrast = "Brightness/Contrast", vibrance = "Vibrance"
+    case selectiveColor = "Selective Color", colorLookup = "Color Lookup"
+    case threshold = "Threshold", posterize = "Posterize"
     case progressiveBlur = "Progressive Blur", bloomGlow = "Bloom / Glow", rgbSplit = "RGB Split"
     case vignette = "Vignette", lensEffects = "Lens Effects", tonalContrast = "Tonal Contrast"
-    case sharpen = "Sharpen", reduceNoise = "Reduce Noise"
+    case sharpen = "Sharpen", highPass = "High Pass", reduceNoise = "Reduce Noise"
     /// The menus' two groups, each in the order of the menu it comes from: the Image menu's color adjustments, then
     /// the Filter menu's filters.
-    static let imageAdjustments: [Self] = [.curves, .levels, .hsv, .blackWhite, .colorBalance, .exposure, .gradientMap, .grain, .invert]
-    static let filters: [Self] = [.gaussianBlur, .motionBlur, .progressiveBlur, .sharpen, .reduceNoise, .addNoise, .vignette, .bloomGlow, .rgbSplit,
+    static let imageAdjustments: [Self] = [.brightnessContrast, .levels, .curves, .exposure, .vibrance, .hsv, .colorBalance,
+                                           .blackWhite, .selectiveColor, .colorLookup, .gradientMap, .grain, .invert, .posterize, .threshold]
+    static let filters: [Self] = [.gaussianBlur, .motionBlur, .progressiveBlur, .sharpen, .highPass, .reduceNoise, .addNoise, .vignette, .bloomGlow, .rgbSplit,
                                   .lensEffects, .tonalContrast]
     var symbol: String {
         switch self {
@@ -29,6 +33,12 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .invert: return "circle.righthalf.filled"
         case .blackWhite: return "circle.filled.pattern.diagonalline.rectangle"
         case .colorBalance: return "scale.3d"
+        case .brightnessContrast: return "sun.min"
+        case .vibrance: return "paintpalette.fill"
+        case .selectiveColor: return "swatchpalette"
+        case .colorLookup: return "cube.transparent"
+        case .threshold: return "circle.lefthalf.filled.righthalf.striped.horizontal"
+        case .posterize: return "square.stack.3d.down.right"
         case .progressiveBlur: return "aqi.medium"
         case .bloomGlow: return "sun.max"
         case .rgbSplit: return "rainbow"
@@ -36,6 +46,7 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .lensEffects: return "camera.aperture"
         case .tonalContrast: return "circle.lefthalf.striped.horizontal"
         case .sharpen: return "triangle.lefthalf.filled"
+        case .highPass: return "waveform.path.ecg"
         case .reduceNoise: return "circle.dotted.and.circle"
         }
     }
@@ -47,6 +58,12 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .curves: return .curves
         case .blackWhite: return .blackWhite
         case .colorBalance: return .colorBalance
+        case .brightnessContrast: return .brightnessContrast
+        case .vibrance: return .vibrance
+        case .selectiveColor: return .selectiveColor
+        case .colorLookup: return .colorLookup
+        case .threshold: return .threshold
+        case .posterize: return .posterize
         case .exposure: return .exposure
         case .gradientMap: return .gradientMap
         case .grain: return .grain
@@ -60,6 +77,7 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .lensEffects: return .lensEffects
         case .tonalContrast: return .tonalContrast
         case .sharpen: return .sharpen
+        case .highPass: return .highPass
         case .reduceNoise: return .reduceNoise
         // Hue/Saturation and Levels have panels of their own; Invert has nothing to set.
         case .hsv, .levels, .invert: return nil
@@ -85,6 +103,13 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
     var grainSettings: GrainSettings?
     var blackWhiteSettings: BlackWhiteSettings?
     var colorBalanceSettings: ColorBalanceSettings?
+    // Optional so projects from before version 25 decode and save unchanged.
+    var brightnessContrastSettings: BrightnessContrastSettings?
+    var vibranceSettings: VibranceSettings?
+    var selectiveColorSettings: SelectiveColorSettings?
+    var colorLookupSettings: ColorLookupSettings?
+    var thresholdSettings: ThresholdSettings?
+    var posterizeSettings: PosterizeSettings?
     // Optional so projects created before blur adjustments continue to decode unchanged.
     var blurRadius: Double?
     var motionAngle: Double?
@@ -119,6 +144,30 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
     var colorBalance: ColorBalanceSettings {
         get { colorBalanceSettings ?? ColorBalanceSettings() }
         set { colorBalanceSettings = newValue }
+    }
+    var brightnessContrast: BrightnessContrastSettings {
+        get { brightnessContrastSettings ?? BrightnessContrastSettings() }
+        set { brightnessContrastSettings = newValue }
+    }
+    var vibrance: VibranceSettings {
+        get { vibranceSettings ?? VibranceSettings() }
+        set { vibranceSettings = newValue }
+    }
+    var selectiveColor: SelectiveColorSettings {
+        get { selectiveColorSettings ?? SelectiveColorSettings() }
+        set { selectiveColorSettings = newValue }
+    }
+    var colorLookup: ColorLookupSettings {
+        get { colorLookupSettings ?? ColorLookupSettings() }
+        set { colorLookupSettings = newValue }
+    }
+    var threshold: ThresholdSettings {
+        get { thresholdSettings ?? ThresholdSettings() }
+        set { thresholdSettings = newValue }
+    }
+    var posterize: PosterizeSettings {
+        get { posterizeSettings ?? PosterizeSettings() }
+        set { posterizeSettings = newValue }
     }
     var gaussianRadius: Double {
         get { blurRadius ?? 10 }
@@ -157,6 +206,7 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
             return FilterEdit.blurMargin(kind.filterKind ?? .bloomGlow, filterLayer.applied(to: FilterSettings()))
         case .tonalContrast: return CGFloat(filterLayer.resolvedTonal.radius * 3 + 2)
         case .sharpen: return CGFloat(filterLayer.resolvedSharpen.radius * 3 + 2)
+        case .highPass: return CGFloat(filterLayer.resolvedHighPass.radius * 3 + 2)
         // Its search and patches, and its color smoothing, in the widest they reach.
         case .reduceNoise: return 24
         // A light anywhere can streak or scatter across the whole picture: a change redraws everything.
@@ -173,6 +223,8 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         && resolvedHSV.bands.values.allSatisfy { $0.handles.allSatisfy { $0.isFinite } }
         && levels.ranges.count == 4 && levels.ranges.allSatisfy { $0 == $0.normalized } && curves.isValid
         && exposure.isValid && gradientMap.isValid && grain.isValid && blackWhite.isValid && colorBalance.isValid
+        && brightnessContrast.isValid && vibrance.isValid && selectiveColor.isValid && colorLookup.isValid
+        && threshold.isValid && posterize.isValid
         && gaussianRadius.isFinite && (0.1...250).contains(gaussianRadius)
         && resolvedMotionAngle.isFinite && (-90...90).contains(resolvedMotionAngle)
         && resolvedMotionDistance.isFinite && (1...2000).contains(resolvedMotionDistance)
@@ -185,7 +237,8 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
     var sixteenBitLookup: (cube: Data, dimension: Int)? {
         switch kind {
         case .hsv: (HueSaturationFilter.cube(resolvedHSV), HueSaturationFilter.dimension)
-        case .blackWhite, .colorBalance, .gradientMap: GPUAdjustment.cube(for: self).map { ($0, GPUAdjustment.dimension) }
+        case .blackWhite, .colorBalance, .gradientMap, .vibrance, .selectiveColor, .colorLookup:
+            GPUAdjustment.cube(for: self).map { ($0, GPUAdjustment.dimension) }
         default: nil
         }
     }
@@ -215,6 +268,12 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         case .curves: return try curves.apply(image)
         case .blackWhite: return try blackWhite.apply(image)
         case .colorBalance: return try colorBalance.apply(image)
+        case .brightnessContrast: return try brightnessContrast.apply(image)
+        case .vibrance: return try vibrance.apply(image)
+        case .selectiveColor: return try selectiveColor.apply(image)
+        case .colorLookup: return try colorLookup.apply(image)
+        case .threshold: return try threshold.apply(image)
+        case .posterize: return try posterize.apply(image)
         case .exposure: return try exposure.apply(image)
         case .gradientMap: return try gradientMap.apply(image)
         case .grain:
@@ -241,14 +300,14 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
                                                                   y: $0.minY * CGFloat(image.height) / max(1, $0.height)) } ?? .zero)
             job.sixteenBit = sixteenBit && filterKind != .addNoise
             return try PixelFilter.run(job)
-        case .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .reduceNoise:
+        case .progressiveBlur, .bloomGlow, .rgbSplit, .vignette, .lensEffects, .tonalContrast, .sharpen, .highPass, .reduceNoise:
             // The positions are the document's: `region` places this image in it.
             let region = region ?? CGRect(x: 0, y: 0, width: image.width, height: image.height)
             let mapping = CGAffineTransform(a: region.width / CGFloat(max(1, image.width)), b: 0, c: 0,
                                             d: region.height / CGFloat(max(1, image.height)), tx: region.minX, ty: region.minY)
             var job = FilterJob(kind: kind.filterKind ?? .bloomGlow, image: image, settings: filterLayer.applied(to: FilterSettings()),
                                 scale: scale, selection: nil, mapping: mapping)
-            job.sixteenBit = sixteenBit && kind != .rgbSplit && kind != .vignette && kind != .tonalContrast && kind != .reduceNoise
+            job.sixteenBit = sixteenBit && kind != .rgbSplit && kind != .vignette && kind != .tonalContrast && kind != .reduceNoise && kind != .highPass
             // The document's longer side in this image's pixels.
             job.lensSide = document.map { max($0.width, $0.height) * CGFloat(image.width) / max(1, region.width) }
             return try PixelFilter.run(job)
@@ -322,6 +381,8 @@ nonisolated struct FilterLayerSettings: Codable, Equatable, Sendable {
     var lens: LensEffectSettings?
     var sharpen: SharpenLayerSettings?
     var resolvedSharpen: SharpenLayerSettings { sharpen ?? SharpenLayerSettings() }
+    var highPass: HighPassLayerSettings?
+    var resolvedHighPass: HighPassLayerSettings { highPass ?? HighPassLayerSettings() }
     var reduceNoise: ReduceNoiseLayerSettings?
     var resolvedReduceNoise: ReduceNoiseLayerSettings { reduceNoise ?? ReduceNoiseLayerSettings() }
     var resolvedVignette: VignetteLayerSettings { vignette ?? VignetteLayerSettings() }
@@ -351,6 +412,7 @@ nonisolated struct FilterLayerSettings: Codable, Equatable, Sendable {
         if let tonal { settings = tonal.applied(to: settings) }
         if let lens { settings.lens = lens }
         if let sharpen { settings = sharpen.applied(to: settings) }
+        if let highPass { settings = highPass.applied(to: settings) }
         if let reduceNoise { settings = reduceNoise.applied(to: settings) }
         return settings
     }
@@ -359,12 +421,13 @@ nonisolated struct FilterLayerSettings: Codable, Equatable, Sendable {
     var isValid: Bool {
         let points = [progressiveStart, progressiveEnd, rgbSplitCenter].compactMap { $0 }
         var shared = self
-        shared.vignette = nil; shared.tonal = nil; shared.lens = nil; shared.sharpen = nil; shared.reduceNoise = nil
+        shared.vignette = nil; shared.tonal = nil; shared.lens = nil; shared.sharpen = nil; shared.highPass = nil; shared.reduceNoise = nil
         return shared == Self(shared.applied(to: FilterSettings())) && points.allSatisfy { $0.x.isFinite && $0.y.isFinite }
             && vignette.map { $0 == VignetteLayerSettings($0.applied(to: FilterSettings())) } ?? true
             && tonal.map { $0 == TonalLayerSettings($0.applied(to: FilterSettings())) } ?? true
             && lens.map { $0 == $0.normalized } ?? true
             && sharpen.map { $0 == SharpenLayerSettings($0.applied(to: FilterSettings())) } ?? true
+            && highPass.map { $0.isValid } ?? true
             && reduceNoise.map { $0 == ReduceNoiseLayerSettings($0.applied(to: FilterSettings())) } ?? true
     }
 }

@@ -17,7 +17,7 @@ extension UTType {
 
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
-    static let current = 24
+    static let current = 25
     /// Every version `load` accepts: each one a release has written (1 through `current`), and 27 from the
     /// GIF branch's own builds. Leaving out 15 and 16 once locked out projects saved by 1.5.4 and 1.5.5.
     /// The package-header and manifest checks both read this, so they can't drift apart when `current` is bumped.
@@ -438,6 +438,14 @@ actor ProjectStore {
                 // Reduce Noise layers arrived in version 21.
                 if adjustment.kind == .reduceNoise || filterLayer?.reduceNoise != nil {
                     guard manifest.version >= 21 else { throw ProjectError.invalid }
+                }
+                // Brightness/Contrast, Vibrance, Selective Color, Color Lookup, Threshold, Posterize and High Pass arrived in version 25.
+                if [.brightnessContrast, .vibrance, .selectiveColor, .colorLookup, .threshold, .posterize, .highPass].contains(adjustment.kind)
+                    || adjustment.brightnessContrastSettings != nil || adjustment.vibranceSettings != nil
+                    || adjustment.selectiveColorSettings != nil || adjustment.colorLookupSettings != nil
+                    || adjustment.thresholdSettings != nil || adjustment.posterizeSettings != nil
+                    || filterLayer?.highPass != nil {
+                    guard manifest.version >= 25 else { throw ProjectError.invalid }
                 }
             }
             // Layer masks arrived in version 4, folder masks in version 6.

@@ -9,3 +9,4 @@
 #import "Rendering/DitherPixels.h"
 #import "Rendering/DeepPixels.h"
 #import "Rendering/TonePixels.h"
+#import "Rendering/RetouchFilters.h"

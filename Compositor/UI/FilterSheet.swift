@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The open filter's panel: its settings, Preview, and Cancel / OK.
 struct FilterSheet: View {
@@ -15,6 +16,8 @@ struct FilterSheet: View {
     private var isCameraRaw: Bool { edit?.kind == .cameraRaw }
     /// The widest slider title in the panel, so every slider starts and ends in the same place.
     @State private var labelWidth: CGFloat = 60
+    @State private var selectiveColorFamily: SelectiveColorFamily = .reds
+    @State private var lutLoadError: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -177,6 +180,62 @@ struct FilterSheet: View {
                     .help("How strongly edges and fine detail are brought out")
                 control("Radius", \.sharpenRadius, range: 0.1...20, unit: "px", decimals: 1, logarithmic: true)
                     .help("How fine the detail it sharpens: small for crisp texture, larger for a punchier look")
+            case .highPass:
+                control("Radius", \.highPassRadius, range: HighPassLayerSettings.radiusRange, unit: "px", decimals: 1, logarithmic: true)
+                    .help("Keeps fine detail above this radius centered on 50% gray; blend with Overlay or Soft Light to sharpen")
+            case .offset:
+                control("Horizontal", \.offset.horizontal, range: -2000...2000, unit: "px", decimals: 0, logarithmic: false)
+                control("Vertical", \.offset.vertical, range: -2000...2000, unit: "px", decimals: 0, logarithmic: false)
+                Picker("Undefined Areas", selection: Binding(get: { settings.offset.edgeMode },
+                                                             set: { new in update { $0.offset.edgeMode = new } })) {
+                    ForEach(OffsetEdgeMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                }
+            case .brightnessContrast:
+                control("Brightness", \.brightnessContrast.brightness, range: BrightnessContrastSettings.brightnessRange, unit: "", decimals: 0, logarithmic: false)
+                control("Contrast", \.brightnessContrast.contrast, range: BrightnessContrastSettings.contrastRange, unit: "", decimals: 0, logarithmic: false)
+                Toggle("Use Legacy", isOn: flag(\.brightnessContrast.useLegacy))
+            case .vibrance:
+                control("Vibrance", \.vibrance.vibrance, range: VibranceSettings.range, unit: "", decimals: 0, logarithmic: false)
+                control("Saturation", \.vibrance.saturation, range: VibranceSettings.range, unit: "", decimals: 0, logarithmic: false)
+            case .threshold:
+                control("Threshold Level", \.threshold.level, range: ThresholdSettings.range, unit: "", decimals: 0, logarithmic: false)
+            case .posterize:
+                control("Levels", \.posterize.levels, range: PosterizeSettings.range, unit: "", decimals: 0, logarithmic: false)
+            case .selectiveColor:
+                Picker("Colors", selection: $selectiveColorFamily) {
+                    ForEach(SelectiveColorFamily.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                }
+                selectiveColorSliders(for: selectiveColorFamily)
+                Picker("Method", selection: flag(\.selectiveColor.relative)) {
+                    Text("Relative").tag(true)
+                    Text("Absolute").tag(false)
+                }
+                .pickerStyle(.segmented)
+            case .colorLookup:
+                HStack(spacing: 8) {
+                    Picker("3D LUT", selection: Binding(get: { settings.colorLookup.preset }, set: { next in
+                        lutLoadError = nil
+                        update {
+                            $0.colorLookup.preset = next
+                            if next != .custom {
+                                $0.colorLookup.title = nil
+                                $0.colorLookup.dimension = nil
+                                $0.colorLookup.customCubeBase64 = nil
+                            }
+                        }
+                    })) {
+                        ForEach(ColorLookupPreset.builtIn, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                        if settings.colorLookup.preset == .custom {
+                            Divider()
+                            Text(settings.colorLookup.title ?? L10n.text("Custom .cube")).tag(ColorLookupPreset.custom)
+                        }
+                    }
+                    Button("Load .cube…") { loadCubeLUT() }
+                }
+                control("Intensity", \.colorLookup.intensity, range: ColorLookupSettings.intensityRange, unit: "%", decimals: 0, logarithmic: false)
+                if let lutLoadError {
+                    Text(lutLoadError).font(.callout).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                }
             case .reduceNoise:
                 control("Strength", \.reduceNoiseLuminance, range: 0...100, unit: "%", decimals: 0, logarithmic: false)
                     .help("How much grain is smoothed from the picture's brightness")
@@ -597,6 +656,55 @@ struct FilterSheet: View {
                     update { $0[keyPath: key] = min(range.upperBound, max(range.lowerBound, (stepped * step).rounded() / step)) }
                 })
                 .unitSuffix(unit)
+        }
+    }
+
+    @ViewBuilder
+    private func selectiveColorSliders(for family: SelectiveColorFamily) -> some View {
+        switch family {
+        case .reds:
+            selectiveColorGroup(\.selectiveColor.reds)
+        case .yellows:
+            selectiveColorGroup(\.selectiveColor.yellows)
+        case .greens:
+            selectiveColorGroup(\.selectiveColor.greens)
+        case .cyans:
+            selectiveColorGroup(\.selectiveColor.cyans)
+        case .blues:
+            selectiveColorGroup(\.selectiveColor.blues)
+        case .magentas:
+            selectiveColorGroup(\.selectiveColor.magentas)
+        case .whites:
+            selectiveColorGroup(\.selectiveColor.whites)
+        case .neutrals:
+            selectiveColorGroup(\.selectiveColor.neutrals)
+        case .blacks:
+            selectiveColorGroup(\.selectiveColor.blacks)
+        }
+    }
+
+    @ViewBuilder
+    private func selectiveColorGroup(_ key: WritableKeyPath<FilterSettings, SelectiveColorAdjust>) -> some View {
+        control("Cyan", key.appending(path: \.cyan), range: SelectiveColorAdjust.range, unit: "%", decimals: 0, logarithmic: false)
+        control("Magenta", key.appending(path: \.magenta), range: SelectiveColorAdjust.range, unit: "%", decimals: 0, logarithmic: false)
+        control("Yellow", key.appending(path: \.yellow), range: SelectiveColorAdjust.range, unit: "%", decimals: 0, logarithmic: false)
+        control("Black", key.appending(path: \.black), range: SelectiveColorAdjust.range, unit: "%", decimals: 0, logarithmic: false)
+    }
+
+    private func loadCubeLUT() {
+        let panel = NSOpenPanel()
+        panel.title = L10n.text("Load 3D LUT (.cube)")
+        panel.allowedContentTypes = [UTType(filenameExtension: "cube") ?? .plainText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            let parsed = try ColorLookupParser.parse(text, fallbackTitle: url.deletingPathExtension().lastPathComponent)
+            lutLoadError = nil
+            update { $0.colorLookup.setCustomLUT(title: parsed.title, dimension: parsed.dimension, table: parsed.table) }
+        } catch {
+            lutLoadError = error.localizedDescription
         }
     }
 }

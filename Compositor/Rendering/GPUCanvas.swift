@@ -564,7 +564,7 @@ nonisolated enum GPUAdjustment {
     static func apply(_ adjustment: LayerAdjustment, to image: CIImage, scale: CGFloat, mapping: CGAffineTransform,
                       hdr: Bool = false, document: CGSize? = nil) -> CIImage? {
         if hdr, adjustment.kind == .exposure { return exposure(adjustment.exposure, to: image) }
-        if hdr, [.levels, .hsv, .curves, .blackWhite, .colorBalance, .gradientMap, .invert, .vignette, .tonalContrast]
+        if hdr, [.levels, .hsv, .curves, .blackWhite, .colorBalance, .brightnessContrast, .vibrance, .selectiveColor, .colorLookup, .threshold, .posterize, .gradientMap, .invert, .vignette, .tonalContrast]
             .contains(adjustment.kind) {
             // Worked on in straight colors at full coverage, so the blend filters' compositing leaves them alone; the
             // coverage goes back at the end.
@@ -599,9 +599,45 @@ nonisolated enum GPUAdjustment {
                 "inputCubeDimension": HueSaturationFilter.dimension,
                 "inputCubeData": HueSaturationFilter.cube(adjustment.resolvedHSV),
             ])
-        case .curves, .blackWhite, .colorBalance, .exposure, .gradientMap, .invert:
+        case .curves, .blackWhite, .colorBalance, .brightnessContrast, .vibrance, .selectiveColor, .colorLookup, .exposure, .gradientMap, .invert:
             guard let cube = cube(for: adjustment) else { return nil }
             return image.applyingFilter("CIColorCube", parameters: ["inputCubeDimension": dimension, "inputCubeData": cube])
+        case .threshold:
+            let extent = image.extent
+            let level = adjustment.threshold.normalized.level / 255.0
+            let straight = image.unpremultiplyingAlpha().settingAlphaOne(in: extent)
+            let cut = straight.applyingFilter("CIColorThreshold", parameters: ["inputThreshold": level])
+            return cut.applyingFilter("CIBlendWithAlphaMask", parameters: [
+                kCIInputBackgroundImageKey: CIImage.empty(), kCIInputMaskImageKey: image,
+            ]).cropped(to: extent)
+        case .posterize:
+            let extent = image.extent
+            let levels = adjustment.posterize.normalized.levels
+            let straight = image.unpremultiplyingAlpha().settingAlphaOne(in: extent)
+            let quantized = straight.applyingFilter("CIPosterize", parameters: ["inputLevels": levels])
+            return quantized.applyingFilter("CIBlendWithAlphaMask", parameters: [
+                kCIInputBackgroundImageKey: CIImage.empty(), kCIInputMaskImageKey: image,
+            ]).cropped(to: extent)
+        case .highPass:
+            let extent = image.extent
+            let radius = adjustment.filterLayer.resolvedHighPass.radius * scale
+            let straight = image.unpremultiplyingAlpha().settingAlphaOne(in: extent)
+            let blurred = straight.clampedToExtent().applyingGaussianBlur(sigma: radius).cropped(to: extent)
+            let negated = blurred.applyingFilter("CIColorMatrix", parameters: [
+                "inputRVector": CIVector(x: -1, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: 0, y: -1, z: 0, w: 0),
+                "inputBVector": CIVector(x: 0, y: 0, z: -1, w: 0),
+                "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+                "inputBiasVector": CIVector(x: 0.5, y: 0.5, z: 0.5, w: 1),
+            ])
+            let combined = straight.applyingFilter("CIAdditionCompositing", parameters: [kCIInputBackgroundImageKey: negated])
+                .applyingFilter("CIColorClamp", parameters: [
+                    "inputMinComponents": CIVector(x: 0, y: 0, z: 0, w: 0),
+                    "inputMaxComponents": CIVector(x: 1, y: 1, z: 1, w: 1),
+                ])
+            return combined.applyingFilter("CIBlendWithAlphaMask", parameters: [
+                kCIInputBackgroundImageKey: CIImage.empty(), kCIInputMaskImageKey: image,
+            ]).cropped(to: extent)
         case .gaussianBlur:
             // Not clamped, as on the Core Graphics canvas: the blur spreads past the pixels' edges.
             return image.applyingGaussianBlur(sigma: adjustment.gaussianRadius * scale)
