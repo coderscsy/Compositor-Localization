@@ -2,6 +2,8 @@
 
 Compositor is a macOS image editor for compositing and photo work, written in Swift (SwiftUI and AppKit, with some C for pixel work).
 
+Development and testing for this fork target the macOS app and its localizations on Apple silicon Macs.
+
 ## Designing or editing a Compositor project
 
 If you've been asked to make or change an image in a `.comp` project, you don't need the app's source code. Read [docs/writing-comp-files.md](docs/writing-comp-files.md): it covers the file format, the rules that make a project load, and how to write it safely while it's open, so the person can watch the canvas update as you work.

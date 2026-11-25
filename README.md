@@ -1,8 +1,16 @@
 # Compositor Localization
 
-Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s Compositor](https://github.com/robbietilton/Compositor), an open-source macOS image editor for compositing and photo editing. The first release is based on upstream Compositor 1.7.1.
+**[Download for macOS · 下载 DMG](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg)** · [Releases](https://github.com/coderscsy/Compositor-Localization/releases)
 
-这是 Compositor 的非官方多语言分支。可以在「Compositor → 设置 → 界面语言」中选择语言，重新打开应用后生效。
+**English** · [简体中文](docs/readme/README.zh-Hans.md) · [繁體中文](docs/readme/README.zh-Hant.md) · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
+
+Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s Compositor](https://github.com/robbietilton/Compositor), an open-source image editor for compositing and photo editing. Development, testing, and releases for this fork focus exclusively on **macOS on Apple silicon**. The first release is based on upstream Compositor 1.7.1.
+
+## Download for macOS
+
+The public preview requires **Apple silicon and macOS 26 or later**. The release also includes `SHA256SUMS.txt` to verify the download. Open the disk image and copy the app to Applications. [GitHub preview release](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+
+The app uses ad hoc signing and has not been notarized by Apple. Gatekeeper may block it the first time you open it. You can also build the app from source. [Apple’s guide to opening Mac apps](https://support.apple.com/en-us/102445)
 
 ## Language support
 
@@ -19,11 +27,9 @@ Use **Compositor → Settings → Interface Language** and relaunch the app afte
 
 French, German, Spanish, Japanese, and Korean are preview localizations. Common controls have been spot-checked, and the rest of the interface includes machine-assisted translations. Traditional Chinese uses Taiwanese terminology where possible.
 
-Report translation issues in this fork’s [issue tracker](https://github.com/coderscsy/Compositor-Localization/issues). Include the language, the menu or panel, and the text you see.
-
 ## Build from source
 
-The [fork releases](https://github.com/coderscsy/Compositor-Localization/releases) provide tagged source code. Build with Xcode on a Mac with Apple silicon running macOS 26 or later. Upstream CI uses Xcode 26.6.
+The source for each version is available from the corresponding Git tag. Build with Xcode on a Mac with Apple silicon running macOS 26 or later. Upstream CI uses Xcode 26.6.
 
 ```sh
 git clone https://github.com/coderscsy/Compositor-Localization.git
@@ -34,11 +40,17 @@ xcodebuild -project Compositor.xcodeproj -scheme Compositor \
 open build/Build/Products/Release/Compositor.app
 ```
 
-You can also open `Compositor.xcodeproj` in Xcode and run the **Compositor** scheme. Debug and Release use ad hoc signing for local builds, with an app sandbox and a separate bundle identifier. To keep both editions in your Applications folder, copy the resulting app as `Compositor Localization.app`. To update it, rebuild from a newer fork release.
+You can also open `Compositor.xcodeproj` in Xcode and run the **Compositor** scheme. Debug and Release use ad hoc signing for local builds, with an app sandbox and a separate bundle identifier. To keep both editions in your Applications folder, copy the resulting app as `Compositor Localization.app`. To update your local build, rebuild from a newer fork release.
 
 For the signed and notarized upstream app, see [Robbie Tilton’s release page](https://github.com/robbietilton/Compositor/releases/latest).
 
-The inherited `scripts/release.sh`, `scripts/publish.sh`, and `appcast.xml` belong to the upstream release process. This fork publishes tagged source through its own GitHub Releases page.
+The inherited `scripts/release.sh`, `scripts/publish.sh`, and `appcast.xml` belong to the upstream release process.
+
+## Report issues and contribute
+
+Use this fork’s [issue tracker](https://github.com/coderscsy/Compositor-Localization/issues) for macOS bugs and translation issues. Include your interface language, the affected menu or panel, the text you see, and your Compositor and macOS versions. A screenshot of the affected area helps when it can be shared.
+
+Interface translations live in [Localizable.xcstrings](Compositor/Resources/Localizable.xcstrings). Send changes to this fork through a pull request and test them on a Mac.
 
 ## Features
 
@@ -106,16 +118,6 @@ The inherited `scripts/release.sh`, `scripts/publish.sh`, and `appcast.xml` belo
 
 ### Works with AI agents
 - AI agents and scripts can build and edit projects directly: a `.comp` is a folder of PNG layers and a manifest, and an open project updates live as it's written. See [Writing Compositor projects](docs/writing-comp-files.md)
-
-## Other platforms
-
-Compositor is a macOS app. Report issues with these ports in their own repositories.
-
-- [CompositorWindows](https://github.com/Cengokill/CompositorWindows) by [@Cengokill](https://github.com/Cengokill): Windows
-- [Composa](https://github.com/dvdstelt/Composa) by [@dvdstelt](https://github.com/dvdstelt): Windows and Linux
-- [CompositorLX](https://github.com/ClaudiuJitea/compositorLX) by [@ClaudiuJitea](https://github.com/ClaudiuJitea): Linux
-
-More are listed in [#23 (Windows)](https://github.com/robbietilton/Compositor/issues/23) and [#19 (Linux)](https://github.com/robbietilton/Compositor/issues/19).
 
 ## License
 
