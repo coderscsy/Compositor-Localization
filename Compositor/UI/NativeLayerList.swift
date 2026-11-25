@@ -83,7 +83,7 @@ struct NativeLayerList: NSViewRepresentable {
                 // Selection never reloads cells or recreates thumbnails. A depth change can keep the very same picture
                 // (Convert to 16-Bit on an 8-bit layer), so its tag is compared too.
                 let changed = IndexSet(next.indices.filter {
-                    editableChanged || expansionChanged || (old[$0].name != next[$0].name || old[$0].isVisible != next[$0].isVisible || old[$0].size != next[$0].size || old[$0].parentID != next[$0].parentID || old[$0].isGroup != next[$0].isGroup || old[$0].asset?.image !== next[$0].asset?.image || old[$0].depthLabel != next[$0].depthLabel || (old[$0].liveText != nil) != (next[$0].liveText != nil) || old[$0].effects != next[$0].effects || old[$0].mask != next[$0].mask || old[$0].maskSourceID != next[$0].maskSourceID) || previousDetails[next[$0].id]?.depth != rowDetails[next[$0].id]?.depth || previousDetails[next[$0].id]?.visible != rowDetails[next[$0].id]?.visible
+                    editableChanged || expansionChanged || (old[$0].name != next[$0].name || old[$0].isVisible != next[$0].isVisible || old[$0].size != next[$0].size || old[$0].parentID != next[$0].parentID || old[$0].isGroup != next[$0].isGroup || old[$0].asset?.image !== next[$0].asset?.image || old[$0].depthLabel != next[$0].depthLabel || (old[$0].liveText != nil) != (next[$0].liveText != nil) || old[$0].effects != next[$0].effects || old[$0].mask != next[$0].mask || old[$0].maskSourceID != next[$0].maskSourceID || old[$0].lock != next[$0].lock) || previousDetails[next[$0].id]?.depth != rowDetails[next[$0].id]?.depth || previousDetails[next[$0].id]?.visible != rowDetails[next[$0].id]?.visible
                 })
                 let resized = IndexSet(next.indices.filter { (old[$0].effects?.kinds.count ?? 0) != (next[$0].effects?.kinds.count ?? 0) })
                 // Adding or removing an effect only changes how tall a row is. Left to AppKit that is animated, and
@@ -427,7 +427,8 @@ struct NativeLayerList: NSViewRepresentable {
             session.renamingLayerID = id
         }
         func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
-            guard session.canEditLayers, rows.indices.contains(row) else { return nil }
+            guard session.canEditLayers, rows.indices.contains(row),
+                  !session.effectiveLock(for: rows[row].id).blocksStructure else { return nil }
             let item = NSPasteboardItem()
             item.setString(rows[row].id.uuidString, forType: Self.layerType)
             return item
@@ -1301,6 +1302,8 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
     private var maskThumbnailHeight: NSLayoutConstraint!
     private let nameLabel = NSTextField(labelWithString: "")
     private let dimensions = NSTextField(labelWithString: "")
+    private let lockBadge = NSImageView()
+    private var nameTrailing: NSLayoutConstraint!
     private var layerID: UUID?
     private weak var session: EditorSession?
 
@@ -1354,7 +1357,9 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
         nameLabel.wantsLayer = true
         dimensions.font = .systemFont(ofSize: 10)
         dimensions.textColor = .secondaryLabelColor
-        for view in [eye, disclosure, thumbnail, linkButton, maskThumbnail, disabledMaskMark, depthTag, nameLabel, dimensions] {
+        lockBadge.isHidden = true
+        lockBadge.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 11, weight: .medium)
+        for view in [eye, disclosure, thumbnail, linkButton, maskThumbnail, disabledMaskMark, depthTag, nameLabel, dimensions, lockBadge] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
@@ -1375,6 +1380,7 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
         thumbnailHeight = thumbnail.heightAnchor.constraint(equalToConstant: 36)
         maskThumbnailWidth = maskThumbnail.widthAnchor.constraint(equalToConstant: 30)
         maskThumbnailHeight = maskThumbnail.heightAnchor.constraint(equalToConstant: 30)
+        nameTrailing = nameLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8)
         NSLayoutConstraint.activate([
             eye.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             eye.centerYAnchor.constraint(equalTo: topAnchor, constant: 26),
@@ -1401,13 +1407,16 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
             disabledMaskMark.centerXAnchor.constraint(equalTo: maskThumbnail.centerXAnchor),
             disabledMaskMark.centerYAnchor.constraint(equalTo: maskThumbnail.centerYAnchor),
             nameLabel.leadingAnchor.constraint(equalTo: maskSlot.trailingAnchor, constant: 5),
-            nameLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            nameTrailing,
             nameLabel.topAnchor.constraint(equalTo: topAnchor, constant: 9),
             dimensions.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             dimensions.trailingAnchor.constraint(lessThanOrEqualTo: nameLabel.trailingAnchor),
             dimensions.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 3),
             depthTag.leadingAnchor.constraint(equalTo: dimensions.trailingAnchor, constant: 5),
-            depthTag.centerYAnchor.constraint(equalTo: dimensions.centerYAnchor)
+            depthTag.centerYAnchor.constraint(equalTo: dimensions.centerYAnchor),
+            lockBadge.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            lockBadge.centerYAnchor.constraint(equalTo: topAnchor, constant: 26),
+            lockBadge.widthAnchor.constraint(equalToConstant: 14), lockBadge.heightAnchor.constraint(equalToConstant: 14)
         ])
         depthTagFits = depthTag.trailingAnchor.constraint(lessThanOrEqualTo: nameLabel.trailingAnchor)
         // A narrow panel truncates the size before the tag.
@@ -1504,6 +1513,14 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
         eye.isEnabled = enabled
         eye.layerID = layer.id
         eye.session = session
+        let effectiveLock = session.effectiveLock(for: layer.id)
+        lockBadge.isHidden = !effectiveLock.isLocked
+        nameTrailing.constant = effectiveLock.isLocked ? -26 : -8
+        if effectiveLock.isLocked {
+            lockBadge.image = NSImage(systemSymbolName: effectiveLock.all ? "lock.fill" : "lock", accessibilityDescription: L10n.text("Locked"))
+            lockBadge.contentTintColor = effectiveLock.all ? .labelColor : .secondaryLabelColor
+            lockBadge.toolTip = L10n.text(effectiveLock.all ? "Lock All" : "Locked")
+        }
         alphaValue = visible ? 1 : 0.35
     }
     private var maskThumbnailKey: ThumbnailKey?
@@ -1532,7 +1549,7 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
     /// Types the layer's name in the row: Return keeps it, Escape leaves it as it was, as does clicking away.
     func beginRenaming() {
         // Not `canEditLayers`: that is false while a rename is pending, which is exactly when this runs.
-        guard !renaming, let session, layerID != nil,
+        guard !renaming, let session, let id = layerID, !session.effectiveLock(for: id).blocksStructure,
               session.document != nil, !session.isProjectBusy, !session.isImporting else { return }
         renaming = true
         nameLabel.isEditable = true

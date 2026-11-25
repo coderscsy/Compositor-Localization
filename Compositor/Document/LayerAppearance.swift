@@ -82,10 +82,16 @@ extension EditorSession {
         else { blendPreview = nil }
         refreshCanvasPreview?()
     }
-    var canEditAppearance: Bool { canEditLayers && selectedLayerIDs.count == 1 && activeLayer?.isGroup == false }
+    var canEditAppearance: Bool {
+        guard canEditLayers, selectedLayerIDs.count == 1, let layer = activeLayer, !layer.isGroup else { return false }
+        return !effectiveLock(for: layer.id).blocksAppearance
+    }
     /// A folder takes an opacity of its own, which dims everything inside it (see LayerOpacity);
     /// blending still belongs to each layer, so the rest of the appearance controls stay off for folders.
-    var canEditOpacity: Bool { canEditLayers && selectedLayerIDs.count == 1 && activeLayer != nil }
+    var canEditOpacity: Bool {
+        guard canEditLayers, selectedLayerIDs.count == 1, let layer = activeLayer else { return false }
+        return !effectiveLock(for: layer.id).blocksAppearance
+    }
     func beginOpacityEdit() {
         guard canEditOpacity, opacityEditLayerID == nil, let id = activeLayerID else { return }
         beginEdit("Layer Opacity")
@@ -111,7 +117,9 @@ extension EditorSession {
         guard opacity.isFinite, canEditLayers, let document else { return }
         let value = min(1, max(0, opacity))
         let indices = document.layers.indices.filter {
-            selectedLayerIDs.contains(document.layers[$0].id) && document.layers[$0].opacity != value
+            selectedLayerIDs.contains(document.layers[$0].id)
+                && !document.effectiveLock(for: document.layers[$0].id).blocksAppearance
+                && document.layers[$0].opacity != value
         }
         guard !indices.isEmpty else { return }
         finishOpacityEdit()

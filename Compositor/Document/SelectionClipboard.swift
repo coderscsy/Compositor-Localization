@@ -268,7 +268,7 @@ extension EditorSession {
             ImageLayer(id: mapping[original.id]!, asset: displayedAsset(for: original),
                 name: original.id == layer.id ? L10n.format("%@ copy", original.name) : original.name, isVisible: original.isVisible,
                 transform: original.transform, parentID: original.parentID.map { mapping[$0] ?? $0 },
-                isGroup: original.isGroup, opacity: original.opacity, blendMode: original.blendMode,
+                isGroup: original.isGroup, opacity: original.opacity, blendMode: original.blendMode, lock: original.lock,
                 mask: original.mask, maskSourceID: original.maskSourceID.map { mapping[$0] ?? $0 },
                 adjustment: original.adjustment, shape: original.shape, effects: original.effects, text: original.text,
                 gifAnimation: currentGIFAnimation(for: original))

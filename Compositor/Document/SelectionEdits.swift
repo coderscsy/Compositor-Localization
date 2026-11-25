@@ -68,7 +68,7 @@ extension EditorSession {
     /// selection fills with the background color, as in Photoshop.
     func clearSelectedPixels() async {
         guard selection != nil, canEditPixels, let layer = activeLayer else { return }
-        if isMaskSelected { await fillSelection(with: .background); return }
+        if isMaskSelected || effectiveLock(for: layer.id).locksTransparentPixels { await fillSelection(with: .background); return }
         guard layer.asset != nil else { return }
         await applyPixelEdit(to: layer, name: "Clear") { try $0.clearPixels() }
     }
@@ -99,6 +99,8 @@ extension EditorSession {
         guard document != nil, textDraft == nil, let layer = activeLayer, !isProjectBusy, !isImporting, brushStroke == nil, pixelMove == nil,
               renamingLayerID == nil, !showsNewDocument, !showsImporter, selectedLayerIDs.count == 1, !layer.isGroup || isMaskSelected,
               document?.effectiveVisibleIDs.contains(layer.id) == true, selection?.isEmpty != true else { return false }
+        let lock = effectiveLock(for: layer.id)
+        if isMaskSelected ? lock.blocksStructure : lock.blocksPixels { return false }
         return isMaskSelected ? selectedMask(for: layer)?.isEnabled == true : layer.asset != nil
     }
 

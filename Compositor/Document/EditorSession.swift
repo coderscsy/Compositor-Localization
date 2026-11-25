@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 struct ImageLayer: Identifiable, Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id && lhs.name == rhs.name && lhs.isVisible == rhs.isVisible && lhs.transform == rhs.transform
-            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.blendMode == rhs.blendMode && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects
+            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.blendMode == rhs.blendMode && lhs.lock == rhs.lock && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects
             && lhs.gifAnimation == rhs.gifAnimation
     }
     let id: UUID
@@ -17,6 +17,7 @@ struct ImageLayer: Identifiable, Equatable {
     var isGroup = false
     var opacity: Double = 1
     var blendMode: LayerBlendMode = .normal
+    var lock = LayerLock()
     var maskSourceID: UUID?
     var mask: LayerMask?
     /// Masks scoped to frames in an imported GIF. The frames remain part of this one layer.
@@ -43,7 +44,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.name = name
     }
 
-    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, blendMode: LayerBlendMode = .normal, mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil, gifAnimation: GIFAnimation? = nil) {
+    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, blendMode: LayerBlendMode = .normal, lock: LayerLock = LayerLock(), mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil, gifAnimation: GIFAnimation? = nil) {
         self.id = id
         self.asset = asset
         self.name = name
@@ -53,6 +54,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.isGroup = isGroup
         self.opacity = opacity
         self.blendMode = blendMode
+        self.lock = lock
         self.mask = mask
         self.gifAnimation = gifAnimation
         self.maskSourceID = maskSourceID
@@ -520,8 +522,9 @@ final class EditorSession {
     var canTransform: Bool {
         guard canEditLayers else { return false }
         // Several selected layers, or a folder's contents, transform together.
-        if transformsAsGroup { return !groupTransformMembers.isEmpty }
-        return activeLayer?.asset != nil && activeLayer?.isGroup == false && activeLayerID.map { document?.effectiveVisibleIDs.contains($0) == true } == true
+        if transformsAsGroup { return !hasPositionLockedSelection && !groupTransformMembers.isEmpty }
+        guard let layer = activeLayer, !effectiveLock(for: layer.id).blocksPosition else { return false }
+        return layer.asset != nil && !layer.isGroup && document?.effectiveVisibleIDs.contains(layer.id) == true
     }
     /// Several layers selected, or a folder: the transform moves them (a folder, everything in it) together in one box.
     var transformsAsGroup: Bool { selectedLayerIDs.count > 1 || (selectedLayerIDs.count == 1 && activeLayer?.isGroup == true) }
@@ -933,7 +936,10 @@ final class EditorSession {
     }
 
     func deleteLayer(_ id: UUID) {
-        guard canEditLayers, document?.layers.contains(where: { $0.id == id }) == true else { return }
+        guard canEditLayers, let document, document.layers.contains(where: { $0.id == id }) else { return }
+        if document.effectiveLock(for: id).blocksStructure { return }
+        if document.layers.first(where: { $0.id == id })?.isGroup == true,
+           descendantIDs(of: id).contains(where: { document.effectiveLock(for: $0).blocksStructure }) { return }
         guard !deleteWithLiveMaskChoice(id) else { return }
         finishDeletingLayer(id, baked: [:])
     }
@@ -945,7 +951,7 @@ final class EditorSession {
     /// Deletes every selected layer as one undo step (a selected folder takes its contents); with one
     /// layer selected, just that one.
     func deleteSelectedLayers() {
-        guard canEditLayers, let document else { return }
+        guard canEditLayers, !hasStructureLockedSelection, let document else { return }
         // Captured first: deleting moves the active layer, which resets the selection.
         let ids = document.layers.map(\.id).filter(selectedLayerIDs.contains)
         guard ids.count > 1 else { deleteActiveLayer(); return }
@@ -955,7 +961,8 @@ final class EditorSession {
 
     func renameLayer(_ id: UUID, to name: String) {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !isProjectBusy, !isImporting, !name.isEmpty, let index = document?.layers.firstIndex(where: { $0.id == id }) else { return }
+        guard !isProjectBusy, !isImporting, !name.isEmpty, !effectiveLock(for: id).blocksStructure,
+              let index = document?.layers.firstIndex(where: { $0.id == id }) else { return }
         beginEdit("Rename Layer")
         defer { endEdit() }
         document?.layers[index].name = name
@@ -1026,7 +1033,8 @@ final class EditorSession {
 
     func reorderLayers(from offsets: IndexSet, to destination: Int) {
         guard canEditLayers, var layers = document?.layers.reversed().map({ $0 }),
-              offsets.allSatisfy({ layers.indices.contains($0) }), (0...layers.count).contains(destination) else { return }
+              offsets.allSatisfy({ layers.indices.contains($0) && !effectiveLock(for: layers[$0].id).blocksStructure }),
+              (0...layers.count).contains(destination) else { return }
         // List order is top-to-bottom; the compositor stores bottom-to-top.
         layers.move(fromOffsets: offsets, toOffset: destination)
         beginEdit("Reorder Layers")
@@ -1035,7 +1043,7 @@ final class EditorSession {
     }
 
     func canMoveActiveLayer(by offset: Int) -> Bool {
-        guard canEditLayers, let activeLayer else { return false }
+        guard canEditLayers, let activeLayer, !effectiveLock(for: activeLayer.id).blocksStructure else { return false }
         let siblings = document?.layers.filter { $0.parentID == activeLayer.parentID } ?? []
         guard let index = siblings.firstIndex(where: { $0.id == activeLayer.id }) else { return false }
         return siblings.indices.contains(index + offset)

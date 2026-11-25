@@ -105,12 +105,12 @@ struct LayersFooter: View {
                 (L10n.text(kind.rawValue) + "…", { session.addEffect(kind) })
             })
                 .help("Add layer effect").accessibilityLabel("Layer effects")
-                .accessibilityIdentifier("layerEffects").disabled(!session.layersLookEditable || session.activeLayer?.isGroup != false || session.activeLayer?.asset == nil)
+                .accessibilityIdentifier("layerEffects").disabled(!session.canEditEffects)
             Spacer()
             Button { session.deleteLayerOrMask() } label: { FooterIcon(systemName: "trash") }
                 .help(deleteLabel).accessibilityLabel(deleteLabel)
                 .accessibilityIdentifier("deleteLayer")
-                .disabled(!session.layersLookEditable || session.activeLayer == nil)
+                .disabled(!session.layersLookEditable || session.activeLayer == nil || session.hasStructureLockedSelection)
         }
         .buttonStyle(.plain).foregroundStyle(.secondary)
         .padding(.horizontal, 8).padding(.vertical, 4) // Plus the hit areas' 8 and 12: the original 16.

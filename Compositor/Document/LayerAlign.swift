@@ -118,7 +118,9 @@ extension EditorSession {
     /// otherwise with the box around them all.
     /// Cheap enough for menus and buttons to ask on every redraw; the commands themselves find what moves.
     // Aligning commits a pending move first, so a move in progress leaves it available.
-    var canAlignLayers: Bool { canEditLayersOnceTransformCommitted && transformEdit?.corners == nil && !selectedLayerIDs.isEmpty }
+    var canAlignLayers: Bool {
+        canEditLayersOnceTransformCommitted && transformEdit?.corners == nil && !selectedLayerIDs.isEmpty && !hasPositionLockedSelection
+    }
     var canDistributeLayers: Bool { canAlignLayers && selectedLayerIDs.count > 2 }
 
     func alignLayers(_ alignment: LayerAlignment) {

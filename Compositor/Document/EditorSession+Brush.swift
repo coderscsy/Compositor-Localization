@@ -4,8 +4,10 @@ extension EditorSession {
     /// An explicitly empty selection leaves nothing paintable, so painting never starts.
     var canPaint: Bool {
         let targetMask = activeLayer.flatMap { selectedMask(for: $0) }
+        let lock = activeLayerID.map(effectiveLock(for:)) ?? LayerLock()
+        let locked = isMaskSelected ? lock.blocksStructure : lock.blocksPixels
         // A folder has no pixels of its own, so only its mask can be painted.
-        return canEditLayers && selectedLayerIDs.count == 1 && (activeLayer?.isGroup == false || isMaskSelected) && selection?.isEmpty != true
+        return canEditLayers && selectedLayerIDs.count == 1 && !locked && (activeLayer?.isGroup == false || isMaskSelected) && selection?.isEmpty != true
             && activeLayerID.map { document?.effectiveVisibleIDs.contains($0) == true } == true
             && (!isMaskSelected || targetMask?.isEnabled == true)
             && (isMaskSelected || activeLayer?.adjustment == nil)
@@ -16,6 +18,10 @@ extension EditorSession {
         guard canEditLayers, let layer = activeLayer, !canPaint else { return nil }
         if selectedLayerIDs.count > 1 {
             return L10n.text("Several layers are selected. Select just one to paint on it.")
+        }
+        let lock = effectiveLock(for: layer.id)
+        if isMaskSelected ? lock.blocksStructure : lock.blocksPixels {
+            return L10n.format("“%@” is locked. Unlock it in the Layers panel to edit it.", layer.name)
         }
         if layer.isGroup, !isMaskSelected {
             return L10n.format("“%@” is a folder, which has no pixels of its own. Paint on a layer inside it, or on the folder’s mask.", layer.name)
@@ -40,7 +46,14 @@ extension EditorSession {
         guard let document else { throw ProjectError.tooLarge }
         pauseGIFForEditing(for: layer.id)
         let sourceLayer = pixelEditingLayer(for: layer)
-        let stroke = try BrushStroke(layer: sourceLayer, mask: isMaskSelected, settings: settings, canvas: document.size,
+        var resolvedSettings = settings
+        if !isMaskSelected, effectiveLock(for: layer.id).locksTransparentPixels {
+            resolvedSettings.lockTransparent = true
+            resolvedSettings.eraseRed = backgroundColor.red
+            resolvedSettings.eraseGreen = backgroundColor.green
+            resolvedSettings.eraseBlue = backgroundColor.blue
+        }
+        let stroke = try BrushStroke(layer: sourceLayer, mask: isMaskSelected, settings: resolvedSettings, canvas: document.size,
                                      useGPU: useGPU, growsMask: growsMask)
         func maskPixels(_ candidate: ImageLayer) -> Int {
             candidate.mask.map { $0.asset.image.width * $0.asset.image.height } ?? 0

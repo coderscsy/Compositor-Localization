@@ -236,7 +236,7 @@ extension EditorSession {
         guard canEditLayers, textDraft == nil, let document, point.x.isFinite, point.y.isFinite else { return }
         let visible = document.effectiveVisibleIDs
         let target = newLayer ? nil : document.layers.reversed().first {
-            visible.contains($0.id) && $0.liveText != nil && $0.transform.contains(point)
+            visible.contains($0.id) && $0.liveText != nil && !document.effectiveLock(for: $0.id).blocksPixels && $0.transform.contains(point)
         }
         if let target { selectLayer(target.id) }
         var style = target?.liveText?.style ?? textDefaults

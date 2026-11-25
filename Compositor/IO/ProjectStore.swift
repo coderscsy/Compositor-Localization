@@ -17,7 +17,7 @@ extension UTType {
 
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
-    static let current = 22
+    static let current = 23
     /// Every version `load` accepts: each one a release has written (1 through `current`), and 27 from the
     /// GIF branch's own builds. Leaving out 15 and 16 once locked out projects saved by 1.5.4 and 1.5.5.
     /// The package-header and manifest checks both read this, so they can't drift apart when `current` is bumped.
@@ -46,6 +46,8 @@ nonisolated struct ProjectLayerRecord: Codable, Sendable {
     var isGroup: Bool? = nil
     var opacity: Double? = nil
     var blendMode: LayerBlendMode? = nil
+    /// Per-layer edit locks (format version 23). Omitted when unlocked.
+    var lock: LayerLock? = nil
     var maskFile: String? = nil
     var maskEnabled: Bool? = nil
     var maskSourceID: UUID? = nil
@@ -392,6 +394,13 @@ actor ProjectStore {
                       let red = shape.strokeRed, let green = shape.strokeGreen, let blue = shape.strokeBlue,
                       red.isFinite, green.isFinite, blue.isFinite,
                       (0...1).contains(red), (0...1).contains(green), (0...1).contains(blue) else { throw ProjectError.invalid }
+            }
+            // Per-layer edit locks arrived in version 23; transparent-pixel lock only applies to non-group, non-adjustment layers.
+            if let lock = layer.lock, !lock.isEmpty {
+                guard manifest.version >= 23 else { throw ProjectError.invalid }
+                if lock.transparent {
+                    guard layer.isGroup != true, layer.adjustment == nil else { throw ProjectError.invalid }
+                }
             }
             if let text = layer.text {
                 // Per-letter colors arrived in version 10, per-letter faces in version 11.

@@ -30,6 +30,12 @@ nonisolated struct BrushSettings: Sendable {
     var pressureOpacity = false
     /// Off for hard, pixel-sharp edges, like a pencil: each pixel is painted fully or not at all.
     var antialiased = true
+    /// Preserves every pixel's existing alpha (Photoshop's Lock Transparent Pixels).
+    var lockTransparent = false
+    /// Background color used when erasing on a layer with transparent pixels locked.
+    var eraseRed: CGFloat = 1
+    var eraseGreen: CGFloat = 1
+    var eraseBlue: CGFloat = 1
 
     /// What a press of `pressure` (0–1) does to the tip: its size as a share of the full diameter, and its strength.
     func dynamics(_ pressure: CGFloat) -> (scale: CGFloat, strength: CGFloat) {
@@ -149,6 +155,7 @@ final class BrushStroke {
     let paintTransform: LayerTransform
     private let source: CGImage?
     private let paintColor: CGColor
+    private let eraseFillColor: CGColor
     private let falloff: CGGradient?
     /// The brush tip, rendered once and stamped for every dab. Only worth it up to
     /// `stampLimit`: past that, blitting the big tip costs more than drawing the falloff.
@@ -269,6 +276,8 @@ final class BrushStroke {
         let space = mask ? CGColorSpaceCreateDeviceGray() : CGColorSpace(name: CGColorSpace.sRGB)!
         let components: [CGFloat] = mask ? [settings.red, 1] : [settings.red, settings.green, settings.blue, 1]
         paintColor = CGColor(colorSpace: space, components: components)!
+        eraseFillColor = CGColor(colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                 components: [settings.eraseRed, settings.eraseGreen, settings.eraseBlue, 1])!
         let steps = 24
         let locations = (0...steps).map { CGFloat($0) / CGFloat(steps) }
         let levels: [CGFloat] = locations.flatMap { [BrushRaster.falloff($0), CGFloat(1)] }
@@ -463,7 +472,11 @@ final class BrushStroke {
                 width: CGFloat(abs(s.z - s.x)), height: CGFloat(abs(s.w - s.y)))
                 .insetBy(dx: -reach, dy: -reach).intersection(canvas)
             guard !box.isNull, !box.isEmpty else { continue }
-            let affected = box.applying(inverse).integral.intersection(CGRect(x: 0, y: 0, width: width, height: height))
+            var affected = box.applying(inverse).integral.intersection(CGRect(x: 0, y: 0, width: width, height: height))
+            if settings.lockTransparent, !isMask {
+                guard source != nil else { continue }
+                affected = affected.intersection(sourceRect)
+            }
             guard !affected.isNull, !affected.isEmpty else { continue }
             for y in Int(affected.minY) / Self.tileSize...Int(ceil(affected.maxY) - 1) / Self.tileSize {
                 for x in Int(affected.minX) / Self.tileSize...Int(ceil(affected.maxX) - 1) / Self.tileSize {
@@ -612,13 +625,22 @@ final class BrushStroke {
                     // `heal()` rebuilds it from its surroundings when the stroke ends.
                     BrushRaster.fill(Self.healingWash, coverage: mask, in: local, alpha: 0.45, context: tile.context)
                 } else if settings.erasing, !isMask {
-                    // Erasing takes the coverage out of the layer's alpha, leaving the pixels under it transparent.
                     tile.context.saveGState()
-                    tile.context.setBlendMode(.destinationOut)
-                    BrushRaster.fill(Self.eraseColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                    if settings.lockTransparent {
+                        // Photoshop's eraser paints the background color inside existing alpha when transparency is locked.
+                        tile.context.setBlendMode(.sourceAtop)
+                        BrushRaster.fill(eraseFillColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                    } else {
+                        // Erasing takes the coverage out of the layer's alpha, leaving the pixels under it transparent.
+                        tile.context.setBlendMode(.destinationOut)
+                        BrushRaster.fill(Self.eraseColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                    }
                     tile.context.restoreGState()
                 } else {
+                    tile.context.saveGState()
+                    if settings.lockTransparent, !isMask { tile.context.setBlendMode(.sourceAtop) }
                     BrushRaster.fill(paintColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                    tile.context.restoreGState()
                 }
                 tile.context.restoreGState()
             }
@@ -642,7 +664,8 @@ final class BrushStroke {
         context.scaleBy(x: 1, y: -1)
         context.translateBy(x: 0, y: -local.height)
         context.setAlpha(settings.opacity)
-        if replacesWithClone { context.setBlendMode(.copy) }
+        if settings.lockTransparent, !isMask { context.setBlendMode(.sourceAtop) }
+        else if replacesWithClone { context.setBlendMode(.copy) }
         context.interpolationQuality = .medium
         // Into the space the sample lives in: the stroke's grid, or document coordinates.
         context.translateBy(x: -tile.minX, y: -tile.minY)
@@ -702,8 +725,12 @@ final class BrushStroke {
                           y: (center.y - CGFloat(tip.height) / 2).rounded(),
                           width: CGFloat(tip.width), height: CGFloat(tip.height))
         }
-        let affected = (blit ?? clipped.applying(inverse)).intersection(pixelCanvas)
+        var affected = (blit ?? clipped.applying(inverse)).intersection(pixelCanvas)
             .integral.intersection(CGRect(x: 0, y: 0, width: width, height: height))
+        if settings.lockTransparent, !isMask {
+            guard source != nil else { return }
+            affected = affected.intersection(sourceRect)
+        }
         guard !affected.isNull, !affected.isEmpty else { return }
         let columns = (width + Self.tileSize - 1) / Self.tileSize
         for y in Int(affected.minY) / Self.tileSize...Int(ceil(affected.maxY) - 1) / Self.tileSize {
@@ -844,13 +871,16 @@ final class BrushStroke {
     /// cover (only the layer's existing pixels with `withinSource`), clipped to both,
     /// starting from each tile's original content.
     private func paintCanvas(withinSource: Bool = false, _ draw: @escaping (CGContext) throws -> Void) throws {
-        canvasPaint = (draw, withinSource)
+        let lockAlpha = settings.lockTransparent && !isMask
+        let restricted = withinSource || lockAlpha
+        canvasPaint = (draw, restricted)
+        if lockAlpha, source == nil { return }
         var area = canvas
         if let selectionClip { area = area.intersection(selectionClip.rect) }
         guard !area.isNull, !area.isEmpty else { return }
         let inverse = pixelToDocument.inverted()
         var affected = area.applying(inverse).integral.intersection(CGRect(x: 0, y: 0, width: width, height: height))
-        if withinSource { affected = affected.intersection(sourceRect) }
+        if restricted { affected = affected.intersection(sourceRect) }
         guard !affected.isNull, !affected.isEmpty else { return }
         let columns = (width + Self.tileSize - 1) / Self.tileSize
         for y in Int(affected.minY) / Self.tileSize...Int(ceil(affected.maxY) - 1) / Self.tileSize {
@@ -867,6 +897,7 @@ final class BrushStroke {
                 context.concatenate(inverse)
                 context.clip(to: canvas)
                 selectionClip?.apply(to: context)
+                if lockAlpha { context.setBlendMode(.sourceAtop) }
                 try draw(context)
                 context.restoreGState()
                 guard let image = context.makeImage() else { throw ExportError.render }
@@ -1038,7 +1069,18 @@ final class BrushStroke {
                 context.concatenate(pixelToDocument)
                 context.translateBy(x: tile.rect.minX, y: tile.rect.minY)
             }
-            BrushRaster.draw(healed, in: region.offsetBy(dx: -tile.rect.minX, dy: -tile.rect.minY), mask: false, context: context)
+            let placed = region.offsetBy(dx: -tile.rect.minX, dy: -tile.rect.minY)
+            if settings.lockTransparent {
+                context.saveGState()
+                context.interpolationQuality = .none
+                context.translateBy(x: placed.minX, y: placed.maxY)
+                context.scaleBy(x: 1, y: -1)
+                context.setBlendMode(.sourceAtop)
+                context.draw(healed, in: CGRect(origin: .zero, size: placed.size))
+                context.restoreGState()
+            } else {
+                BrushRaster.draw(healed, in: placed, mask: false, context: context)
+            }
             context.restoreGState()
             tiles[key]?.image = context.makeImage()
         }
@@ -1104,6 +1146,7 @@ final class BrushStroke {
         if let canvasPaint, !isMask {
             // As `paintCanvas` draws it into each tile, into the whole committed area at once.
             let inverse = pixelToDocument.inverted(), canvas = canvas, selectionClip = selectionClip
+            let lockAlpha = settings.lockTransparent
             let within = canvasPaint.withinSource ? sourceRect.offsetBy(dx: -bounds.minX, dy: -bounds.minY) : nil
             deepPaint = { context in
                 if let within { context.clip(to: within) }
@@ -1111,6 +1154,7 @@ final class BrushStroke {
                 context.concatenate(inverse)
                 context.clip(to: canvas)
                 selectionClip?.apply(to: context)
+                if lockAlpha { context.setBlendMode(.sourceAtop) }
                 try canvasPaint.draw(context)
             }
         }

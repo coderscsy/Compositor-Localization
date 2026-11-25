@@ -228,7 +228,7 @@ extension EditorSession {
     }
     /// Option-click clips to the next lower sibling, sharing its base when it is already clipped.
     func toggleClippingMask(_ id: UUID) {
-        guard canEditLayers, let layers = document?.layers,
+        guard canEditLayers, !effectiveLock(for: id).blocksStructure, let layers = document?.layers,
               let layer = layers.first(where: { $0.id == id }), !layer.isGroup else { return }
         if layer.maskSourceID != nil { removeLiveMask(from: id); return }
         let siblings = layers.filter { $0.parentID == layer.parentID }
@@ -249,7 +249,7 @@ extension EditorSession {
     }
     var selectedClippingTitle: String { releasesSelectedClipping ? "Release Clipping Mask" : "Create Clipping Mask" }
     var canToggleSelectedClipping: Bool {
-        guard canEditLayers else { return false }
+        guard canEditLayers, !hasStructureLockedSelection else { return false }
         return releasesSelectedClipping || clippedSelection() != nil
     }
     /// Create Clipping Mask for the selected layers, as in Photoshop: each not yet clipped, from the bottom up, is

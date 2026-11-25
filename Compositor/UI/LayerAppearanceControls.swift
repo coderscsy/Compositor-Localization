@@ -34,8 +34,9 @@ struct LayerAppearanceControls: View {
                                     change: { step($0) })
                     Text("%").font(.caption)
                 }
-            }
-        }.padding(12).disabled(!session.canEditOpacity)
+            }.disabled(!session.canEditOpacity)
+            LayerLockControls(session: session)
+        }.padding(12)
             .onAppear { sync() }
             .onChange(of: session.activeLayer?.opacity) { _, _ in if !focused { sync() } }
             .onDisappear { session.finishOpacityEdit() }

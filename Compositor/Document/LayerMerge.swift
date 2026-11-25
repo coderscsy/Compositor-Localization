@@ -10,6 +10,7 @@ extension EditorSession {
         if selectedLayerIDs.count > 1 {
             var picked = selectedLayerIDs
             for id in selectedLayerIDs { picked.formUnion(descendantIDs(of: id)) }
+            guard !picked.contains(where: { document.effectiveLock(for: $0).blocksStructure || document.effectiveLock(for: $0).blocksPixels }) else { return nil }
             let ordered = layers.filter { picked.contains($0.id) }
             guard ordered.contains(where: { !$0.isGroup }),
                   let top = ordered.last(where: { selectedLayerIDs.contains($0.id) }) else { return nil }
@@ -17,12 +18,16 @@ extension EditorSession {
         }
         if active.isGroup {
             let inside = descendantIDs(of: active.id)
+            guard !document.effectiveLock(for: active.id).blocksStructure,
+                  !inside.contains(where: { document.effectiveLock(for: $0).blocksStructure || document.effectiveLock(for: $0).blocksPixels }) else { return nil }
             guard layers.contains(where: { inside.contains($0.id) && !$0.isGroup }) else { return nil }
             let ids = layers.filter { inside.contains($0.id) || $0.id == active.id }.map(\.id)
             return (ids, Set(ids), active.name, active.parentID, active.id, "Merge Group")
         }
         guard let index = layers.firstIndex(where: { $0.id == active.id }),
-              let below = layers[..<index].last(where: { $0.parentID == active.parentID }), !below.isGroup else { return nil }
+              let below = layers[..<index].last(where: { $0.parentID == active.parentID }), !below.isGroup,
+              !document.effectiveLock(for: active.id).blocksStructure, !document.effectiveLock(for: active.id).blocksPixels,
+              !document.effectiveLock(for: below.id).blocksStructure, !document.effectiveLock(for: below.id).blocksPixels else { return nil }
         return ([below.id, active.id], [below.id, active.id], below.name, active.parentID, active.id, "Merge Down")
     }
 

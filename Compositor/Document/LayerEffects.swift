@@ -233,7 +233,10 @@ struct LayerEffectSelection: Equatable {
 }
 
 extension EditorSession {
-    var canEditEffects: Bool { canEditLayers && activeLayer?.isGroup == false && activeLayer?.asset != nil }
+    var canEditEffects: Bool {
+        guard canEditLayers, let layer = activeLayer, !layer.isGroup, layer.asset != nil else { return false }
+        return !effectiveLock(for: layer.id).blocksStructure
+    }
     var activeEffects: LayerEffects { activeLayer?.effects ?? LayerEffects() }
     var editingEffects: LayerEffects {
         document?.layers.first(where: { $0.id == effectsEditing?.layerID })?.effects ?? LayerEffects()
@@ -369,7 +372,7 @@ extension EditorSession {
     }
 
     func removeSelectedEffect() {
-        guard let selectedEffect, canEditLayers,
+        guard let selectedEffect, canEditLayers, !effectiveLock(for: selectedEffect.layerID).blocksStructure,
               var effects = document?.layers.first(where: { $0.id == selectedEffect.layerID })?.effects else { return }
         if effectsEditing == selectedEffect {
             if let picker = colorPicker, case .effect = picker.target { closeColorPicker(commit: false) }

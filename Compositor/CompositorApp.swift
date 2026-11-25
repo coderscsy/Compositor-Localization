@@ -401,9 +401,18 @@ struct CompositorApp: App {
                     Button("New Blank Layer") { session.addBlankLayer() }
                         .configuredKeyboardShortcut("n", modifiers: [.command, .shift]).disabled(!session.canEditLayers)
                     Button("Rename Layer…") { session.renamingLayerID = session.activeLayerID }
-                        .disabled(!session.canEditLayers || session.activeLayer == nil)
+                        .disabled(!session.canEditLayers || session.activeLayer == nil || session.activeLayerID.map { session.effectiveLock(for: $0).blocksStructure } == true)
                     Button(L10n.text(session.visibilityTitle)) {
                         session.toggleSelectedLayersVisibility()
+                    }.disabled(!session.canEditLayers || session.activeLayer == nil)
+                    Menu("Lock Layer") {
+                        ForEach(LayerLockKind.allCases, id: \.self) { kind in
+                            Toggle(L10n.text(kind.rawValue), isOn: Binding(
+                                get: { session.activeLayer?.lock[kind] == true },
+                                set: { _ in session.toggleLayerLock(kind) }
+                            ))
+                            .disabled(!session.canToggleLayerLock(kind))
+                        }
                     }.disabled(!session.canEditLayers || session.activeLayer == nil)
                     Divider()
                     Button("Move Layer Up") { session.moveActiveLayer(by: 1) }
@@ -443,7 +452,7 @@ struct CompositorApp: App {
                     Button(deleteLayerMenuTitle) {
                         session.deleteLayerOrMask()
                     }
-                        .disabled(!session.canEditLayers || session.activeLayer == nil)
+                        .disabled(!session.canEditLayers || session.activeLayer == nil || session.hasStructureLockedSelection)
                 }
             }
         Settings {
