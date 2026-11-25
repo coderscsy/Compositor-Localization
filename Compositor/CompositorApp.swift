@@ -199,6 +199,15 @@ struct CompositorApp: App {
                             Toggle("Rulers", isOn: Binding(get: { session.showsRulers }, set: { session.showsRulers = $0 }))
                                 .configuredKeyboardShortcut("r").disabled(session.document == nil)
                             Divider()
+                            Menu("Panels") {
+                                Toggle("History Panel", isOn: Binding(get: { session.showsHistoryPanel }, set: { session.showsHistoryPanel = $0 }))
+                                Toggle("Info Panel", isOn: Binding(get: { session.showsInfoPanel }, set: { session.showsInfoPanel = $0 }))
+                                Toggle("Histogram Panel", isOn: Binding(get: { session.showsHistogramPanel }, set: { session.showsHistogramPanel = $0 }))
+                                Button("Paths Panel") { session.rightPanelTab = .paths }
+                                Button("Layers Panel") { session.rightPanelTab = .layers }
+                            }
+                            .disabled(session.document == nil)
+                            Divider()
                             Toggle("Snap", isOn: Binding(get: { session.snapEnabled }, set: { session.snapEnabled = $0 }))
                                 .configuredKeyboardShortcut(";", modifiers: [.command, .shift]).disabled(session.document == nil)
                             Menu("Snap To") {

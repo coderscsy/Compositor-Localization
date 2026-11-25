@@ -495,6 +495,14 @@ final class EditorSession {
     var quickMaskRevision: Int = 0
     /// Floating Select & Mask refinement workspace state.
     var selectAndMask: SelectAndMaskSession?
+    /// Professional workflow panels state (History snapshots, Info panel, persistent Histogram panel).
+    var historySnapshots: [HistoryDocumentSnapshot] = []
+    var pointerInfo: PointerColorInfo?
+    var histogramStats: HistogramStats?
+    var histogramChannel = HistogramChannel.rgb
+    var showsHistoryPanel = false
+    var showsInfoPanel = false
+    var showsHistogramPanel = false
     /// The dialog whose color the picker is open on (`ColorPickerTarget.dialog`).
     @ObservationIgnored var dialogColorChange: ((PaletteColor) -> Void)?
     /// A dialog with its own zoomable preview (Export JPEG) is open: the View menu's zoom commands zoom that instead.

@@ -16,7 +16,6 @@ struct ContentView: View {
     @State private var filterPanel = FloatingPanelController(name: "filterPanel", sharing: "editPanel")
     @State private var effectsPanel = FloatingPanelController(name: "effectsPanel", sharing: "editPanel")
     @State private var blendIfPanel = FloatingPanelController(name: "blendIfPanel", sharing: "editPanel")
-    @State private var selectAndMaskPanel = FloatingPanelController(name: "selectAndMaskPanel", sharing: "editPanel")
     @State private var isDropTargeted = false
     /// The window's width, so the tab strip can use the toolbar's free space.
     @State private var windowWidth: CGFloat = 1180
@@ -302,12 +301,7 @@ struct ContentView: View {
                 blendIfPanel.show(title: L10n.text("Blending Options"), content: BlendIfSheet(session: session))
             } else { blendIfPanel.close() }
         }
-        .onChange(of: session.selectAndMask != nil) { _, open in
-            if open {
-                selectAndMaskPanel.onClose = { session.cancelSelectAndMask() }
-                selectAndMaskPanel.show(title: L10n.text("Select and Mask"), content: SelectAndMaskSheet(session: session))
-            } else { selectAndMaskPanel.close() }
-        }
+        .modifier(WorkflowPanelsModifier(session: session))
         .onChange(of: session.document?.layers) { _, layers in
             if let editing = session.effectsEditing,
                layers?.first(where: { $0.id == editing.layerID })?.effects?.contains(editing.kind) != true {
@@ -447,6 +441,42 @@ struct ContentView: View {
         case .zoom:
             L10n.text("Click to zoom in · Option-click to zoom out · Drag right or left to zoom smoothly · Space to pan")
         }
+    }
+}
+
+private struct WorkflowPanelsModifier: ViewModifier {
+    @Bindable var session: EditorSession
+    @State private var selectAndMaskPanel = FloatingPanelController(name: "selectAndMaskPanel", sharing: "editPanel")
+    @State private var historyPanel = FloatingPanelController(name: "historyPanel")
+    @State private var infoPanel = FloatingPanelController(name: "infoPanel")
+    @State private var histogramPanel = FloatingPanelController(name: "histogramPanel")
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: session.selectAndMask != nil) { _, open in
+                if open {
+                    selectAndMaskPanel.onClose = { session.cancelSelectAndMask() }
+                    selectAndMaskPanel.show(title: L10n.text("Select and Mask"), content: SelectAndMaskSheet(session: session))
+                } else { selectAndMaskPanel.close() }
+            }
+            .onChange(of: session.showsHistoryPanel) { _, open in
+                if open {
+                    historyPanel.onClose = { session.showsHistoryPanel = false }
+                    historyPanel.show(title: L10n.text("History"), content: HistoryPanel(session: session))
+                } else { historyPanel.close() }
+            }
+            .onChange(of: session.showsInfoPanel) { _, open in
+                if open {
+                    infoPanel.onClose = { session.showsInfoPanel = false }
+                    infoPanel.show(title: L10n.text("Info"), content: InfoPanel(session: session))
+                } else { infoPanel.close() }
+            }
+            .onChange(of: session.showsHistogramPanel) { _, open in
+                if open {
+                    histogramPanel.onClose = { session.showsHistogramPanel = false }
+                    histogramPanel.show(title: L10n.text("Histogram"), content: HistogramPanel(session: session))
+                } else { histogramPanel.close() }
+            }
     }
 }
 

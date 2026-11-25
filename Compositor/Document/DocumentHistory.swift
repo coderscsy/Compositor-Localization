@@ -37,6 +37,25 @@ final class DocumentHistory {
     var redoName: String { future.last?.name ?? "" }
     var isModified: Bool { revision != savedRevision }
     var undoCount: Int { past.count }
+    var redoCount: Int { future.count }
+    var pastNames: [String] { past.map(\.name) }
+    /// Redoable entries in chronological forward order (next redo first).
+    var futureNames: [String] { future.reversed().map(\.name) }
+    /// Index of the current state (0 = initial state before any undoable edit; `past.count` = latest applied edit).
+    var currentStepIndex: Int { past.count }
+    var totalSteps: Int { past.count + future.count }
+
+    /// Jumps directly to `targetStep` (0...totalSteps) by stepping undo/redo atomically.
+    func jumpTo(step targetStep: Int) -> Snapshot? {
+        guard depth == 0, (0...totalSteps).contains(targetStep), targetStep != currentStepIndex else { return nil }
+        var result: Snapshot?
+        if targetStep < currentStepIndex {
+            while currentStepIndex > targetStep, let snap = undo() { result = snap }
+        } else {
+            while currentStepIndex < targetStep, let snap = redo() { result = snap }
+        }
+        return result
+    }
     func markSaved() { savedRevision = revision }
     /// The document as it stands, for a save that captures it now and finishes later.
     var currentRevision: UUID { revision }

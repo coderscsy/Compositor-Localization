@@ -1709,7 +1709,7 @@ final class CanvasView: NSView {
         // only tools whose cursor depends on where the pointer is also track movement.
         // The picker panel stays key, so sampling must track while this window is not.
         var options: NSTrackingArea.Options = [.mouseEnteredAndExited, picking ? .activeAlways : .activeInKeyWindow, .inVisibleRect]
-        if picking || session.tool == .move || session.tool.isBrushTool || session.tool.isSelectionTool {
+        if picking || session.showsInfoPanel || session.tool == .move || session.tool.isBrushTool || session.tool.isSelectionTool {
             options.formUnion([.mouseMoved, .cursorUpdate])
         }
         let area = NSTrackingArea(rect: .zero, options: options, owner: self)
@@ -1802,6 +1802,7 @@ final class CanvasView: NSView {
     override func mouseEntered(with event: NSEvent) { mouseMoved(with: event) }
     override func mouseExited(with event: NSEvent) {
         session.filterEdit?.cameraRawReadout = nil
+        session.pointerInfo = nil
         if transformDrag == nil, !session.distanceLines.isEmpty { session.distanceLines = []; transformOverlay.needsDisplay = true }
         brushPointer = nil
         updateBrushCursor()
@@ -1813,8 +1814,13 @@ final class CanvasView: NSView {
         }
     }
     override func mouseMoved(with event: NSEvent) {
-        guard session.document != nil else { return }
-        if session.filterEdit?.kind == .cameraRaw, let document = session.document {
+        guard let document = session.document else { return }
+        if session.showsInfoPanel {
+            let viewPt = convert(event.locationInWindow, from: nil)
+            let docPt = session.viewport.documentPoint(from: viewPt, documentSize: document.size)
+            updateInfoReadout(at: docPt, document: document)
+        }
+        if session.filterEdit?.kind == .cameraRaw {
             let point = convert(event.locationInWindow, from: nil)
             session.updateCameraRawReadout(at: session.viewport.documentPoint(from: point, documentSize: document.size))
         }
@@ -1859,6 +1865,26 @@ final class CanvasView: NSView {
         guard lines != session.distanceLines else { return }
         session.distanceLines = lines
         transformOverlay.needsDisplay = true
+    }
+
+    private func updateInfoReadout(at docPoint: CGPoint, document: CanvasDocument) {
+        guard docPoint.x >= 0, docPoint.y >= 0, docPoint.x < CGFloat(document.width), docPoint.y < CGFloat(document.height) else {
+            session.pointerInfo = nil
+            return
+        }
+        var r = 0, g = 0, b = 0, a = 0
+        if let ctx = try? BrushRaster.context(width: 1, height: 1, mask: false),
+           let ptr = ctx.data?.assumingMemoryBound(to: UInt8.self) {
+            ctx.translateBy(x: -floor(docPoint.x), y: -floor(docPoint.y))
+            session.drawLiveComposite(document, in: ctx)
+            a = Int(ptr[3])
+            if a > 0 {
+                r = min(255, Int(ptr[0]) * 255 / a)
+                g = min(255, Int(ptr[1]) * 255 / a)
+                b = min(255, Int(ptr[2]) * 255 / a)
+            }
+        }
+        session.pointerInfo = PointerColorInfo(point: docPoint, r: r, g: g, b: b, a: a)
     }
     override func cursorUpdate(with event: NSEvent) {
         guard session.document != nil else { return }

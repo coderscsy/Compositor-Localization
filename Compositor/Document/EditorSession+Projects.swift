@@ -51,6 +51,7 @@ extension EditorSession {
         projectURL = url
         sourceImageURL = nil
         renamingLayerID = nil
+        historySnapshots = []
         history.reset()
         viewport.fit(documentSize: document!.size)
     }
