@@ -167,18 +167,22 @@ extension EditorSession {
     /// with `hdr` (a merge with an HDR layer), they keep light brighter than white too.
     func drawLiveComposite(_ document: CanvasDocument, in context: CGContext, onSurface: Bool = false, sixteenBit: Bool = false,
                            hdr: Bool = false) {
-        if !onSurface, document.layers.contains(where: { $0.adjustment != nil }) {
+        if !onSurface, document.layers.contains(where: { $0.adjustment != nil
+            || SeparableBlend.needsSurface(self.displayedBlendMode(for: $0), blendIf: self.displayedBlendIf(for: $0))
+            || self.isFolderIsolated($0) }) {
             AdjustmentSurface.draw(in: context, sixteenBit: sixteenBit, hdr: hdr) {
                 self.drawLiveComposite(document, in: $0, onSurface: true, sixteenBit: sixteenBit, hdr: hdr)
             }
             return
         }
         let records = Dictionary(uniqueKeysWithValues: document.layers.map { ($0.id, $0) })
+        let isIsolated: (ImageLayer) -> Bool = { self.isFolderIsolated($0) }
+        var liveRef: LiveMaskRenderer?
         let live = LiveMaskRenderer(bounds: context.boundingBoxOfClipPath, source: { records[$0]?.maskSourceID }) { id, ctx in
             guard let layer = records[id] else { return }
             let displayed = self.displayedLayer(for: layer)
             guard let image = displayed.asset?.image else { return }
-            let opacity = layer.effectiveOpacity(in: records)
+            let opacity = layer.effectiveOpacity(in: records, isIsolated: isIsolated)
             let fill = layer.fillOpacity
             let transform = self.displayedTransform(for: layer)
             let mask = displayed.mask?.clipImage(placement: self.displayedMaskPlacement(for: layer), over: transform, width: image.width, height: image.height)
@@ -193,17 +197,25 @@ extension EditorSession {
                 LayerRenderer.draw(image, transform: transform, center: transform.center, opacity: opacity * fill,
                     blendMode: mode, mask: mask, in: target)
             }
+            if liveRef?.buildingStackBaseID == id {
+                drawLayer(.normal, ctx)
+                return
+            }
             let mode = self.displayedBlendMode(for: layer)
-            // Core Graphics blends these two wrong; see SeparableBlend.
-            if SeparableBlend.needsSurface(mode), SeparableBlend.draw(mode, in: ctx, body: { drawLayer(.normal, $0) }) { return }
+            let blendIf = self.displayedBlendIf(for: layer)
+            // Core Graphics cannot draw these modes or Blend If directly; see SeparableBlend.
+            if SeparableBlend.needsSurface(mode, blendIf: blendIf),
+               SeparableBlend.draw(mode, blendIf: blendIf, in: ctx, body: { drawLayer(.normal, $0) }) { return }
             drawLayer(mode, ctx)
         }
+        liveRef = live
         live.sixteenBit = sixteenBit
         live.hdr = hdr
+        live.blendIf = { records[$0].flatMap { self.displayedBlendIf(for: $0) } }
         live.adjustment = { records[$0]?.adjustment }
         live.adjustmentOpacity = {
             guard let layer = records[$0] else { return 1 }
-            return layer.effectiveOpacity(in: records) * layer.fillOpacity
+            return layer.effectiveOpacity(in: records, isIsolated: isIsolated) * layer.fillOpacity
         }
         live.adjustmentClip = { id, ctx in
             if let layer = records[id], let image = layer.mask?.enabledImage {
@@ -216,7 +228,12 @@ extension EditorSession {
             let transform = self.displayedTransform(for: folder)
             let clip = FolderMaskClip(image: image, transform: transform)
             return { clip.apply(center: transform.center, in: $0) }
-        }, in: context) { live.drawComposite($0, in: context) }
+        }, isolated: { id in
+            guard let folder = records[id], isIsolated(folder) else { return nil }
+            return IsolatedFolderStyle(opacity: folder.effectiveOpacity(in: records, isIsolated: isIsolated),
+                                       blendMode: self.displayedBlendMode(for: folder),
+                                       blendIf: self.displayedBlendIf(for: folder))
+        }, in: context) { id, target in live.drawComposite(id, in: target) }
     }
 }
 

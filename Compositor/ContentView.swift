@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var colorRangePanel = FloatingPanelController(name: "colorRangePanel", sharing: "editPanel")
     @State private var filterPanel = FloatingPanelController(name: "filterPanel", sharing: "editPanel")
     @State private var effectsPanel = FloatingPanelController(name: "effectsPanel", sharing: "editPanel")
+    @State private var blendIfPanel = FloatingPanelController(name: "blendIfPanel", sharing: "editPanel")
     @State private var isDropTargeted = false
     /// The window's width, so the tab strip can use the toolbar's free space.
     @State private var windowWidth: CGFloat = 1180
@@ -279,6 +280,12 @@ struct ContentView: View {
                 effectsPanel.onClose = { session.finishEffectsEditing(commit: false) }
                 effectsPanel.show(title: L10n.text(selection.kind.rawValue), content: EffectsSheet(session: session, kind: selection.kind))
             } else { effectsPanel.close() }
+        }
+        .onChange(of: session.blendIfEdit?.layerID) { _, layerID in
+            if layerID != nil {
+                blendIfPanel.onClose = { session.cancelBlendIf() }
+                blendIfPanel.show(title: L10n.text("Blending Options"), content: BlendIfSheet(session: session))
+            } else { blendIfPanel.close() }
         }
         .onChange(of: session.document?.layers) { _, layers in
             if let editing = session.effectsEditing,

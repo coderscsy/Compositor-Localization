@@ -210,6 +210,10 @@ nonisolated enum PSDReader {
             if key == "iOpa", let fill = payload.first { layer.fill = fill }
             if key == "lsct" || key == "lsdk", payload.count >= 4 {
                 layer.section = Int(u32(payload, 0))
+                if payload.count >= 12,
+                   String(decoding: payload[4..<8], as: UTF8.self) == "8BIM" {
+                    layer.blendKey = String(decoding: payload[8..<12], as: UTF8.self)
+                }
             }
         }
         cursor.offset = extraEnd

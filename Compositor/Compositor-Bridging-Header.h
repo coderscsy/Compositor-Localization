@@ -10,3 +10,4 @@
 #import "Rendering/DeepPixels.h"
 #import "Rendering/TonePixels.h"
 #import "Rendering/RetouchFilters.h"
+#import "Rendering/BlendPixels.h"

@@ -12,10 +12,20 @@ struct LayerAppearanceControls: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack {
+            HStack(spacing: 6) {
                 Text("Blend").font(.caption)
                 BlendModePicker(session: session)
-            }.disabled(!session.canEditAppearance)
+                Button {
+                    session.openBlendIf()
+                } label: {
+                    Image(systemName: "slider.horizontal.below.square.filled.and.square")
+                        .font(.system(size: 12))
+                        .foregroundStyle(session.activeLayer?.blendIf?.nonIdentity != nil ? Color.accentColor : Color.secondary)
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.text("Blending Options (Blend If)"))
+                .accessibilityLabel(L10n.text("Blending Options"))
+            }.disabled(!session.canEditBlendMode)
             HStack(spacing: 6) {
                 Text("Opacity").font(.caption)
                     .frame(minWidth: 44, alignment: .leading)

@@ -122,7 +122,7 @@ nonisolated enum PSDWriter {
                     try visit(layer.id, depth: depth + 1)
                     var group = Record(name: layer.name)
                     group.section = 1
-                    group.blendKey = "pass"
+                    group.blendKey = layer.isIsolatedGroup ? (layer.blendMode ?? .normal).psdKey : "pass"
                     group.opacity = layer.opacity ?? 1
                     group.hidden = !layer.isVisible
                     group.channels = emptyChannels(sixteenBit: sixteenBit)
@@ -473,12 +473,15 @@ extension LayerBlendMode {
     nonisolated var psdKey: String {
         switch self {
         case .normal: "norm"
+        case .dissolve: "diss"
         case .multiply: "mul "
         case .screen: "scrn"
         case .overlay: "over"
         case .softLight: "sLit"
         case .darken: "dark"
+        case .darkerColor: "dkCl"
         case .lighten: "lite"
+        case .lighterColor: "lgCl"
         case .difference: "diff"
         case .colorDodge: "div "
         case .colorBurn: "idiv"

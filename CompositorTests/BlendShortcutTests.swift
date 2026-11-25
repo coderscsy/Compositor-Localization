@@ -26,8 +26,8 @@ struct BlendShortcutTests {
         session.selectTool(.brush)
         #expect(window.makeFirstResponder(canvas))
         try press(forward: true)
-        // The list follows Photoshop's order, so the mode after Normal is the first darkening one.
-        #expect(mode() == .darken)
+        // The list follows Photoshop's order, so the mode after Normal is Dissolve.
+        #expect(mode() == .dissolve)
         session.selectTool(.lasso)
         #expect(window.makeFirstResponder(nil))
         try press(forward: false)

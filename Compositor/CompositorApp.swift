@@ -414,6 +414,8 @@ struct CompositorApp: App {
                             .disabled(!session.canToggleLayerLock(kind))
                         }
                     }.disabled(!session.canEditLayers || session.activeLayer == nil)
+                    Button("Blending Options…") { session.openBlendIf() }
+                        .disabled(!session.canEditBlendIf)
                     Divider()
                     Button("Move Layer Up") { session.moveActiveLayer(by: 1) }
                         .configuredKeyboardShortcut("]").disabled(!session.canMoveActiveLayer(by: 1))

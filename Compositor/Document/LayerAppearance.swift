@@ -2,22 +2,22 @@ import Foundation
 import CoreGraphics
 
 nonisolated enum LayerBlendMode: String, Codable, CaseIterable, Sendable {
-    case normal = "Normal"
+    case normal = "Normal", dissolve = "Dissolve"
     case darken = "Darken", multiply = "Multiply", colorBurn = "Color Burn"
-    case linearBurn = "Linear Burn"
+    case linearBurn = "Linear Burn", darkerColor = "Darker Color"
     case lighten = "Lighten", screen = "Screen", colorDodge = "Color Dodge"
-    case linearDodge = "Linear Dodge (Add)"
+    case linearDodge = "Linear Dodge (Add)", lighterColor = "Lighter Color"
     case overlay = "Overlay", softLight = "Soft Light", hardLight = "Hard Light"
     case vividLight = "Vivid Light", linearLight = "Linear Light", pinLight = "Pin Light", hardMix = "Hard Mix"
     case difference = "Difference", exclusion = "Exclusion", subtract = "Subtract", divide = "Divide"
     case hue = "Hue", saturation = "Saturation", color = "Color", luminosity = "Luminosity"
 
-    /// Photoshop's grouping: darkening modes together, then lightening, then contrast, then the
-    /// comparative ones, then the component modes. The menu draws a line between each group.
+    /// Photoshop's grouping: normal/dissolve, then darkening, lightening, contrast,
+    /// comparative, and component modes. The menu draws a line between each group.
     static let groups: [[LayerBlendMode]] = [
-        [.normal],
-        [.darken, .multiply, .colorBurn, .linearBurn],
-        [.lighten, .screen, .colorDodge, .linearDodge],
+        [.normal, .dissolve],
+        [.darken, .multiply, .colorBurn, .linearBurn, .darkerColor],
+        [.lighten, .screen, .colorDodge, .linearDodge, .lighterColor],
         [.overlay, .softLight, .hardLight, .vividLight, .linearLight, .pinLight, .hardMix],
         [.difference, .exclusion, .subtract, .divide],
         [.hue, .saturation, .color, .luminosity]
@@ -43,9 +43,15 @@ nonisolated enum LayerBlendMode: String, Codable, CaseIterable, Sendable {
         case .saturation: .saturation
         case .color: .color
         case .luminosity: .luminosity
-        // Drawn through Core Image or by hand; never reaches Core Graphics.
-        case .linearBurn, .linearDodge, .vividLight, .linearLight, .pinLight, .hardMix, .subtract, .divide: .normal
+        // Drawn through Core Image or custom pixel/Metal kernels; never reaches Core Graphics.
+        case .dissolve, .darkerColor, .lighterColor,
+             .linearBurn, .linearDodge, .vividLight, .linearLight, .pinLight, .hardMix, .subtract, .divide: .normal
         }
+    }
+
+    /// Modes computed by our own C/Metal kernels rather than Core Graphics or Core Image built-ins.
+    var usesCustomBlend: Bool {
+        self == .dissolve || self == .darkerColor || self == .lighterColor
     }
 
     /// The Core Image filter that computes this mode, for the ones Core Graphics has no equivalent
@@ -67,9 +73,6 @@ nonisolated enum LayerBlendMode: String, Codable, CaseIterable, Sendable {
         default: nil
         }
     }
-
-    // Photoshop's Darker Color and Lighter Color are left out: they compare a pixel's whole
-    // brightness rather than working a channel at a time, and neither framework implements them.
 }
 
 extension EditorSession {
@@ -77,17 +80,32 @@ extension EditorSession {
         if let blendPreview, blendPreview.layerID == layer.id, activeLayerID == layer.id { return blendPreview.mode }
         return layer.blendMode
     }
-    func previewBlendMode(_ mode: LayerBlendMode?, for id: UUID?) {
-        if let mode, let id, id == activeLayerID, canEditAppearance { blendPreview = (id, mode) }
-        else { blendPreview = nil }
+    func displayedFolderPassThrough(for layer: ImageLayer) -> Bool {
+        guard layer.isGroup else { return false }
+        if let blendPreview, blendPreview.layerID == layer.id, activeLayerID == layer.id,
+           let previewPassThrough = blendPreview.passThrough {
+            return previewPassThrough
+        }
+        return layer.isPassThrough
+    }
+    func previewBlendMode(_ mode: LayerBlendMode?, for id: UUID?, passThrough: Bool? = nil) {
+        if let mode, let id, id == activeLayerID, canEditBlendMode {
+            blendPreview = (id, mode, passThrough)
+        } else {
+            blendPreview = nil
+        }
         refreshCanvasPreview?()
     }
     var canEditAppearance: Bool {
         guard canEditLayers, selectedLayerIDs.count == 1, let layer = activeLayer, !layer.isGroup else { return false }
         return !effectiveLock(for: layer.id).blocksAppearance
     }
-    /// A folder takes an opacity of its own, which dims everything inside it (see LayerOpacity);
-    /// blending still belongs to each layer, so the rest of the appearance controls stay off for folders.
+    /// Both layers and folders accept a blend mode and Blend If options.
+    var canEditBlendMode: Bool {
+        guard canEditLayers, selectedLayerIDs.count == 1, let layer = activeLayer else { return false }
+        return !effectiveLock(for: layer.id).blocksAppearance
+    }
+    /// A folder takes an opacity of its own, which dims everything inside it (see LayerOpacity).
     var canEditOpacity: Bool {
         guard canEditLayers, selectedLayerIDs.count == 1, let layer = activeLayer else { return false }
         return !effectiveLock(for: layer.id).blocksAppearance
@@ -150,20 +168,48 @@ extension EditorSession {
         for index in indices { self.document?.layers[index].opacity = value }
         endEdit()
     }
-    /// Shift-+ / Shift-−: the active layer's blend mode steps to the next or previous one in the
+    /// Shift-+ / Shift-−: the active layer's (or folder's) blend mode steps to the next or previous one in the
     /// blend menu's order, wrapping around, as one undo step.
     func cycleBlendMode(forward: Bool) {
-        guard canEditAppearance, let layer = activeLayer else { return }
+        guard canEditBlendMode, let layer = activeLayer else { return }
+        if layer.isGroup {
+            let modes = LayerBlendMode.allCases
+            if layer.isPassThrough {
+                setLayerBlendMode(forward ? modes[0] : modes[modes.count - 1])
+            } else if let index = modes.firstIndex(of: layer.blendMode) {
+                let next = index + (forward ? 1 : -1)
+                if next < 0 || next >= modes.count {
+                    setFolderPassThrough()
+                } else {
+                    setLayerBlendMode(modes[next])
+                }
+            }
+            return
+        }
         let modes = LayerBlendMode.allCases
         let index = modes.firstIndex(of: layer.blendMode) ?? 0
         setLayerBlendMode(modes[(index + (forward ? 1 : modes.count - 1)) % modes.count])
     }
     func setLayerBlendMode(_ mode: LayerBlendMode) {
         blendPreview = nil
-        guard canEditAppearance, let index = document?.layers.firstIndex(where: { $0.id == activeLayerID }) else { return }
+        guard canEditBlendMode, let index = document?.layers.firstIndex(where: { $0.id == activeLayerID }) else { return }
         finishOpacityEdit()
         beginEdit("Layer Blend Mode")
         document?.layers[index].blendMode = mode
+        if document?.layers[index].isGroup == true {
+            document?.layers[index].isPassThrough = false
+        }
+        endEdit()
+    }
+    func setFolderPassThrough() {
+        blendPreview = nil
+        guard canEditBlendMode, let index = document?.layers.firstIndex(where: { $0.id == activeLayerID }),
+              document?.layers[index].isGroup == true else { return }
+        guard !(document?.layers[index].isPassThrough == true && document?.layers[index].blendMode == .normal) else { return }
+        finishOpacityEdit()
+        beginEdit("Layer Blend Mode")
+        document?.layers[index].isPassThrough = true
+        document?.layers[index].blendMode = .normal
         endEdit()
     }
 }

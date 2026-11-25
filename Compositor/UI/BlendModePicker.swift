@@ -3,10 +3,20 @@ import AppKit
 
 struct BlendModePicker: NSViewRepresentable {
     let session: EditorSession
+    private static let passThroughToken = "passThrough"
+
     func makeCoordinator() -> Coordinator { Coordinator(session: session) }
     func makeNSView(context: Context) -> NSPopUpButton {
         let button = NSPopUpButton(frame: .zero, pullsDown: false)
-        // Grouped as Photoshop groups them — darkening, lightening, contrast, comparative, component —
+        let passItem = NSMenuItem(title: L10n.text("Pass Through"), action: nil, keyEquivalent: "")
+        passItem.representedObject = Self.passThroughToken
+        passItem.isHidden = true
+        button.menu?.addItem(passItem)
+        let passSeparator = NSMenuItem.separator()
+        passSeparator.tag = 999
+        passSeparator.isHidden = true
+        button.menu?.addItem(passSeparator)
+        // Grouped as Photoshop groups them — normal/dissolve, darkening, lightening, contrast, comparative, component —
         // with a line between, so a long list stays readable.
         for (index, group) in LayerBlendMode.groups.enumerated() {
             if index > 0 { button.menu?.addItem(.separator()) }
@@ -32,13 +42,25 @@ struct BlendModePicker: NSViewRepresentable {
         return CGSize(width: max(width, 60), height: natural.height)
     }
     func updateNSView(_ button: NSPopUpButton, context: Context) {
-        button.isEnabled = session.canEditAppearance
+        button.isEnabled = session.canEditBlendMode
+        let isGroup = session.activeLayer?.isGroup == true
+        if let menu = button.menu {
+            menu.items.first { ($0.representedObject as? String) == Self.passThroughToken }?.isHidden = !isGroup
+            menu.item(withTag: 999)?.isHidden = !isGroup
+        }
         if !context.coordinator.tracking {
-            Self.select(session.activeLayer?.blendMode ?? .normal, in: button)
+            if isGroup, session.activeLayer?.isPassThrough == true {
+                Self.selectPassThrough(in: button)
+            } else {
+                Self.select(session.activeLayer?.blendMode ?? .normal, in: button)
+            }
         }
     }
     private static func select(_ mode: LayerBlendMode, in button: NSPopUpButton) {
         button.select(button.itemArray.first { $0.representedObject as? LayerBlendMode == mode })
+    }
+    private static func selectPassThrough(in button: NSPopUpButton) {
+        button.select(button.itemArray.first { ($0.representedObject as? String) == passThroughToken })
     }
     static func dismantleNSView(_ button: NSPopUpButton, coordinator: Coordinator) {
         if coordinator.tracking { coordinator.session.previewBlendMode(nil, for: nil) }
@@ -49,19 +71,28 @@ struct BlendModePicker: NSViewRepresentable {
         var tracking = false
         private var layerID: UUID?
         private var highlightedMode: LayerBlendMode?
+        private var highlightedPassThrough = false
         init(session: EditorSession) { self.session = session }
         func menuWillOpen(_ menu: NSMenu) {
             tracking = true
             layerID = session.activeLayerID
             highlightedMode = nil
+            highlightedPassThrough = false
         }
         func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
             // AppKit briefly reports no highlighted item while dismissing the menu.
             // Keep the last preview alive until the selection action has committed so
             // the canvas never flashes back to the layer's previous mode.
+            if (item?.representedObject as? String) == BlendModePicker.passThroughToken {
+                highlightedPassThrough = true
+                highlightedMode = nil
+                session.previewBlendMode(.normal, for: layerID, passThrough: true)
+                return
+            }
             guard let mode = item?.representedObject as? LayerBlendMode else { return }
+            highlightedPassThrough = false
             highlightedMode = mode
-            session.previewBlendMode(mode, for: layerID)
+            session.previewBlendMode(mode, for: layerID, passThrough: false)
         }
         func menuDidClose(_ menu: NSMenu) {
             tracking = false
@@ -74,8 +105,16 @@ struct BlendModePicker: NSViewRepresentable {
             }
         }
         @objc func choose(_ button: NSPopUpButton) {
-            guard session.activeLayerID == layerID,
-                  let mode = highlightedMode ?? (button.selectedItem?.representedObject as? LayerBlendMode) else { return }
+            guard session.activeLayerID == layerID else { return }
+            if highlightedPassThrough || (button.selectedItem?.representedObject as? String) == BlendModePicker.passThroughToken {
+                session.setFolderPassThrough()
+                BlendModePicker.selectPassThrough(in: button)
+                highlightedPassThrough = false
+                highlightedMode = nil
+                session.refreshCanvasPreview?()
+                return
+            }
+            guard let mode = highlightedMode ?? (button.selectedItem?.representedObject as? LayerBlendMode) else { return }
             session.setLayerBlendMode(mode)
             BlendModePicker.select(mode, in: button)
             highlightedMode = nil

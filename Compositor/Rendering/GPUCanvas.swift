@@ -513,10 +513,14 @@ final class MetalCanvasView: NSView {
 }
 
 nonisolated enum GPUBlend {
-    /// `top` composited over `bottom` in `mode`.
-    static func blend(_ top: CIImage, over bottom: CIImage, mode: LayerBlendMode) -> CIImage {
-        guard let name = filterName(mode) else { return top.composited(over: bottom) }
-        return top.applyingFilter(name, parameters: [kCIInputBackgroundImageKey: bottom])
+    /// `top` composited over `bottom` in `mode`, optionally modulated by `blendIf`.
+    static func blend(_ top: CIImage, over bottom: CIImage, mode: LayerBlendMode, blendIf: BlendIfSettings? = nil) -> CIImage {
+        let source = blendIf.flatMap(\.nonIdentity).map { MetalBlend.applyBlendIf(top, over: bottom, settings: $0) } ?? top
+        if mode.usesCustomBlend {
+            return MetalBlend.blend(source, over: bottom, mode: mode)
+        }
+        guard let name = filterName(mode) else { return source.composited(over: bottom) }
+        return source.applyingFilter(name, parameters: [kCIInputBackgroundImageKey: bottom])
     }
 
     static func filterName(_ mode: LayerBlendMode) -> String? {

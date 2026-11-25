@@ -17,7 +17,7 @@ extension UTType {
 
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
-    static let current = 25
+    static let current = 26
     /// Every version `load` accepts: each one a release has written (1 through `current`), and 27 from the
     /// GIF branch's own builds. Leaving out 15 and 16 once locked out projects saved by 1.5.4 and 1.5.5.
     /// The package-header and manifest checks both read this, so they can't drift apart when `current` is bumped.
@@ -48,6 +48,10 @@ nonisolated struct ProjectLayerRecord: Codable, Sendable {
     /// Interior pixel opacity separate from layer effects (format version 24). Omitted when 1.
     var fillOpacity: Double? = nil
     var blendMode: LayerBlendMode? = nil
+    /// For folders: true when composited as an isolated group instead of Pass Through (format version 26).
+    var folderIsolated: Bool? = nil
+    /// Per-layer / per-folder Blend If tonal visibility ranges (format version 26). Omitted when identity.
+    var blendIf: BlendIfSettings? = nil
     /// Per-layer edit locks (format version 23). Omitted when unlocked.
     var lock: LayerLock? = nil
     var maskFile: String? = nil
@@ -455,11 +459,20 @@ actor ProjectStore {
                 layer.maskPlacement.map({ $0.isValid && layer.maskFile != nil }) ?? true else { throw ProjectError.invalid }
             let opacity = layer.opacity ?? 1
             let blend = layer.blendMode ?? .normal
-            // Folders took an opacity of their own in version 8, which multiplies into what is inside
-            // them; their blend mode is still pass-through, so it stays Normal.
+            // Dissolve, Darker Color, Lighter Color, Blend If, and isolated folder blend modes arrived in version 26.
+            if blend.usesCustomBlend {
+                guard manifest.version >= 26 else { throw ProjectError.invalid }
+            }
+            if let folderIsolated = layer.folderIsolated {
+                guard manifest.version >= 26, layer.isGroup == true, folderIsolated == true else { throw ProjectError.invalid }
+            }
+            if let blendIf = layer.blendIf {
+                guard manifest.version >= 26, blendIf.isValid else { throw ProjectError.invalid }
+            }
+            // Folders took an opacity of their own in version 8 and independent blend modes in version 26.
             guard opacity.isFinite, (0...1).contains(opacity),
                   (manifest.version >= 3 || (opacity == 1 && blend == .normal)),
-                  (layer.isGroup != true || (blend == .normal && (manifest.version >= 8 || opacity == 1))) else { throw ProjectError.invalid }
+                  (layer.isGroup != true || ((manifest.version >= 26 || blend == .normal) && (manifest.version >= 8 || opacity == 1))) else { throw ProjectError.invalid }
         }
         try LayerHierarchy.validate(manifest.layers)
         try LiveMaskGraph.validate(manifest.layers)

@@ -23,7 +23,7 @@ actor CanvasResizer {
             guard transform.isValid else { throw ProjectError.tooLarge }
             let gif = layer.gif
             manifest.layers.append(ProjectLayerRecord(id: layer.id, name: layer.name,
-                isVisible: layer.isVisible, transform: transform, imageFile: layer.imageFile, parentID: layer.parentID, isGroup: layer.isGroup, opacity: layer.opacity, blendMode: layer.blendMode, maskFile: layer.maskFile, maskEnabled: layer.maskEnabled, maskSourceID: layer.maskSourceID, adjustment: layer.adjustment,
+                isVisible: layer.isVisible, transform: transform, imageFile: layer.imageFile, parentID: layer.parentID, isGroup: layer.isGroup, opacity: layer.opacity, fillOpacity: layer.fillOpacity, blendMode: layer.blendMode, folderIsolated: layer.folderIsolated, blendIf: layer.blendIf, lock: layer.lock, maskFile: layer.maskFile, maskEnabled: layer.maskEnabled, maskSourceID: layer.maskSourceID, adjustment: layer.adjustment,
                 maskPlacement: layer.maskPlacement.map { placement -> LayerTransform in
                     var moved = placement
                     moved.origin.x += offset.x

@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 struct ImageLayer: Identifiable, Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id && lhs.name == rhs.name && lhs.isVisible == rhs.isVisible && lhs.transform == rhs.transform
-            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.fillOpacity == rhs.fillOpacity && lhs.blendMode == rhs.blendMode && lhs.lock == rhs.lock && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects
+            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.fillOpacity == rhs.fillOpacity && lhs.blendMode == rhs.blendMode && lhs.isPassThrough == rhs.isPassThrough && lhs.blendIf == rhs.blendIf && lhs.lock == rhs.lock && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects
             && lhs.gifAnimation == rhs.gifAnimation
     }
     let id: UUID
@@ -18,6 +18,10 @@ struct ImageLayer: Identifiable, Equatable {
     var opacity: Double = 1
     var fillOpacity: Double = 1
     var blendMode: LayerBlendMode = .normal
+    /// For folders: true is Photoshop's Pass Through (default); false composites the folder as an isolated group.
+    var isPassThrough = true
+    /// Optional Blend If tonal visibility ranges (This Layer / Underlying Layer).
+    var blendIf: BlendIfSettings? = nil
     var lock = LayerLock()
     var maskSourceID: UUID?
     var mask: LayerMask?
@@ -30,6 +34,9 @@ struct ImageLayer: Identifiable, Equatable {
     var effects: LayerEffects?
     var text: LayerText?
     nonisolated var size: CGSize { transform.size }
+    nonisolated var isIsolatedGroup: Bool {
+        isGroup && (!isPassThrough || blendMode != .normal || blendIf?.isIdentity == false)
+    }
 
     init(asset: ImportedImage, origin: CGPoint) {
         self.id = UUID()
@@ -45,7 +52,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.name = name
     }
 
-    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, fillOpacity: Double = 1, blendMode: LayerBlendMode = .normal, lock: LayerLock = LayerLock(), mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil, gifAnimation: GIFAnimation? = nil) {
+    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, fillOpacity: Double = 1, blendMode: LayerBlendMode = .normal, isPassThrough: Bool = true, blendIf: BlendIfSettings? = nil, lock: LayerLock = LayerLock(), mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil, gifAnimation: GIFAnimation? = nil) {
         self.id = id
         self.asset = asset
         self.name = name
@@ -56,6 +63,8 @@ struct ImageLayer: Identifiable, Equatable {
         self.opacity = opacity
         self.fillOpacity = fillOpacity
         self.blendMode = blendMode
+        self.isPassThrough = isPassThrough
+        self.blendIf = blendIf
         self.lock = lock
         self.mask = mask
         self.gifAnimation = gifAnimation
@@ -816,7 +825,8 @@ final class EditorSession {
     @ObservationIgnored private var conversionCancelled = false
     var opacityEditLayerID: UUID?
     var fillOpacityEditLayerID: UUID?
-    var blendPreview: (layerID: UUID, mode: LayerBlendMode)?
+    var blendPreview: (layerID: UUID, mode: LayerBlendMode, passThrough: Bool?)?
+    var blendIfEdit: BlendIfEdit?
     @ObservationIgnored var refreshCanvasPreview: (() -> Void)?
     var isMaskSelected = false {
         didSet {

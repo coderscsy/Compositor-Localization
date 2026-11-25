@@ -111,12 +111,15 @@ extension LayerBlendMode {
     nonisolated static func fromPSD(_ key: String) -> LayerBlendMode? {
         switch key {
         case "norm": .normal
+        case "diss": .dissolve
         case "mul ": .multiply
         case "scrn": .screen
         case "over": .overlay
         case "sLit": .softLight
         case "dark": .darken
+        case "dkCl": .darkerColor
         case "lite": .lighten
+        case "lgCl": .lighterColor
         case "diff": .difference
         case "div ": .colorDodge
         case "idiv": .colorBurn
@@ -134,8 +137,6 @@ extension LayerBlendMode {
         case "smud": .exclusion
         case "fsub": .subtract
         case "fdiv": .divide
-        // Dissolve, Darker Color and Lighter Color are deliberately absent: Compositor has no
-        // equivalent, so they fall through to Normal and say so in the conversion report.
         default: nil
         }
     }

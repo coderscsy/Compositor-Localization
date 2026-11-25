@@ -611,7 +611,9 @@ final class CanvasView: NSView {
             let parentID: UUID?
             let visible: Bool
             let opacity: Double
+            let fillOpacity: Double
             let blendMode: LayerBlendMode
+            let blendIf: BlendIfSettings?
             let adjustment: LayerAdjustment?
             let effects: LayerEffects?
             /// Where the mask shows when placed apart from the layer.
@@ -624,11 +626,15 @@ final class CanvasView: NSView {
         let renderBounds: CGRect?
         let viewport: CanvasViewport
         let layers: [Layer]
-        /// Folders have no pixels, so their masks are tracked apart from `layers`.
+        /// Folders have no pixels, so their masks and blending options are tracked apart from `layers`.
         struct FolderMask: Equatable {
             let id: UUID
             let maskID: ObjectIdentifier?
             let transform: LayerTransform
+            let opacity: Double
+            let blendMode: LayerBlendMode
+            let isPassThrough: Bool
+            let blendIf: BlendIfSettings?
         }
         let folderMasks: [FolderMask]
         /// The text being typed, which the canvas draws as pixels.
@@ -662,12 +668,16 @@ final class CanvasView: NSView {
         let state = DisplayState(brushRevision: session.brushRevision, pixelGrid: session.showsPixelGrid, documentID: document?.id, size: document?.size, renderBounds: renderBounds, viewport: session.viewport,
             layers: (document.map { $0.layers.contains(where: { $0.maskSourceID != nil }) ? $0.layers : $0.renderLayers } ?? []).filter { $0.asset != nil || $0.adjustment != nil }.map {
                 DisplayState.Layer(id: $0.id, transform: session.displayedTransform(for: $0),
-                                   imageID: session.displayedAsset(for: $0).map { ObjectIdentifier($0.image) }, maskID: session.displayedLayer(for: $0).mask?.enabledImage.map { ObjectIdentifier($0) }, maskSourceID: $0.maskSourceID, parentID: $0.parentID, visible: visible.contains($0.id), opacity: (opacities[$0.id] ?? $0.opacity), blendMode: session.displayedBlendMode(for: $0), adjustment: $0.adjustment, effects: $0.effects,
+                                   imageID: session.displayedAsset(for: $0).map { ObjectIdentifier($0.image) }, maskID: session.displayedLayer(for: $0).mask?.enabledImage.map { ObjectIdentifier($0) }, maskSourceID: $0.maskSourceID, parentID: $0.parentID, visible: visible.contains($0.id), opacity: (opacities[$0.id] ?? $0.opacity), fillOpacity: $0.fillOpacity, blendMode: session.displayedBlendMode(for: $0), blendIf: session.displayedBlendIf(for: $0), adjustment: $0.adjustment, effects: $0.effects,
                                    maskPlacement: session.displayedMaskPlacement(for: $0))
             },
-            folderMasks: (document?.layers ?? []).filter { $0.isGroup && $0.mask != nil }.map {
+            folderMasks: (document?.layers ?? []).filter { $0.isGroup }.map {
                 DisplayState.FolderMask(id: $0.id, maskID: $0.mask?.enabledImage.map { ObjectIdentifier($0) },
-                                        transform: session.displayedTransform(for: $0))
+                                        transform: session.displayedTransform(for: $0),
+                                        opacity: $0.opacity,
+                                        blendMode: session.displayedBlendMode(for: $0),
+                                        isPassThrough: session.displayedFolderPassThrough(for: $0),
+                                        blendIf: session.displayedBlendIf(for: $0))
             }, textStyle: session.textDraft?.style, textTransform: session.textDraft == nil ? nil : inlineTextEditor?.shownTransform,
             maskAlone: session.maskAloneLayer?.mask.map { ObjectIdentifier($0.asset.image) })
         var changed = false
@@ -1070,10 +1080,11 @@ final class CanvasView: NSView {
         }
         handOffTextEffects(document)
         session.effectsPreviews.prepare(layers: document.layers)
-        // Color Burn and Color Dodge are blended by hand against the pixels under them, which needs a surface to
+        // Modes that Core Graphics can't draw directly, Blend If, and isolated folders need a bitmap surface to
         // read back (see SeparableBlend).
         if !onSurface, document.layers.contains(where: { $0.adjustment != nil
-            || SeparableBlend.needsSurface(session.displayedBlendMode(for: $0)) }) {
+            || SeparableBlend.needsSurface(session.displayedBlendMode(for: $0), blendIf: session.displayedBlendIf(for: $0))
+            || session.isFolderIsolated($0) }) {
             let visible = document.effectiveVisibleIDs
             let padding = document.layers.filter { visible.contains($0.id) }
                 .compactMap(\.adjustment).map(\.samplingMargin).max() ?? 0
@@ -1086,6 +1097,8 @@ final class CanvasView: NSView {
             return
         }
         let byID = Dictionary(uniqueKeysWithValues: document.layers.map { ($0.id, $0) })
+        let isIsolated: (ImageLayer) -> Bool = { self.session.isFolderIsolated($0) }
+        var liveRef: LiveMaskRenderer?
         func drawOwn(_ id: UUID, _ context: CGContext) {
             guard let layer = byID[id] else { return }
             let displayedLayer = session.displayedLayer(for: layer)
@@ -1096,17 +1109,21 @@ final class CanvasView: NSView {
                 guard let shown = editedText(layer) else { return }
                 let hasEffects = layer.effects?.visible.isEmpty == false && layer.effects?.isValid == true
                 LayerRenderer.draw(shown.image, transform: shown.transform, center: center(shown.transform.center), scale: scale,
-                    opacity: layer.effectiveOpacity(in: byID) * (hasEffects ? 1 : layer.fillOpacity), blendMode: blendMode(of: layer), mask: nil, in: context)
+                    opacity: layer.effectiveOpacity(in: byID, isIsolated: isIsolated) * (hasEffects ? 1 : layer.fillOpacity), blendMode: blendMode(of: layer), mask: nil, in: context)
                 return
             }
-            // A folder the layer sits in dims it along with everything else inside (see LayerOpacity).
-            let opacity = layer.effectiveOpacity(in: byID)
+            // A pass-through folder the layer sits in dims it along with everything else inside (see LayerOpacity).
+            let opacity = layer.effectiveOpacity(in: byID, isIsolated: isIsolated)
             let plainOpacity = opacity * layer.fillOpacity
             let mode = session.displayedBlendMode(for: layer)
-            if SeparableBlend.needsSurface(mode), normalBlendLayerID != id {
+            let blendIf = session.displayedBlendIf(for: layer)
+            if liveRef?.buildingStackBaseID == id {
                 normalBlendLayerID = id
                 defer { normalBlendLayerID = nil }
-                if SeparableBlend.draw(mode, in: context, body: { drawOwn(id, $0) }) { return }
+            } else if SeparableBlend.needsSurface(mode, blendIf: blendIf), normalBlendLayerID != id {
+                normalBlendLayerID = id
+                defer { normalBlendLayerID = nil }
+                if SeparableBlend.draw(mode, blendIf: blendIf, in: context, body: { drawOwn(id, $0) }) { return }
             }
             let stroke = session.brushStroke?.layer.id == layer.id ? session.brushStroke
                 : session.gradientEdit?.raster.layer.id == layer.id ? session.gradientEdit?.raster
@@ -1283,10 +1300,12 @@ final class CanvasView: NSView {
             LayerRenderer.draw(text.image, transform: text.transform, center: center(text.transform.center), scale: scale, in: context)
         }
         let live = LiveMaskRenderer(bounds: context.boundingBoxOfClipPath, source: { byID[$0]?.maskSourceID }, drawOwn: drawOwnWithDraft)
+        liveRef = live
+        live.blendIf = { byID[$0].flatMap { self.session.displayedBlendIf(for: $0) } }
         live.adjustment = { byID[$0]?.adjustment }
         live.adjustmentOpacity = {
             guard let layer = byID[$0] else { return 1 }
-            return layer.effectiveOpacity(in: byID) * layer.fillOpacity
+            return layer.effectiveOpacity(in: byID, isIsolated: isIsolated) * layer.fillOpacity
         }
         // Adjustments run on the surface's pixels, one per screen pixel (see AdjustmentSurface).
         live.adjustmentScale = scale * LayerRenderer.deviceScale(of: context)
@@ -1325,11 +1344,16 @@ final class CanvasView: NSView {
             let clip = FolderMaskClip(image: displayImage(mask.asset.image, width: transform.size.width * scale, in: context), transform: transform)
             let origin = center(transform.center)
             return { clip.apply(scale: scale, center: origin, in: $0) }
-        }, in: context) { id in
-            live.drawComposite(id, in: context)
+        }, isolated: { id in
+            guard let folder = byID[id], isIsolated(folder) else { return nil }
+            return IsolatedFolderStyle(opacity: folder.effectiveOpacity(in: byID, isIsolated: isIsolated),
+                                       blendMode: session.displayedBlendMode(for: folder),
+                                       blendIf: session.displayedBlendIf(for: folder))
+        }, in: context) { id, target in
+            live.drawComposite(id, in: target)
             if let stackTop, id == stackTop.base {
-                drawShapeDraft(scale: scale, center: center, in: context)
-                drawNewText(context)
+                drawShapeDraft(scale: scale, center: center, in: target)
+                drawNewText(target)
             }
         }
         drawNewText(context)
@@ -3134,11 +3158,21 @@ extension CanvasView {
             }
             return placed
         }
-        func clippedByFolders(_ id: UUID, _ image: CIImage) -> CIImage {
+        let isIsolated: (ImageLayer) -> Bool = { self.session.isFolderIsolated($0) }
+        func clippedByFolders(_ id: UUID, _ image: CIImage, stopAt: UUID? = nil) -> CIImage {
             var result = image, folder = byID[id]?.parentID, depth = 0
-            while let current = folder, depth < 64 {
+            while let current = folder, current != stopAt, depth < 64 {
                 if let mask = folderMask(current) { result = GPUBlend.masked(result, by: mask) }
                 folder = byID[current]?.parentID
+                depth += 1
+            }
+            return result
+        }
+        func clippedByFolderSelfAndAncestors(_ folderID: UUID, _ image: CIImage, stopAt: UUID? = nil) -> CIImage {
+            var result = image, current: UUID? = folderID, depth = 0
+            while let fid = current, fid != stopAt, depth < 64 {
+                if let mask = folderMask(fid) { result = GPUBlend.masked(result, by: mask) }
+                current = byID[fid]?.parentID
                 depth += 1
             }
             return result
@@ -3319,7 +3353,7 @@ extension CanvasView {
             return image
         }
         func ownImage(_ layer: ImageLayer) -> CIImage? {
-            let opacity = layer.effectiveOpacity(in: byID)
+            let opacity = layer.effectiveOpacity(in: byID, isIsolated: isIsolated)
             let plainOpacity = opacity * layer.fillOpacity
             // Text being edited, as it will be committed.
             if layer.id == session.textDraft?.layerID {
@@ -3466,9 +3500,9 @@ extension CanvasView {
             return GPUBlend.faded(image, plainOpacity)
         }
         // An adjustment re-colors what's under it, through its own mask and its folders' masks, at its opacity.
-        func adjusted(_ below: CIImage, by layer: ImageLayer, adjustment: LayerAdjustment, folders: Bool) -> CIImage? {
+        func adjusted(_ below: CIImage, by layer: ImageLayer, adjustment: LayerAdjustment, folders: Bool, stopAt: UUID? = nil) -> CIImage? {
             var changed: CIImage
-            if folders, Self.keptExactly.contains(adjustment.kind), let exact = exactAdjustments[layer.id], exact.key == exactLatest[layer.id],
+            if folders, stopAt == nil, Self.keptExactly.contains(adjustment.kind), let exact = exactAdjustments[layer.id], exact.key == exactLatest[layer.id],
                let placed = placement.place(exact.image, transform: LayerTransform(origin: .zero, size: document.size)) {
                 changed = placed
             } else {
@@ -3484,22 +3518,24 @@ extension CanvasView {
                 else { return nil }
                 changed = live
             }
-            // In a blend mode, the adjusted colors blend with the ones under them at full coverage, and the original
-            // coverage comes back after — as LiveMaskRenderer does, so soft edges aren't thickened.
+            // In a blend mode or with Blend If, the adjusted colors blend with the ones under them at full coverage,
+            // and the original coverage comes back after — as LiveMaskRenderer does, so soft edges aren't thickened.
             let mode = session.displayedBlendMode(for: layer)
-            if mode != .normal {
+            let blendIf = session.displayedBlendIf(for: layer)
+            if mode != .normal || blendIf != nil {
                 func opaque(_ image: CIImage) -> CIImage {
                     image.applyingFilter("CIColorMatrix", parameters: [
                         "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0), "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 1)])
                 }
-                changed = GPUBlend.blend(opaque(changed), over: opaque(below), mode: mode)
+                changed = GPUBlend.blend(opaque(changed), over: opaque(below), mode: mode, blendIf: blendIf)
                     .applyingFilter("CIBlendWithAlphaMask", parameters: [kCIInputBackgroundImageKey: CIImage.empty(),
                                                                          kCIInputMaskImageKey: below])
             }
-            return covered(changed, over: below, by: layer, folders: folders, opacity: layer.effectiveOpacity(in: byID) * layer.fillOpacity)
+            return covered(changed, over: below, by: layer, folders: folders, stopAt: stopAt,
+                           opacity: layer.effectiveOpacity(in: byID, isIsolated: isIsolated) * layer.fillOpacity)
         }
         // `changed` shown over `below` through the layer's mask (as it's being painted, too), its folders' and `opacity`.
-        func covered(_ changed: CIImage, over below: CIImage, by layer: ImageLayer, folders: Bool, opacity: Double) -> CIImage {
+        func covered(_ changed: CIImage, over below: CIImage, by layer: ImageLayer, folders: Bool, stopAt: UUID? = nil, opacity: Double) -> CIImage {
             var coverage: CIImage?
             func multiply(_ mask: CIImage) {
                 coverage = coverage.map {
@@ -3514,7 +3550,7 @@ extension CanvasView {
             }
             if folders {
                 var folder = layer.parentID, depth = 0
-                while let current = folder, depth < 64 {
+                while let current = folder, current != stopAt, depth < 64 {
                     if let mask = folderMask(current) { multiply(mask) }
                     folder = byID[current]?.parentID
                     depth += 1
@@ -3560,27 +3596,62 @@ extension CanvasView {
         func drafts(after id: UUID, over image: CIImage) -> CIImage {
             place == .above(id) ? drafts(over: image) : image
         }
-        // An adjustment layer as it's drawn: its settings, its own mask, opacity and blend mode.
+        // An adjustment layer as it's drawn: its settings, its own mask, opacity, blend mode and Blend If.
         func adjustmentPrint(_ layer: ImageLayer, _ adjustment: LayerAdjustment) -> String {
             if liveMaskEdit(for: layer.id) != nil { return transient() }
             let mask = layer.mask.map { "\(ObjectIdentifier($0.asset.image)) \($0.isEnabled)" } ?? "unmasked"
-            return "adjustment \(layer.id) \(adjustment) \(mask) \(layer.transform) \(layer.effectiveOpacity(in: byID) * layer.fillOpacity) "
-                + "\(session.displayedBlendMode(for: layer))"
+            let bif = session.displayedBlendIf(for: layer).map { "\($0)" } ?? "none"
+            return "adjustment \(layer.id) \(adjustment) \(mask) \(layer.transform) \(layer.effectiveOpacity(in: byID, isIsolated: isIsolated) * layer.fillOpacity) "
+                + "\(session.displayedBlendMode(for: layer)) \(bif)"
         }
         prints.append("frame \(placement.mapping) \(placement.scale) \(hasHDR) \(document.size)")
         var cached = Set<UUID>()
         defer { if cachesAdjustments { adjustmentCache = adjustmentCache.filter { cached.contains($0.key) } } }
-        var result = place == .bottom ? drafts(over: CIImage.empty()) : CIImage.empty()
+        var groupStack: [(folder: ImageLayer?, image: CIImage)] = [
+            (nil, place == .bottom ? drafts(over: CIImage.empty()) : CIImage.empty())
+        ]
+        func isolatedChain(for layerID: UUID) -> [ImageLayer] {
+            var chain: [ImageLayer] = []
+            var ancestor = byID[layerID]?.parentID, depth = 0
+            while let current = ancestor, depth < 64 {
+                if let folder = byID[current], isIsolated(folder) { chain.append(folder) }
+                ancestor = byID[current]?.parentID
+                depth += 1
+            }
+            return chain.reversed()
+        }
+        func closeTopIsolatedFolder() {
+            guard groupStack.count > 1, let popped = groupStack.popLast(), let folder = popped.folder else { return }
+            let stopAt = groupStack.last?.folder?.id
+            let clipped = clippedByFolderSelfAndAncestors(folder.id, popped.image, stopAt: stopAt)
+            let faded = GPUBlend.faded(clipped, folder.effectiveOpacity(in: byID, isIsolated: isIsolated))
+            let fMode = session.displayedBlendMode(for: folder)
+            let fBlendIf = session.displayedBlendIf(for: folder)
+            prints.append("folderClose \(folder.id) \(fMode) \(String(describing: fBlendIf)) \(folder.effectiveOpacity(in: byID, isIsolated: isIsolated))")
+            groupStack[groupStack.count - 1].image = GPUBlend.blend(faded, over: groupStack[groupStack.count - 1].image, mode: fMode, blendIf: fBlendIf)
+        }
         for id in ids where !stacked.contains(id) {
             guard let layer = byID[id] else { continue }
+            let chain = isolatedChain(for: id)
+            var common = 0
+            while common < groupStack.count - 1 && common < chain.count && groupStack[common + 1].folder?.id == chain[common].id {
+                common += 1
+            }
+            while groupStack.count - 1 > common { closeTopIsolatedFolder() }
+            for folder in chain[common...] {
+                prints.append("folderOpen \(folder.id)")
+                groupStack.append((folder, CIImage.empty()))
+            }
+            let stopAt = groupStack.last?.folder?.id
             let mode = session.displayedBlendMode(for: layer)
-            prints.append("layer \(id) \(mode)")
+            let blendIf = session.displayedBlendIf(for: layer)
+            prints.append("layer \(id) \(mode) \(String(describing: blendIf))")
             if let adjustment = layer.adjustment {
                 guard layer.maskSourceID == nil else { continue }
                 // Its folders' masks are part of what it's drawn through.
                 var folder = layer.parentID, depth = 0
-                while let current = folder, depth < 64 { _ = folderMask(current); folder = byID[current]?.parentID; depth += 1 }
-                if Self.keptExactly.contains(adjustment.kind), !hasHDR {
+                while let current = folder, current != stopAt, depth < 64 { _ = folderMask(current); folder = byID[current]?.parentID; depth += 1 }
+                if stopAt == nil, Self.keptExactly.contains(adjustment.kind), !hasHDR {
                     // What's under it and its settings, not the frame: panning and zooming keep the picture made. Its own
                     // mask, opacity and blend mode go on over it as they're painted and dragged, so none of them leaves it.
                     let key = prints.filter { !$0.hasPrefix("frame ") } + ["exact \(id) \(adjustment) \(document.size)"]
@@ -3590,22 +3661,22 @@ extension CanvasView {
                     }
                 }
                 prints.append(adjustmentPrint(layer, adjustment))
-                if Self.keptExactly.contains(adjustment.kind) {
+                if stopAt == nil, Self.keptExactly.contains(adjustment.kind) {
                     prints.append(exactAdjustments[id]?.key == exactLatest[id] ? "exact" : "live")
                 }
-                let steady = !prints.contains { $0.hasPrefix("transient") }
+                let steady = stopAt == nil && !prints.contains { $0.hasPrefix("transient") }
                 if cachesAdjustments, steady, let entry = adjustmentCache[id], entry.key == prints {
-                    result = entry.image
+                    groupStack[groupStack.count - 1].image = entry.image
                     cached.insert(id)
                     continue
                 }
-                guard let changed = adjusted(result, by: layer, adjustment: adjustment, folders: true) else { return nil }
+                guard let changed = adjusted(groupStack[groupStack.count - 1].image, by: layer, adjustment: adjustment, folders: true, stopAt: stopAt) else { return nil }
                 if cachesAdjustments, steady, let kept = placement.renderer.keep(changed) {
                     adjustmentCache[id] = (prints, kept)
                     cached.insert(id)
-                    result = kept
+                    groupStack[groupStack.count - 1].image = kept
                 } else {
-                    result = changed
+                    groupStack[groupStack.count - 1].image = changed
                 }
                 continue
             }
@@ -3625,24 +3696,28 @@ extension CanvasView {
                         guard let changed = adjusted(group, by: child, adjustment: adjustment, folders: false) else { return nil }
                         group = changed
                     } else if let image = own(child) {
-                        prints.append("layer \(childID) \(session.displayedBlendMode(for: child))")
-                        group = GPUBlend.blend(image, over: group, mode: session.displayedBlendMode(for: child))
+                        let childMode = session.displayedBlendMode(for: child)
+                        let childBlendIf = session.displayedBlendIf(for: child)
+                        prints.append("layer \(childID) \(childMode) \(String(describing: childBlendIf))")
+                        group = GPUBlend.blend(image, over: group, mode: childMode, blendIf: childBlendIf)
                     } else if unsupported { return nil }
                     // Over the top of the stack, the new layer won't be clipped: it goes over the stack, below.
                     if childID != children.last { group = drafts(after: childID, over: group) }
                 }
                 let stack = group.applyingFilter("CIBlendWithAlphaMask", parameters: [kCIInputBackgroundImageKey: CIImage.empty(),
                                                                                        kCIInputMaskImageKey: base])
-                result = GPUBlend.blend(clippedByFolders(id, stack), over: result, mode: mode)
-                if let top = children.last { result = drafts(after: top, over: result) }
+                groupStack[groupStack.count - 1].image = GPUBlend.blend(clippedByFolders(id, stack, stopAt: stopAt), over: groupStack[groupStack.count - 1].image, mode: mode, blendIf: blendIf)
+                if let top = children.last { groupStack[groupStack.count - 1].image = drafts(after: top, over: groupStack[groupStack.count - 1].image) }
                 continue
             }
             // A layer masked by another's coverage, outside a clipping stack.
             if let image = live(layer) {
-                result = GPUBlend.blend(clippedByFolders(id, image), over: result, mode: mode)
+                groupStack[groupStack.count - 1].image = GPUBlend.blend(clippedByFolders(id, image, stopAt: stopAt), over: groupStack[groupStack.count - 1].image, mode: mode, blendIf: blendIf)
             } else if unsupported { return nil }
-            result = drafts(after: id, over: result)
+            groupStack[groupStack.count - 1].image = drafts(after: id, over: groupStack[groupStack.count - 1].image)
         }
+        while groupStack.count > 1 { closeTopIsolatedFolder() }
+        var result = groupStack[0].image
         if !drewNewText, session.textDraft?.layerID == nil, let text = draftText,
            let placed = placement.place(text.image, transform: text.transform) {
             result = placed.composited(over: result)

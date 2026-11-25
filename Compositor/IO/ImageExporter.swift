@@ -45,6 +45,7 @@ actor ImageExporter {
                       layer.maskFile == nil || snapshot.masks[layer.id] != nil else { throw ProjectError.missingImage }
             }
             try LiveMaskGraph.validate(snapshot.manifest.layers)
+            var liveRef: LiveMaskRenderer?
             let live = LiveMaskRenderer(bounds: CGRect(x: 0, y: 0, width: width, height: height), source: { records[$0]?.maskSourceID }) { id, target in
                 guard let layer = records[id], let asset = snapshot.images[id] else { return }
                 let image = sixteenBit ? (try? DeepLayer.flattened(asset)) ?? asset.image : asset.image
@@ -62,13 +63,21 @@ actor ImageExporter {
                     LayerRenderer.draw(image, transform: layer.transform, center: layer.transform.center,
                         opacity: opacity * fill, blendMode: mode, mask: mask, in: into)
                 }
+                if liveRef?.buildingStackBaseID == id {
+                    drawLayer(.normal, target)
+                    return
+                }
                 let mode = layer.blendMode ?? .normal
-                // Core Graphics blends these two wrong; see SeparableBlend.
-                if SeparableBlend.needsSurface(mode), SeparableBlend.draw(mode, in: target, body: { drawLayer(.normal, $0) }) { return }
+                let blendIf = layer.blendIf?.nonIdentity
+                // Core Graphics cannot draw these modes or Blend If directly; see SeparableBlend.
+                if SeparableBlend.needsSurface(mode, blendIf: blendIf),
+                   SeparableBlend.draw(mode, blendIf: blendIf, in: target, body: { drawLayer(.normal, $0) }) { return }
                 drawLayer(mode, target)
             }
+            liveRef = live
             live.sixteenBit = sixteenBit
             live.hdr = hdr
+            live.blendIf = { records[$0]?.blendIf?.nonIdentity }
             live.adjustment = { records[$0]?.adjustment }
             live.adjustmentOpacity = {
                 guard let record = records[$0] else { return 1 }
@@ -84,7 +93,12 @@ actor ImageExporter {
                 guard let folder = records[id], let image = snapshot.mask(for: folder)?.enabledImage else { return nil }
                 let clip = FolderMaskClip(image: image, transform: folder.transform)
                 return { clip.apply(center: folder.transform.center, in: $0) }
-            }, in: context) { live.drawComposite($0, in: context) }
+            }, isolated: { id in
+                guard let folder = records[id], folder.isIsolatedGroup else { return nil }
+                return IsolatedFolderStyle(opacity: folder.effectiveOpacity(in: records),
+                                           blendMode: folder.blendMode ?? .normal,
+                                           blendIf: folder.blendIf?.nonIdentity)
+            }, in: context) { id, target in live.drawComposite(id, in: target) }
             guard let image = context.makeImage() else { throw ExportError.render }
             return ExportRaster(image: image, resolution: snapshot.manifest.resolution ?? 72)
         }

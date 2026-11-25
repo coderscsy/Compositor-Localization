@@ -62226,46 +62226,22 @@
     },
     "This Layer": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diese Schicht"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Esta capa"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ce calque"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "このレイヤー"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이 레이어"
+            "value": "This Layer"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前图层"
+            "value": "本图层"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "當前圖層"
+            "value": "此圖層"
           }
         }
       }
@@ -69066,6 +69042,248 @@
           "stringUnit": {
             "state": "translated",
             "value": "此檔案不是有效的 3D .cube LUT（支援尺寸 2 到 65）。"
+          }
+        }
+      }
+    },
+    "Pass Through": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pass Through"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "穿过"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "穿透"
+          }
+        }
+      }
+    },
+    "Dissolve": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dissolve"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "溶解"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "溶解"
+          }
+        }
+      }
+    },
+    "Darker Color": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Darker Color"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "較深顏色"
+          }
+        }
+      }
+    },
+    "Lighter Color": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lighter Color"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "浅色"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "較淺顏色"
+          }
+        }
+      }
+    },
+    "Blending Options": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blending Options"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合选项"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合選項"
+          }
+        }
+      }
+    },
+    "Blending Options…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blending Options…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合选项…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合選項…"
+          }
+        }
+      }
+    },
+    "Blending Options (Blend If)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blending Options (Blend If)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合选项（混合颜色带）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合選項（混合色彩範圍）"
+          }
+        }
+      }
+    },
+    "Blend If:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blend If:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合颜色带："
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合色彩範圍："
+          }
+        }
+      }
+    },
+    "Blend If Channel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blend If Channel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合颜色带通道"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "混合色彩範圍色版"
+          }
+        }
+      }
+    },
+    "Underlying Layer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underlying Layer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一图层"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下層圖層"
+          }
+        }
+      }
+    },
+    "Option-drag a handle to split it for smooth feathering.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option-drag a handle to split it for smooth feathering."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住 Option 键拖移滑块可拆分滑块，实现平滑过渡。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住 Option 鍵拖曳滑桿可拆分滑桿，實現平滑過渡。"
           }
         }
       }

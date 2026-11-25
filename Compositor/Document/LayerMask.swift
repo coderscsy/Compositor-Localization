@@ -168,10 +168,18 @@ nonisolated final class MaskPlacementCache: @unchecked Sendable {
     }
 }
 
-/// A folder's mask, clipping the layers inside the folder. Folders are pass-through — the
-/// layers inside are drawn straight onto what is below, never composited as a unit — so a
-/// folder mask applies to each of those layers, multiplied with the layer's own mask and the
-/// masks of any folders further out (Core Graphics multiplies nested mask clips).
+/// Compositing parameters for a folder that isolates its contents (non-Pass-Through blend mode, Normal isolation,
+/// or Blend If).
+nonisolated struct IsolatedFolderStyle {
+    let opacity: Double
+    let blendMode: LayerBlendMode
+    let blendIf: BlendIfSettings?
+}
+
+/// A folder's mask (and optional isolated group compositing). Pass-through folders draw their
+/// children straight onto what is below, clipped by each containing folder's mask; isolated folders
+/// composite their contents into a clean group surface first, then apply mask, opacity, blend mode,
+/// and Blend If once when compositing onto the parent backdrop.
 nonisolated struct FolderMaskClip {
     let image: CGImage
     let transform: LayerTransform
@@ -189,26 +197,101 @@ nonisolated struct FolderMaskClip {
         context.concatenate(placement.inverted())
     }
 
-    /// Draws `ids` in order, each clipped by every folder containing it. `clip` says how to
-    /// clip for one folder, or nil when it has no enabled mask, and is asked once per folder.
+    private static func makeIsolatedSurface(like base: CGContext) -> CGContext? {
+        guard base.data != nil, base.width > 0, base.height > 0, let space = base.colorSpace else { return nil }
+        guard let surface = CGContext(data: nil, width: base.width, height: base.height,
+                                      bitsPerComponent: base.bitsPerComponent,
+                                      bytesPerRow: base.bytesPerRow,
+                                      space: space,
+                                      bitmapInfo: base.bitmapInfo.rawValue) else { return nil }
+        surface.clear(CGRect(x: 0, y: 0, width: base.width, height: base.height))
+        surface.concatenate(base.ctm)
+        return surface
+    }
+
+    /// Draws `ids` in order, handling both pass-through folder masks and nested isolated folders.
     static func draw(_ ids: [UUID], parent: (UUID) -> UUID?, clip: (UUID) -> ((CGContext) -> Void)?,
-                     in context: CGContext, drawLayer: (UUID) -> Void) {
+                     isolated: (UUID) -> IsolatedFolderStyle? = { _ in nil },
+                     in context: CGContext, drawLayer: (UUID, CGContext) -> Void) {
         var clips: [UUID: ((CGContext) -> Void)?] = [:]
-        for id in ids {
+        func clipApplier(for folderID: UUID) -> ((CGContext) -> Void)? {
+            if clips[folderID] == nil { clips[folderID] = .some(clip(folderID)) }
+            return clips[folderID] ?? nil
+        }
+
+        var open: [(id: UUID, style: IsolatedFolderStyle, surface: CGContext)] = []
+
+        func closeTop() {
+            guard let top = open.popLast() else { return }
+            let dest = open.last?.surface ?? context
+            let stopAt = open.last?.id
+            guard let groupImage = top.surface.makeImage() else { return }
             var appliers: [(CGContext) -> Void] = []
-            var folder = parent(id), depth = 0
-            while let current = folder, depth < 64 {
-                if clips[current] == nil { clips[current] = .some(clip(current)) }
-                if let apply = clips[current] ?? nil { appliers.append(apply) }
-                folder = parent(current)
+            var current: UUID? = top.id, depth = 0
+            while let folderID = current, folderID != stopAt, depth < 64 {
+                if let apply = clipApplier(for: folderID) { appliers.append(apply) }
+                current = parent(folderID)
                 depth += 1
             }
-            guard !appliers.isEmpty else { drawLayer(id); continue }
-            context.saveGState()
-            appliers.forEach { $0(context) }
-            drawLayer(id)
-            context.restoreGState()
+            let frame = CGRect(x: 0, y: 0, width: dest.width, height: dest.height)
+            func place(_ target: CGContext) {
+                target.saveGState()
+                appliers.forEach { $0(target) }
+                target.concatenate(target.ctm.inverted())
+                target.setAlpha(top.style.opacity)
+                target.draw(groupImage, in: frame)
+                target.restoreGState()
+            }
+            if !(SeparableBlend.needsSurface(top.style.blendMode, blendIf: top.style.blendIf)
+                 && SeparableBlend.draw(top.style.blendMode, blendIf: top.style.blendIf, in: dest, body: place)) {
+                dest.saveGState()
+                dest.setBlendMode(top.style.blendMode.cgMode)
+                place(dest)
+                dest.restoreGState()
+            }
         }
+
+        for id in ids {
+            var isolatedChain: [(id: UUID, style: IsolatedFolderStyle)] = []
+            var ancestor = parent(id), depth = 0
+            while let current = ancestor, depth < 64 {
+                if let style = isolated(current) { isolatedChain.append((current, style)) }
+                ancestor = parent(current)
+                depth += 1
+            }
+            isolatedChain.reverse()
+
+            var common = 0
+            while common < open.count && common < isolatedChain.count && open[common].id == isolatedChain[common].id {
+                common += 1
+            }
+            while open.count > common { closeTop() }
+            for entry in isolatedChain[common...] {
+                let base = open.last?.surface ?? context
+                if let surface = makeIsolatedSurface(like: base) {
+                    open.append((entry.id, entry.style, surface))
+                }
+            }
+
+            let target = open.last?.surface ?? context
+            let stopAt = open.last?.id
+            var appliers: [(CGContext) -> Void] = []
+            var folder = parent(id), maskDepth = 0
+            while let current = folder, current != stopAt, maskDepth < 64 {
+                if let apply = clipApplier(for: current) { appliers.append(apply) }
+                folder = parent(current)
+                maskDepth += 1
+            }
+            if appliers.isEmpty {
+                drawLayer(id, target)
+            } else {
+                target.saveGState()
+                appliers.forEach { $0(target) }
+                drawLayer(id, target)
+                target.restoreGState()
+            }
+        }
+        while !open.isEmpty { closeTop() }
     }
 }
 

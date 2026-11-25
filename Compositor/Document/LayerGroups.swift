@@ -54,15 +54,15 @@ nonisolated enum LayerHierarchy {
     }
 }
 
-/// A folder's opacity multiplies into everything inside it: a layer at 50% in a folder at 50%
-/// shows at 25%, while the layer itself still reads 50% in the panel. Folders are pass-through —
-/// what's inside is drawn straight onto what is below, never composited as a unit — so the
-/// folder's opacity is applied to each of those layers rather than to the folder as a whole.
+/// A pass-through folder's opacity multiplies into everything inside it: a layer at 50% in a folder at 50%
+/// shows at 25%, while the layer itself still reads 50% in the panel. Isolated folders (those with a blend mode,
+/// Blend If, or Normal isolation) composite their contents first and apply their own opacity once at group end.
 nonisolated enum LayerOpacity {
     static func effective(_ own: Double, parent: UUID?,
-                          folder: (UUID) -> (opacity: Double, parentID: UUID?)?) -> Double {
+                          folder: (UUID) -> (opacity: Double, parentID: UUID?, isolated: Bool)?) -> Double {
         var opacity = own, id = parent, depth = 0
         while let current = id, depth < 64, let node = folder(current) {
+            if node.isolated { break }
             opacity *= node.opacity
             id = node.parentID
             depth += 1
@@ -72,24 +72,36 @@ nonisolated enum LayerOpacity {
 }
 
 extension ImageLayer {
-    /// The opacity this layer is drawn at, folders included (see LayerOpacity).
+    /// The opacity this layer is drawn at, pass-through folders included (see LayerOpacity).
     func effectiveOpacity(in byID: [UUID: ImageLayer]) -> Double {
-        LayerOpacity.effective(opacity, parent: parentID) { byID[$0].map { ($0.opacity, $0.parentID) } }
+        effectiveOpacity(in: byID) { $0.isIsolatedGroup }
+    }
+    func effectiveOpacity(in byID: [UUID: ImageLayer], isIsolated: (ImageLayer) -> Bool) -> Double {
+        LayerOpacity.effective(opacity, parent: parentID) {
+            byID[$0].map { ($0.opacity, $0.parentID, isIsolated($0)) }
+        }
     }
     var hierarchyRecord: ProjectLayerRecord {
         ProjectLayerRecord(id: id, name: name, isVisible: isVisible, transform: transform,
-            imageFile: asset?.file(for: id), parentID: parentID, isGroup: isGroup, opacity: opacity, blendMode: blendMode, maskFile: mask == nil ? nil : "\(id.uuidString).mask.png", maskEnabled: mask?.isEnabled, maskSourceID: maskSourceID, adjustment: adjustment, maskPlacement: mask?.placement, maskLinked: mask?.isLinked)
+            imageFile: asset?.file(for: id), parentID: parentID, isGroup: isGroup, opacity: opacity, fillOpacity: isGroup ? nil : (fillOpacity == 1 ? nil : fillOpacity), blendMode: blendMode, folderIsolated: isGroup && !isPassThrough ? true : nil, blendIf: blendIf?.nonIdentity, lock: lock.isEmpty ? nil : lock, maskFile: mask == nil ? nil : "\(id.uuidString).mask.png", maskEnabled: mask?.isEnabled, maskSourceID: maskSourceID, adjustment: adjustment, maskPlacement: mask?.placement, maskLinked: mask?.isLinked)
     }
 }
 nonisolated extension ProjectLayerRecord {
-    /// The opacity this layer is drawn at, folders included (see LayerOpacity).
+    var isIsolatedGroup: Bool {
+        isGroup == true && (folderIsolated == true || (blendMode ?? .normal) != .normal || blendIf?.isIdentity == false)
+    }
+    /// The opacity this layer is drawn at, pass-through folders included (see LayerOpacity).
     func effectiveOpacity(in byID: [UUID: ProjectLayerRecord]) -> Double {
-        LayerOpacity.effective(opacity ?? 1, parent: parentID) { byID[$0].map { ($0.opacity ?? 1, $0.parentID) } }
+        LayerOpacity.effective(opacity ?? 1, parent: parentID) {
+            byID[$0].map { ($0.opacity ?? 1, $0.parentID, $0.isIsolatedGroup) }
+        }
     }
 }
 extension CanvasDocument {
     var effectiveOpacities: [UUID: Double] {
-        let folders = Dictionary(uniqueKeysWithValues: layers.lazy.map { ($0.id, (opacity: $0.opacity, parentID: $0.parentID)) })
+        let folders = Dictionary(uniqueKeysWithValues: layers.lazy.map {
+            ($0.id, (opacity: $0.opacity, parentID: $0.parentID, isolated: $0.isIsolatedGroup))
+        })
         return folders.mapValues { LayerOpacity.effective($0.opacity, parent: $0.parentID) { folders[$0] } }
     }
     /// Every layer and folder in drawing order (each folder before what's inside it), and which of them show.

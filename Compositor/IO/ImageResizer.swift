@@ -71,7 +71,7 @@ actor ImageResizer {
                 gif?.geometry = resized.geometry
             }
             manifest.layers.append(ProjectLayerRecord(id: layer.id, name: layer.name, isVisible: layer.isVisible,
-                transform: transform, imageFile: layer.imageFile, parentID: layer.parentID, isGroup: layer.isGroup, opacity: layer.opacity, blendMode: layer.blendMode, maskFile: layer.maskFile, maskEnabled: layer.maskEnabled, maskSourceID: layer.maskSourceID, adjustment: layer.adjustment,
+                transform: transform, imageFile: layer.imageFile, parentID: layer.parentID, isGroup: layer.isGroup, opacity: layer.opacity, fillOpacity: layer.fillOpacity, blendMode: layer.blendMode, folderIsolated: layer.folderIsolated, blendIf: layer.blendIf, lock: layer.lock, maskFile: layer.maskFile, maskEnabled: layer.maskEnabled, maskSourceID: layer.maskSourceID, adjustment: layer.adjustment,
                 maskPlacement: layer.maskPlacement.map { $0.placing($0.unitToDocument.concatenating(CGAffineTransform(scaleX: sx, y: sy))) },
                 maskLinked: layer.maskLinked, effects: layer.effects?.scaled(by: effectScale), gif: gif))
         }

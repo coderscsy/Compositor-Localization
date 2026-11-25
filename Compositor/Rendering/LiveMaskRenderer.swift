@@ -14,6 +14,10 @@ nonisolated final class LiveMaskRenderer {
     private var stacked = Set<UUID>()
     private var stackModes: [UUID: LayerBlendMode] = [:]
     private var blendMode: (UUID) -> LayerBlendMode = { _ in .normal }
+    var blendIf: (UUID) -> BlendIfSettings? = { _ in nil }
+    /// Non-nil while rendering a clipping stack's base layer into its isolated stack buffer, so callers draw it
+    /// in Normal without applying its blend mode or Blend If twice (both apply when the stack composites below).
+    private(set) var buildingStackBaseID: UUID?
     var adjustment: (UUID) -> LayerAdjustment? = { _ in nil }
     var adjustmentOpacity: (UUID) -> Double = { _ in 1 }
     var adjustmentClip: (UUID, CGContext) -> Void = { _, _ in }
@@ -44,8 +48,10 @@ nonisolated final class LiveMaskRenderer {
         let deep = sixteenBit && original.bitsPerComponent == 16
         guard var adjusted = try? deep ? settings.applySixteenBit(original, region: region, scale: scale, document: adjustmentDocument)
                                        : settings.apply(original, region: region, scale: scale, document: adjustmentDocument) else { return }
-        // In a blend mode the adjustment blends at 8 bits.
-        if blendMode(id) != .normal {
+        // In a blend mode or with Blend If, the adjustment blends at 8 bits.
+        let adjMode = blendMode(id)
+        let adjBlendIf = blendIf(id)?.nonIdentity
+        if adjMode != .normal || adjBlendIf != nil {
             // Blend colors at full coverage, then restore the original alpha.
             // Source-over of two translucent copies would thicken soft edges.
             let w = original.width, h = original.height
@@ -62,8 +68,8 @@ nonisolated final class LiveMaskRenderer {
             layer_unpremultiply_opaque(top.data!.assumingMemoryBound(to: UInt8.self), top.bytesPerRow, w, h)
             guard let foreground = top.makeImage() else { return }
             // Core Graphics has no Linear Dodge and the like, and gets Color Burn and Dodge wrong (see SeparableBlend).
-            if !SeparableBlend.blend(foreground, over: base, mode: blendMode(id)) {
-                base.setBlendMode(blendMode(id).cgMode)
+            if !SeparableBlend.blend(foreground, over: base, mode: adjMode, blendIf: adjBlendIf) {
+                base.setBlendMode(adjMode.cgMode)
                 base.translateBy(x: 0, y: CGFloat(h)); base.scaleBy(x: 1, y: -1)
                 base.draw(foreground, in: rect)
             }
@@ -118,7 +124,9 @@ nonisolated final class LiveMaskRenderer {
         }
         group.scaleBy(x: resolution, y: resolution)
         group.translateBy(x: -bounds.minX, y: -bounds.minY)
+        buildingStackBaseID = id
         drawOwn(id, group)
+        buildingStackBaseID = nil
         var deepAlpha = sixteenBit && !hdr ? [UInt16](repeating: 0, count: w * h) : []
         var hdrAlpha = sixteenBit && hdr ? [Float](repeating: 0, count: w * h) : []
         if sixteenBit && hdr {
@@ -151,10 +159,11 @@ nonisolated final class LiveMaskRenderer {
                 target.draw(image, in: CGRect(origin: .zero, size: bounds.size))
                 target.restoreGState()
             }
-            // The stack blends in its base's mode — through Core Image for the ones Core Graphics can't draw (Linear
-            // Dodge and the rest), which it would otherwise draw as Normal.
+            // The stack blends in its base's mode and Blend If — through SeparableBlend when Core Graphics can't.
             let mode = stackModes[id] ?? .normal
-            if !(SeparableBlend.needsSurface(mode) && SeparableBlend.draw(mode, in: context, body: place)) {
+            let stackBlendIf = blendIf(id)
+            if !(SeparableBlend.needsSurface(mode, blendIf: stackBlendIf)
+                 && SeparableBlend.draw(mode, blendIf: stackBlendIf, in: context, body: place)) {
                 context.saveGState()
                 context.setBlendMode(mode.cgMode)
                 place(context)
