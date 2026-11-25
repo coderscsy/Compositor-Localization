@@ -1,21 +1,44 @@
-# Compositor
+# Compositor Localization
 
-Adobe Photoshop costs too much and tools like GIMP don’t feel familiar enough for me to stay in flow. That’s why I built Compositor.
+Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s Compositor](https://github.com/robbietilton/Compositor), an open-source macOS image editor for compositing and photo editing. The first release is based on upstream Compositor 1.7.1.
 
-The goal was to create a full-featured image editor that is completely free and open source. I used to use Photoshop for compositing and post-processing, so Compositor is built around that workflow - with the tools needed to create a pixel-perfect final image.
+这是 Compositor 的非官方多语言分支。可以在「Compositor → 设置 → 界面语言」中选择语言，重新打开应用后生效。
 
-Because it’s open source, you can download the Xcode project and add, remove, or modify any feature to fit your workflow.
+## Language support
 
-## Installation
+Use **Compositor → Settings → Interface Language** and relaunch the app after changing the setting. **System Default** follows the language macOS selects for Compositor. You can set the app’s macOS language in **System Settings → General → Language & Region → Applications**. English is the source and fallback language.
 
-### Download
-Get Compositor from [robbietilton.com/compositor](https://robbietilton.com/compositor), or download the latest release directly from [GitHub Releases](https://github.com/robbietilton/Compositor/releases/latest).
+- English (`en`)
+- 简体中文 · Simplified Chinese (`zh-Hans`)
+- 繁體中文 · Traditional Chinese (`zh-Hant`)
+- 日本語 · Japanese (`ja`)
+- 한국어 · Korean (`ko`)
+- Français · French (`fr`)
+- Deutsch · German (`de`)
+- Español · Spanish (`es`)
 
-### Homebrew
+French, German, Spanish, Japanese, and Korean are preview localizations. Common controls have been spot-checked, and the rest of the interface includes machine-assisted translations. Traditional Chinese uses Taiwanese terminology where possible.
+
+Report translation issues in this fork’s [issue tracker](https://github.com/coderscsy/Compositor-Localization/issues). Include the language, the menu or panel, and the text you see.
+
+## Build from source
+
+The [fork releases](https://github.com/coderscsy/Compositor-Localization/releases) provide tagged source code. Build with Xcode on a Mac with Apple silicon running macOS 26 or later. Upstream CI uses Xcode 26.6.
 
 ```sh
-brew install --cask robbietilton-compositor
+git clone https://github.com/coderscsy/Compositor-Localization.git
+cd Compositor-Localization
+xcodebuild -project Compositor.xcodeproj -scheme Compositor \
+  -configuration Release -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath build
+open build/Build/Products/Release/Compositor.app
 ```
+
+You can also open `Compositor.xcodeproj` in Xcode and run the **Compositor** scheme. Debug and Release use ad hoc signing for local builds, with an app sandbox and a separate bundle identifier. To keep both editions in your Applications folder, copy the resulting app as `Compositor Localization.app`. To update it, rebuild from a newer fork release.
+
+For the signed and notarized upstream app, see [Robbie Tilton’s release page](https://github.com/robbietilton/Compositor/releases/latest).
+
+The inherited `scripts/release.sh`, `scripts/publish.sh`, and `appcast.xml` belong to the upstream release process. This fork publishes tagged source through its own GitHub Releases page.
 
 ## Features
 
@@ -80,25 +103,13 @@ brew install --cask robbietilton-compositor
 - Keep working while a project saves
 - Photoshop-style keyboard shortcuts throughout, remappable in Edit > Keyboard Shortcuts
 - Drag a number's label to scrub its value, as in Photoshop
-- Automatic updates, signed and notarized
 
 ### Works with AI agents
 - AI agents and scripts can build and edit projects directly: a `.comp` is a folder of PNG layers and a manifest, and an open project updates live as it's written. See [Writing Compositor projects](docs/writing-comp-files.md)
 
-## Requirements
-
-- macOS 26.0 or later on a Mac with Apple silicon
-- Xcode 26 or later (to build from source)
-
-## Translations
-
-This local patch adds Simplified Chinese (`zh-Hans`). Compositor uses the app language selected in macOS System Settings under General → Language & Region. In Xcode you can also set the scheme's Run → Options → App Language to Chinese (Simplified) to test the translation. English is the source and fallback language.
-
-The upstream project currently accepts no localization pull requests.
-
 ## Other platforms
 
-Compositor is macOS only. These unofficial ports are made by others, not reviewed or supported by me, so please report issues to them:
+Compositor is a macOS app. Report issues with these ports in their own repositories.
 
 - [CompositorWindows](https://github.com/Cengokill/CompositorWindows) by [@Cengokill](https://github.com/Cengokill): Windows
 - [Composa](https://github.com/dvdstelt/Composa) by [@dvdstelt](https://github.com/dvdstelt): Windows and Linux
@@ -106,23 +117,9 @@ Compositor is macOS only. These unofficial ports are made by others, not reviewe
 
 More are listed in [#23 (Windows)](https://github.com/robbietilton/Compositor/issues/23) and [#19 (Linux)](https://github.com/robbietilton/Compositor/issues/19).
 
-## Building
-
-Open `Compositor.xcodeproj` and run the **Compositor** scheme.
-
-## Releasing
-
-`scripts/release.sh` builds a Release version, signs it with Developer ID, notarizes and staples it, and packages it into `dist/Compositor-<version>.dmg`.
-
-It needs, all kept outside this repository:
-
-- a **Developer ID Application** certificate in the login keychain
-- notarization credentials saved with `xcrun notarytool store-credentials "compositor-notary" …`
-- [`create-dmg`](https://github.com/create-dmg/create-dmg) (`brew install create-dmg`)
-
 ## License
 
-MIT — see [LICENSE](LICENSE).
+This fork uses the [MIT License](LICENSE). The original copyright belongs to Wonder Assembly LLC.
 
 Volumetric Light's depth model, DepthMini, is distilled from [Depth Anything V2 Small](https://github.com/DepthAnything/Depth-Anything-V2)
 (Apache-2.0) and starts from torchvision's ImageNet-trained MobileNetV3 weights (BSD-3-Clause). It isn't in the app:
