@@ -54,4 +54,13 @@ void style_render_bevel_emboss(uint8_t *dst, int32_t dstStride,
                                float hiR, float hiG, float hiB, float hiOpacity, int32_t hiBlendMode,
                                float shR, float shG, float shB, float shOpacity, int32_t shBlendMode);
 
+/// Renders a multi-stop gradient from (startX, startY) to (endX, endY) into premultiplied RGBA8 `dst`.
+/// `shape`: 0=Linear, 1=Radial, 2=Angle, 3=Reflected, 4=Diamond.
+/// When `overwrite` is non-zero, writes straight into `dst`; otherwise source-over composites onto `dst`.
+void gradient_render_fill(uint8_t *dst, int32_t dstStride,
+                          int32_t width, int32_t height,
+                          float startX, float startY, float endX, float endY,
+                          int32_t shape, float opacity, int32_t overwrite,
+                          const StyleGradientStop *stops, int32_t stopCount);
+
 #endif /* LAYER_STYLE_PIXELS_H */

@@ -2,6 +2,8 @@ import SwiftUI
 
 struct GradientControls: View {
     @Bindable var session: EditorSession
+    @State private var showsGradientEditor = false
+    @State private var selectedStopIndex = 0
 
     var body: some View {
         HStack(spacing: 12) {
@@ -32,20 +34,75 @@ struct GradientControls: View {
                         Text("Opacity").scrubbable(sensitivity: 0.01, value: $session.paintBucketSettings.opacity, range: 0.01...1)
                         AppSlider(value: $session.paintBucketSettings.opacity, in: 0.01...1).frame(width: 90)
                         Text("\(Int((session.paintBucketSettings.opacity * 100).rounded()))%").monospacedDigit().frame(width: 36)
+                    } else if let liveFill = session.activeLayer?.gradientFill, !session.isMaskSelected {
+                        Picker("Shape", selection: Binding(
+                            get: { liveFill.shape },
+                            set: { var next = liveFill; next.shape = $0; session.updateLiveGradientFill(next) }
+                        )) {
+                            ForEach(GradientShape.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                        }
+                        .pickerStyle(.menu).labelsHidden().fixedSize()
+                        Button { showsGradientEditor.toggle() } label: { liveSwatch(stops: liveFill.stops, reversed: liveFill.reversed) }
+                            .buttonStyle(.plain)
+                            .popover(isPresented: $showsGradientEditor) {
+                                GradientStopEditor(
+                                    stops: Binding(
+                                        get: { session.activeLayer?.gradientFill?.stops ?? liveFill.stops },
+                                        set: { stops in
+                                            guard var next = session.activeLayer?.gradientFill else { return }
+                                            next.stops = stops
+                                            session.updateLiveGradientFill(next)
+                                        }
+                                    ),
+                                    selectedIndex: $selectedStopIndex
+                                )
+                            }
+                        Text("Angle")
+                        AppSlider(value: Binding(
+                            get: { liveFill.angle },
+                            set: { var next = liveFill; next.angle = $0; session.updateLiveGradientFill(next) }
+                        ), in: -180...180).frame(width: 80)
+                        Text("\(Int(liveFill.angle.rounded()))°").monospacedDigit().frame(width: 36)
+                        Text("Scale")
+                        AppSlider(value: Binding(
+                            get: { liveFill.scale },
+                            set: { var next = liveFill; next.scale = $0; session.updateLiveGradientFill(next) }
+                        ), in: 10...200).frame(width: 80)
+                        Text("\(Int(liveFill.scale.rounded()))%").monospacedDigit().frame(width: 40)
+                        Toggle("Reverse", isOn: Binding(
+                            get: { liveFill.reversed },
+                            set: { var next = liveFill; next.reversed = $0; session.updateLiveGradientFill(next) }
+                        ))
                     } else {
                         Picker("Shape", selection: $session.gradientSettings.shape) {
                             ForEach(GradientShape.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
                         }
-                        .pickerStyle(.segmented).labelsHidden().fixedSize()
-                        .help("Linear runs along the line; Radial spreads out from the start point")
-                        swatch
+                        .pickerStyle(.menu).labelsHidden().fixedSize()
+                        .help("Linear, Radial, Angle, Reflected, or Diamond gradient")
+                        Button {
+                            if session.gradientSettings.style != .custom {
+                                session.gradientSettings.customStops = session.gradientStops(mask: false)
+                                session.gradientSettings.style = .custom
+                            }
+                            showsGradientEditor.toggle()
+                        } label: {
+                            swatch
+                        }
+                        .buttonStyle(.plain)
+                        .help("Edit multi-stop gradient")
+                        .popover(isPresented: $showsGradientEditor) {
+                            GradientStopEditor(
+                                stops: $session.gradientSettings.customStops,
+                                selectedIndex: $selectedStopIndex
+                            )
+                        }
                         Picker("Colors", selection: $session.gradientSettings.style) {
                             ForEach(GradientStyle.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
                         }
                         .labelsHidden().fixedSize()
                         Toggle("Reverse", isOn: $session.gradientSettings.reversed)
                         Text("Opacity").scrubbable(sensitivity: 0.01, value: $session.gradientSettings.opacity, range: 0.01...1)
-                        AppSlider(value: $session.gradientSettings.opacity, in: 0.01...1).frame(width: 100)
+                        AppSlider(value: $session.gradientSettings.opacity, in: 0.01...1).frame(width: 90)
                             .accessibilityLabel("Opacity")
                         TextField("Opacity", value: Binding<Double>(get: { Double(session.gradientSettings.opacity * 100) },
                                                                     set: { session.gradientSettings.opacity = $0.isFinite ? CGFloat(min(100, max(1, $0)) / 100) : 1 }),
@@ -55,6 +112,8 @@ struct GradientControls: View {
                                     change: { session.gradientSettings.opacity = CGFloat(min(100, max(1, $0)) / 100) })
                         .help("Press 1–9 for 10–90%, 0 for 100%")
                         .unitSuffix("%")
+                        Button("New Fill Layer") { session.addGradientFillLayer() }
+                            .help("Create a non-destructive live Gradient Fill layer")
                     }
                 }
             }
@@ -70,9 +129,12 @@ struct GradientControls: View {
         .disabled(session.showsBusy || session.document == nil)
     }
 
-    /// Current colors, over a checkerboard so transparency reads as transparency.
-    private var swatch: some View {
-        let colors = session.gradientColors(mask: false).map { Color(cgColor: $0) }
+    private func liveSwatch(stops: [GradientOverlayStop], reversed: Bool) -> some View {
+        let sorted = stops.sorted { $0.position < $1.position }
+        let gStops = sorted.map {
+            Gradient.Stop(color: Color(red: Double($0.red), green: Double($0.green), blue: Double($0.blue), opacity: Double($0.alpha)),
+                          location: reversed ? 1 - $0.position : $0.position)
+        }.sorted { $0.location < $1.location }
         let shape = RoundedRectangle(cornerRadius: 3, style: .continuous)
         return Canvas { context, size in
             let tile: CGFloat = 4
@@ -84,11 +146,130 @@ struct GradientControls: View {
             }
         }
         .background(.white)
-        .overlay { LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing) }
+        .overlay { LinearGradient(stops: gStops, startPoint: .leading, endPoint: .trailing) }
         .clipShape(shape)
         .overlay { shape.strokeBorder(.black.opacity(0.5), lineWidth: 1) }
         .frame(width: 56, height: 18)
-        .accessibilityHidden(true)
+    }
+
+    /// Current colors, over a checkerboard so transparency reads as transparency.
+    private var swatch: some View {
+        liveSwatch(stops: session.gradientStops(mask: false), reversed: false)
+            .accessibilityHidden(true)
+    }
+}
+
+private struct GradientStopEditor: View {
+    @Binding var stops: [GradientOverlayStop]
+    @Binding var selectedIndex: Int
+
+    private var safeIndex: Int {
+        guard !stops.isEmpty else { return 0 }
+        return min(stops.count - 1, max(0, selectedIndex))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Gradient Editor").font(.headline)
+            HStack(spacing: 6) {
+                ForEach(GradientPreset.builtIn) { preset in
+                    Button {
+                        stops = preset.stops
+                        selectedIndex = 0
+                    } label: {
+                        LinearGradient(
+                            stops: preset.stops.map {
+                                Gradient.Stop(color: Color(red: Double($0.red), green: Double($0.green), blue: Double($0.blue), opacity: Double($0.alpha)),
+                                              location: $0.position)
+                            },
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                        .frame(width: 44, height: 16)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                        .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.secondary.opacity(0.4), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .help(L10n.text(preset.name))
+                }
+            }
+            GeometryReader { geo in
+                let width = max(1, geo.size.width)
+                let sortedStops = stops.sorted { $0.position < $1.position }.map {
+                    Gradient.Stop(color: Color(red: Double($0.red), green: Double($0.green), blue: Double($0.blue), opacity: Double($0.alpha)),
+                                  location: $0.position)
+                }
+                ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(LinearGradient(stops: sortedStops, startPoint: .leading, endPoint: .trailing))
+                        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1))
+                        .frame(height: 22)
+                        .onTapGesture { loc in
+                            guard stops.count < 16 else { return }
+                            let pos = min(1, max(0, Double(loc.x / width)))
+                            let newStop = GradientOverlayStop(position: pos, red: 0.5, green: 0.5, blue: 0.5, alpha: 1)
+                            stops.append(newStop)
+                            selectedIndex = stops.count - 1
+                        }
+                    ForEach(stops.indices, id: \.self) { idx in
+                        let stop = stops[idx]
+                        Circle()
+                            .fill(Color(red: Double(stop.red), green: Double(stop.green), blue: Double(stop.blue)))
+                            .overlay(Circle().stroke(idx == safeIndex ? Color.accentColor : Color.primary, lineWidth: idx == safeIndex ? 2.5 : 1))
+                            .frame(width: 12, height: 12)
+                            .offset(x: CGFloat(stop.position) * width - 6, y: 24)
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        selectedIndex = idx
+                                        let pos = min(1, max(0, Double(value.location.x / width)))
+                                        stops[idx].position = pos
+                                    }
+                            )
+                    }
+                }
+            }
+            .frame(height: 40)
+
+            if stops.indices.contains(safeIndex) {
+                HStack(spacing: 10) {
+                    ColorPicker("Color", selection: Binding(
+                        get: {
+                            let s = stops[safeIndex]
+                            return Color(red: Double(s.red), green: Double(s.green), blue: Double(s.blue))
+                        },
+                        set: { color in
+                            if let srgb = NSColor(color).usingColorSpace(.sRGB) {
+                                stops[safeIndex].red = srgb.redComponent
+                                stops[safeIndex].green = srgb.greenComponent
+                                stops[safeIndex].blue = srgb.blueComponent
+                            }
+                        }
+                    ), supportsOpacity: false)
+                    .labelsHidden()
+                    Text("Alpha")
+                    AppSlider(value: Binding(
+                        get: { Double(stops[safeIndex].alpha) },
+                        set: { stops[safeIndex].alpha = CGFloat($0) }
+                    ), in: 0...1).frame(width: 80)
+                    Text("\(Int((stops[safeIndex].position * 100).rounded()))%")
+                        .monospacedDigit().frame(width: 34)
+                    Spacer()
+                    Button(role: .destructive) {
+                        guard stops.count > 2 else { return }
+                        stops.remove(at: safeIndex)
+                        selectedIndex = max(0, min(selectedIndex, stops.count - 1))
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .disabled(stops.count <= 2)
+                    .help("Remove color stop")
+                }
+            }
+            Text("Click the gradient bar to add a color stop; drag stops to reposition.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(width: 300)
     }
 }
 

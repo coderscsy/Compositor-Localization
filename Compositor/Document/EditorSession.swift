@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 struct ImageLayer: Identifiable, Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id && lhs.name == rhs.name && lhs.isVisible == rhs.isVisible && lhs.transform == rhs.transform
-            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.fillOpacity == rhs.fillOpacity && lhs.blendMode == rhs.blendMode && lhs.isPassThrough == rhs.isPassThrough && lhs.blendIf == rhs.blendIf && lhs.lock == rhs.lock && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects
+            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.fillOpacity == rhs.fillOpacity && lhs.blendMode == rhs.blendMode && lhs.isPassThrough == rhs.isPassThrough && lhs.blendIf == rhs.blendIf && lhs.lock == rhs.lock && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects && lhs.gradientFill == rhs.gradientFill
             && lhs.gifAnimation == rhs.gifAnimation
     }
     let id: UUID
@@ -33,6 +33,8 @@ struct ImageLayer: Identifiable, Equatable {
     /// A stroke and drop shadow drawn around the layer, kept apart from its pixels.
     var effects: LayerEffects?
     var text: LayerText?
+    /// Non-destructive live Gradient Fill parameters (format version 29).
+    var gradientFill: LiveGradientFill? = nil
     nonisolated var size: CGSize { transform.size }
     nonisolated var isIsolatedGroup: Bool {
         isGroup && (!isPassThrough || blendMode != .normal || blendIf?.isIdentity == false)
@@ -52,7 +54,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.name = name
     }
 
-    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, fillOpacity: Double = 1, blendMode: LayerBlendMode = .normal, isPassThrough: Bool = true, blendIf: BlendIfSettings? = nil, lock: LayerLock = LayerLock(), mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil, gifAnimation: GIFAnimation? = nil) {
+    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, fillOpacity: Double = 1, blendMode: LayerBlendMode = .normal, isPassThrough: Bool = true, blendIf: BlendIfSettings? = nil, lock: LayerLock = LayerLock(), mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil, gradientFill: LiveGradientFill? = nil, gifAnimation: GIFAnimation? = nil) {
         self.id = id
         self.asset = asset
         self.name = name
@@ -73,6 +75,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.shape = shape
         self.effects = effects
         self.text = text
+        self.gradientFill = gradientFill
     }
 }
 

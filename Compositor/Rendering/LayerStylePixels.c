@@ -361,3 +361,64 @@ void style_render_bevel_emboss(uint8_t *dst, int32_t dstStride,
         }
     }
 }
+
+void gradient_render_fill(uint8_t *dst, int32_t dstStride,
+                          int32_t width, int32_t height,
+                          float startX, float startY, float endX, float endY,
+                          int32_t shape, float opacity, int32_t overwrite,
+                          const StyleGradientStop *stops, int32_t stopCount) {
+    if (!dst || !stops || stopCount <= 0 || width <= 0 || height <= 0 || opacity <= 0.0001f) return;
+    float vx = endX - startX;
+    float vy = endY - startY;
+    float len = hypotf(vx, vy);
+    if (len < 0.001f) len = 1.0f;
+    float ux = vx / len;
+    float uy = vy / len;
+    float baseAngle = atan2f(uy, ux);
+
+    for (int32_t y = 0; y < height; y++) {
+        uint8_t *dRow = dst + (size_t)y * (size_t)dstStride;
+        float py = ((float)y + 0.5f) - startY;
+        for (int32_t x = 0; x < width; x++) {
+            float px = ((float)x + 0.5f) - startX;
+            float t = 0.0f;
+            switch (shape) {
+                case 1: // Radial
+                    t = clampf01(hypotf(px, py) / len);
+                    break;
+                case 2: { // Angle
+                    float a = atan2f(py, px) - baseAngle;
+                    float norm = fmodf(a / (float)(2.0 * M_PI), 1.0f);
+                    if (norm < 0.0f) norm += 1.0f;
+                    t = clampf01(norm);
+                    break;
+                }
+                case 3: // Reflected
+                    t = clampf01(fabsf(px * ux + py * uy) / len);
+                    break;
+                case 4: { // Diamond
+                    float rx = px * ux + py * uy;
+                    float ry = -px * uy + py * ux;
+                    t = clampf01((fabsf(rx) + fabsf(ry)) / len);
+                    break;
+                }
+                default: // 0: Linear
+                    t = clampf01((px * ux + py * uy) / len);
+                    break;
+            }
+            float gr, gg, gb, ga;
+            sample_gradient(stops, stopCount, t, &gr, &gg, &gb, &ga);
+            float sa = clampf01(ga * opacity);
+            uint8_t *dp = dRow + x * 4;
+            if (overwrite) {
+                dp[0] = to_u8(gr * sa);
+                dp[1] = to_u8(gg * sa);
+                dp[2] = to_u8(gb * sa);
+                dp[3] = to_u8(sa);
+            } else {
+                composite_pixel(dp, gr, gg, gb, sa, 0);
+            }
+        }
+    }
+}
+

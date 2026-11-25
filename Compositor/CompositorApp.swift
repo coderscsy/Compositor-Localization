@@ -400,6 +400,8 @@ struct CompositorApp: App {
                         .disabled(!session.canEditLayers || session.activeLayer?.parentID == nil)
                     Button("New Blank Layer") { session.addBlankLayer() }
                         .configuredKeyboardShortcut("n", modifiers: [.command, .shift]).disabled(!session.canEditLayers)
+                    Button("New Gradient Fill Layer") { session.addGradientFillLayer() }
+                        .disabled(!session.canEditLayers)
                     Button("Rename Layer…") { session.renamingLayerID = session.activeLayerID }
                         .disabled(!session.canEditLayers || session.activeLayer == nil || session.activeLayerID.map { session.effectiveLock(for: $0).blocksStructure } == true)
                     Button(L10n.text(session.visibilityTitle)) {

@@ -956,20 +956,55 @@ final class BrushStroke {
     /// Replaces this edit with a gradient over the whole canvas (or the selection),
     /// composited onto the original pixels. Redrawing restarts from each tile's original
     /// content, so moving the line never accumulates earlier previews.
-    func fillGradient(_ shape: GradientShape, from start: CGPoint, to end: CGPoint, colors: [CGColor], opacity: CGFloat) throws {
-        let space = isMask ? CGColorSpaceCreateDeviceGray() : CGColorSpace(name: CGColorSpace.sRGB)!
-        guard let gradient = CGGradient(colorsSpace: space, colors: colors as CFArray, locations: [0, 1]) else { throw ExportError.render }
-        try paintCanvas { context in
-            context.setAlpha(min(1, max(0, opacity)))
-            switch shape {
-            case .linear:
-                context.drawLinearGradient(gradient, start: start, end: end,
-                                           options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
-            case .radial:
-                context.drawRadialGradient(gradient, startCenter: start, startRadius: 0, endCenter: start,
-                                           endRadius: hypot(end.x - start.x, end.y - start.y),
-                                           options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+    func fillGradient(_ shape: GradientShape, from start: CGPoint, to end: CGPoint, colors: [CGColor],
+                      stops: [GradientOverlayStop] = [], opacity: CGFloat) throws {
+        let clampedOpacity = min(1, max(0, opacity))
+        // For Linear & Radial with 2+ stops we can use Core Graphics directly; Angle, Reflected, and Diamond
+        // rasterize into a full-canvas RGBA8 surface via `gradient_render_fill` and draw through `paintCanvas`.
+        if shape == .linear || shape == .radial {
+            let space = isMask ? CGColorSpaceCreateDeviceGray() : CGColorSpace(name: CGColorSpace.sRGB)!
+            let locations: [CGFloat] = stops.count == colors.count && !stops.isEmpty
+                ? stops.map { CGFloat($0.position) }
+                : (colors.count <= 1 ? [0] : (0..<colors.count).map { CGFloat($0) / CGFloat(colors.count - 1) })
+            guard let gradient = CGGradient(colorsSpace: space, colors: colors as CFArray, locations: locations) else {
+                throw ExportError.render
             }
+            try paintCanvas { context in
+                context.setAlpha(clampedOpacity)
+                if shape == .linear {
+                    context.drawLinearGradient(gradient, start: start, end: end,
+                                               options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+                } else {
+                    context.drawRadialGradient(gradient, startCenter: start, startRadius: 0, endCenter: start,
+                                               endRadius: hypot(end.x - start.x, end.y - start.y),
+                                               options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+                }
+            }
+            return
+        }
+
+        let w = max(1, Int(canvas.width.rounded()))
+        let h = max(1, Int(canvas.height.rounded()))
+        let surface = try BrushRaster.context(width: w, height: h, mask: false)
+        guard let raw = surface.data else { throw ExportError.render }
+        let bytes = raw.assumingMemoryBound(to: UInt8.self)
+        let cStops: [StyleGradientStop] = stops.sorted { $0.position < $1.position }.map {
+            StyleGradientStop(position: Float($0.position),
+                              r: Float($0.red), g: Float($0.green), b: Float($0.blue), a: Float($0.alpha))
+        }
+        cStops.withUnsafeBufferPointer { buf in
+            gradient_render_fill(bytes, Int32(surface.bytesPerRow), Int32(w), Int32(h),
+                                 Float(start.x), Float(start.y), Float(end.x), Float(end.y),
+                                 shape.kernelIndex, Float(clampedOpacity), 1,
+                                 buf.baseAddress, Int32(buf.count))
+        }
+        guard let rendered = surface.makeImage() else { throw ExportError.render }
+        try paintCanvas { context in
+            context.saveGState()
+            context.translateBy(x: 0, y: self.canvas.height)
+            context.scaleBy(x: 1, y: -1)
+            context.draw(rendered, in: self.canvas)
+            context.restoreGState()
         }
     }
 

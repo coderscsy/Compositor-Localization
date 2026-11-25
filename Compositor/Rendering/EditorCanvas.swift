@@ -3296,12 +3296,16 @@ extension CanvasView {
                 guard let pixels else { return nil }
                 grid = GPUBlend.masked(inGrid(pixels, stroke: stroke), by: mask)
             } else if let edit = session.gradientEdit, edit.raster === stroke {
-                // The gradient drawn here as it's dragged; its tiles are filled once, when it's committed.
-                grid = oldPixels(stroke).map { inGrid($0, stroke: stroke) } ?? CIImage.empty()
+                // 2-stop linear/radial draw directly on the GPU; multi-stop or Angle/Reflected/Diamond fill into tiles.
                 if edit.hasLine, let fill = edit.fill, let fillImage = gradient(fill, stroke: stroke) {
+                    grid = oldPixels(stroke).map { inGrid($0, stroke: stroke) } ?? CIImage.empty()
                     grid = fillImage.composited(over: grid)
+                    grid = grid.cropped(to: gridRect)
+                } else {
+                    try? edit.applyFill()
+                    guard let image = placement.renderer.image(stroke, base: oldPixels(stroke)) else { return nil }
+                    grid = image
                 }
-                grid = grid.cropped(to: gridRect)
             } else {
                 guard let image = placement.renderer.image(stroke, base: oldPixels(stroke)) else { return nil }
                 grid = image
@@ -3323,7 +3327,7 @@ extension CanvasView {
                 return CIColor(red: c[0], green: c.count > 2 ? c[1] : c[0], blue: c.count > 2 ? c[2] : c[0], alpha: c.last ?? 1,
                                colorSpace: placement.renderer.space) ?? .black
             }
-            guard fill.colors.count == 2 else { return nil }
+            guard fill.colors.count == 2, fill.shape == .linear || fill.shape == .radial else { return nil }
             let shading: CIImage
             switch fill.shape {
             case .linear:
@@ -3335,6 +3339,8 @@ extension CanvasView {
                     kCIInputCenterKey: CIVector(cgPoint: fill.start), "inputRadius0": 0,
                     "inputRadius1": hypot(fill.end.x - fill.start.x, fill.end.y - fill.start.y),
                     "inputColor0": color(fill.colors[0]), "inputColor1": color(fill.colors[1])])
+            case .angle, .reflected, .diamond:
+                return nil
             }
             let toGrid = stroke.pixelToDocument.inverted()
             var coverage = CIImage(color: .white).cropped(to: stroke.canvas)
