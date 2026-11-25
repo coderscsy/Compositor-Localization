@@ -79,6 +79,11 @@ struct ShortcutDefinition: Identifiable {
     let original: ShortcutChord
     var id: String { "\(group):\(title)" }
     var isMenu: Bool { group == "Menus" }
+    var localizedTitle: String { L10n.text(title) }
+
+    func matches(_ query: String) -> Bool {
+        query.isEmpty || title.localizedCaseInsensitiveContains(query) || localizedTitle.localizedCaseInsensitiveContains(query)
+    }
 
     static let all: [ShortcutDefinition] = {
         func entry(_ title: String, _ key: String, _ modifiers: Int = 0, menu: Bool = false) -> ShortcutDefinition {
@@ -186,7 +191,7 @@ final class ShortcutSettings {
         return chord(definition)
     }
     func show() {
-        panel.show(title: "Keyboard Shortcuts", content: KeyboardShortcutsSheet(settings: self))
+        panel.show(title: L10n.text("Keyboard Shortcuts"), content: KeyboardShortcutsSheet(settings: self))
     }
     func close() { panel.close() }
     func save(_ values: [String: ShortcutChord]) {
@@ -196,19 +201,23 @@ final class ShortcutSettings {
         close()
     }
     static func problem(in values: [String: ShortcutChord]) -> String? {
-        var assigned: [ShortcutChord: String] = [:]
+        var assigned: [ShortcutChord: ShortcutDefinition] = [:]
         for definition in ShortcutDefinition.all {
             let chord = values[definition.id] ?? definition.original
             if chord.isNone { continue }
-            guard chord.key.count == 1, (0...15).contains(chord.modifiers) else { return "Choose a single key with optional modifiers." }
+            guard chord.key.count == 1, (0...15).contains(chord.modifiers) else {
+                return L10n.text("Choose a single key with optional modifiers.")
+            }
             if definition.group == "Text Editing", chord.modifiers & 7 == 0 {
-                return "Text-editing shortcuts need Command, Option, or Control so they do not replace normal typing."
+                return L10n.text("Text-editing shortcuts need Command, Option, or Control so they do not replace normal typing.")
             }
             if [ShortcutChord("q", 1), ShortcutChord(",", 1), ShortcutChord("m", 3)].contains(chord) {
-                return "\(chord.label) is reserved by macOS."
+                return L10n.format("%@ is reserved by macOS.", chord.label)
             }
-            if let other = assigned[chord] { return "\(chord.label) is assigned to both \(other) and \(definition.title)." }
-            assigned[chord] = definition.title
+            if let other = assigned[chord] {
+                return L10n.format("%@ is assigned to both %@ and %@.", chord.label, other.localizedTitle, definition.localizedTitle)
+            }
+            assigned[chord] = definition
         }
         return nil
     }
@@ -276,10 +285,10 @@ private struct KeyboardShortcutsSheet: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(["Menus", "Canvas & Layers", "Text Editing"], id: \.self) { group in
-                        Text(group).font(.headline).padding(.top, 8)
-                        ForEach(ShortcutDefinition.all.filter { $0.group == group && (search.isEmpty || $0.title.localizedCaseInsensitiveContains(search)) }) { definition in
+                        Text(L10n.text(group)).font(.headline).padding(.top, 8)
+                        ForEach(ShortcutDefinition.all.filter { $0.group == group && $0.matches(search) }) { definition in
                             HStack {
-                                Text(definition.title)
+                                Text(definition.localizedTitle)
                                 Spacer()
                                 ShortcutRecorder(chord: draft[definition.id] ?? definition.original,
                                     recording: recording == definition.id,
@@ -336,8 +345,9 @@ private struct ShortcutRecorder: NSViewRepresentable {
     func makeNSView(context: Context) -> RecorderButton { RecorderButton() }
     func updateNSView(_ button: RecorderButton, context: Context) {
         button.start = start; button.finish = finish; button.recording = recording
-        button.title = recording ? "Press keys…" : chord.label
-        button.setAccessibilityLabel(recording ? "Press a shortcut" : chord.label)
+        let label = chord.isNone ? L10n.text("None") : chord.label
+        button.title = recording ? L10n.text("Press keys…") : label
+        button.setAccessibilityLabel(recording ? L10n.text("Press a shortcut") : label)
         if recording, button.window?.firstResponder !== button { button.window?.makeFirstResponder(button) }
     }
     final class RecorderButton: NSButton {

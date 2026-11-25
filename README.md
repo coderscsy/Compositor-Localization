@@ -92,7 +92,9 @@ brew install --cask robbietilton-compositor
 
 ## Translations
 
-Compositor is English only for now, and translation pull requests aren't being accepted. It's maintained by one person, every new string would need translating from then on, and translations in languages I don't read can't be reviewed. I'll revisit this once the app settles; until then, please don't open localization PRs.
+This local patch adds Simplified Chinese (`zh-Hans`). Compositor uses the app language selected in macOS System Settings under General → Language & Region. In Xcode you can also set the scheme's Run → Options → App Language to Chinese (Simplified) to test the translation. English is the source and fallback language.
+
+The upstream project currently accepts no localization pull requests.
 
 ## Other platforms
 

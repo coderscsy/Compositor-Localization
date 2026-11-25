@@ -7,6 +7,7 @@ struct CommandPaletteEntry: Identifiable {
     let id: String
     /// Its full path, as the palette shows it and searches it: "Filter › Gaussian Blur…".
     let title: String
+    let englishTitle: String?
     /// Its current key, "⌥⌘P", or nil.
     let shortcut: String?
     /// False when its menu item is disabled right now: listed, greyed, and never run.
@@ -16,10 +17,11 @@ struct CommandPaletteEntry: Identifiable {
     let isOn: Bool
     let perform: @MainActor () -> Void
 
-    init(id: String, title: String? = nil, shortcut: String?, isEnabled: Bool, isOn: Bool = false,
+    init(id: String, title: String? = nil, englishTitle: String? = nil, shortcut: String?, isEnabled: Bool, isOn: Bool = false,
          perform: @escaping @MainActor () -> Void) {
         self.id = id
         self.title = title ?? id
+        self.englishTitle = englishTitle
         self.shortcut = shortcut
         self.isEnabled = isEnabled
         self.isOn = isOn
@@ -87,8 +89,11 @@ enum CommandPaletteSearch {
     /// The entries that match, best first, with enabled ones ahead of disabled; with no query, all of them in menu
     /// order, enabled first.
     static func rank(_ entries: [CommandPaletteEntry], query: String) -> [CommandPaletteEntry] {
-        let scored = entries.enumerated().compactMap { index, entry in
-            score(query, in: entry.title).map { (entry, $0, index) }
+        let scored = entries.enumerated().compactMap { index, entry -> (CommandPaletteEntry, Int, Int)? in
+            let displayed = score(query, in: entry.title)
+            let english = entry.englishTitle.flatMap { score(query, in: $0) }
+            guard let best = [displayed, english].compactMap({ $0 }).max() else { return nil }
+            return (entry, best, index)
         }
         return scored.sorted { a, b in
             if a.0.isEnabled != b.0.isEnabled { return a.0.isEnabled }
@@ -102,6 +107,24 @@ enum CommandPaletteSearch {
 /// key and whether it's enabled now. Read afresh each time the palette opens, so titles that change with state
 /// ("Undo Brush Stroke") are current.
 enum CommandPaletteMenu {
+    /// Menu items only expose their displayed titles. Recover the original names for English searches.
+    private static let englishNames: [String: String] = {
+        guard let language = Bundle.main.preferredLocalizations.first,
+              let url = Bundle.main.url(forResource: "Localizable", withExtension: "strings", subdirectory: nil, localization: language),
+              let data = try? Data(contentsOf: url),
+              let translations = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: String]
+        else { return [:] }
+        return Dictionary(translations.sorted { $0.key < $1.key }.map { ($0.value, $0.key) }, uniquingKeysWith: { first, second in
+            first.count <= second.count ? first : second
+        })
+    }()
+
+    private static func englishName(of title: String) -> String {
+        if let name = englishNames[title] { return name }
+        if title.hasSuffix("…"), let name = englishNames[String(title.dropLast())] { return name + "…" }
+        return title
+    }
+
     /// `skipping` holds titles left out: top-level menus (Window, Help) and single items (the palette's own).
     /// The app menu, the first in the bar, is always left out.
     static func entries(in menu: NSMenu, skipping: Set<String>) -> [CommandPaletteEntry] {
@@ -127,12 +150,14 @@ enum CommandPaletteMenu {
             // SwiftUI takes the action off a disabled item, so an item without one is listed greyed rather than dropped.
             let titles = path + [item.title]
             let title = titles.joined(separator: " › ")
+            let englishTitle = titles.map { englishName(of: $0) }.joined(separator: " › ")
             let occurrence = sameTitle[item.title, default: 0]
             sameTitle[item.title] = occurrence + 1
             let count = seen[title, default: 0]
             seen[title] = count + 1
             result.append(CommandPaletteEntry(
                 id: count == 0 ? title : "\(title) (\(count + 1))", title: title,
+                englishTitle: englishTitle == title ? nil : englishTitle,
                 shortcut: shortcut(of: item), isEnabled: item.isEnabled, isOn: item.state == .on,
                 // Found again by its path when run, so a menu SwiftUI has rebuilt since the palette opened still works.
                 perform: { [weak root] in
@@ -175,14 +200,15 @@ extension CommandPaletteEntry {
     static func layerCommands(for session: EditorSession) -> [CommandPaletteEntry] {
         let canAdd = session.canEditMask && session.activeLayer?.mask == nil
         let selected = session.selection != nil
-        return [
-            CommandPaletteEntry(id: selected ? "Layer › Add Layer Mask from Selection" : "Layer › Add Layer Mask",
-                                shortcut: nil, isEnabled: canAdd,
-                                perform: { [weak session] in session?.addMask(revealing: true) }),
-            CommandPaletteEntry(id: selected ? "Layer › Add Layer Mask Hiding Selection" : "Layer › Add Layer Mask (Hide All)",
-                                shortcut: nil, isEnabled: canAdd,
-                                perform: { [weak session] in session?.addMask(revealing: false) }),
+        let commands = [
+            (selected ? "Add Layer Mask from Selection" : "Add Layer Mask", true),
+            (selected ? "Add Layer Mask Hiding Selection" : "Add Layer Mask (Hide All)", false),
         ]
+        return commands.map { name, revealing in
+            CommandPaletteEntry(id: "Layer › \(name)", title: L10n.text("Layer") + " › " + L10n.text(name),
+                                englishTitle: "Layer › \(name)", shortcut: nil, isEnabled: canAdd,
+                                perform: { [weak session] in session?.addMask(revealing: revealing) })
+        }
     }
 
     /// Every tool, and each of a tool's modes on its own, by the name someone would search for: Liquify is a mode of
@@ -216,7 +242,8 @@ extension CommandPaletteEntry {
             ("Zoom", "Z", .zoom, nil),
         ]
         return tools.map { name, key, tool, setup in
-            CommandPaletteEntry(id: "Tool › \(name)", shortcut: key, isEnabled: session.document != nil,
+            CommandPaletteEntry(id: "Tool › \(name)", title: L10n.text("Tool") + " › " + L10n.text(name),
+                                englishTitle: "Tool › \(name)", shortcut: key, isEnabled: session.document != nil,
                                 perform: { [weak session] in
                                     guard let session else { return }
                                     session.selectTool(tool)
