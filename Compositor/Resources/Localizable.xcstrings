@@ -15782,25 +15782,25 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Streichung %@"
+            "value": "%@ löschen"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suprímase %@"
+            "value": "Eliminar %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "削除%@"
+            "value": "%@を削除"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "제거 %@"
+            "value": "%@ 삭제"
           }
         }
       }
@@ -33265,7 +33265,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dernier filtre: %@"
+            "value": "Dernier filtre : %@"
           }
         },
         "de": {
@@ -33283,7 +33283,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "最後のフィルター: %@"
+            "value": "最後のフィルター：%@"
           }
         },
         "ko": {
@@ -48582,31 +48582,31 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Redémarrage %@"
+            "value": "Rétablir %@"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Redo %@"
+            "value": "%@ wiederholen"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Redo %@"
+            "value": "Rehacer %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "「%@」をやり直す"
+            "value": "%@をやり直す"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "‘%@’ 다시 실행"
+            "value": "%@ 다시 실행"
           }
         }
       }
@@ -62935,25 +62935,25 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Undo %@"
+            "value": "%@ widerrufen"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Undo %@"
+            "value": "Deshacer %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "「%@」を取り消す"
+            "value": "%@を取り消す"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "‘%@’ 실행 취소"
+            "value": "%@ 실행 취소"
           }
         }
       }
