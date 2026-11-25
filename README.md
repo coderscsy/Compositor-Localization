@@ -1,8 +1,8 @@
 # Compositor Localization
 
-Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s Compositor](https://github.com/robbietilton/Compositor), an open-source macOS image editor for compositing and photo editing. The first release is based on upstream Compositor 1.7.1.
+**English** · [简体中文](docs/readme/README.zh-Hans.md) · [繁體中文](docs/readme/README.zh-Hant.md) · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
 
-这是 Compositor 的非官方多语言分支。可以在「Compositor → 设置 → 界面语言」中选择语言，重新打开应用后生效。
+Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s Compositor](https://github.com/robbietilton/Compositor), an open-source image editor for compositing and photo editing. Development, testing, and releases for this fork focus exclusively on **macOS on Apple silicon**. The first release is based on upstream Compositor 1.7.1.
 
 ## Language support
 
@@ -18,8 +18,6 @@ Use **Compositor → Settings → Interface Language** and relaunch the app afte
 - Español · Spanish (`es`)
 
 French, German, Spanish, Japanese, and Korean are preview localizations. Common controls have been spot-checked, and the rest of the interface includes machine-assisted translations. Traditional Chinese uses Taiwanese terminology where possible.
-
-Report translation issues in this fork’s [issue tracker](https://github.com/coderscsy/Compositor-Localization/issues). Include the language, the menu or panel, and the text you see.
 
 ## Build from source
 
@@ -39,6 +37,12 @@ You can also open `Compositor.xcodeproj` in Xcode and run the **Compositor** sch
 For the signed and notarized upstream app, see [Robbie Tilton’s release page](https://github.com/robbietilton/Compositor/releases/latest).
 
 The inherited `scripts/release.sh`, `scripts/publish.sh`, and `appcast.xml` belong to the upstream release process. This fork publishes tagged source through its own GitHub Releases page.
+
+## Report issues and contribute
+
+Use this fork’s [issue tracker](https://github.com/coderscsy/Compositor-Localization/issues) for macOS bugs and translation issues. Include your interface language, the affected menu or panel, the text you see, and your Compositor and macOS versions. A screenshot of the affected area helps when it can be shared.
+
+Interface translations live in [Localizable.xcstrings](Compositor/Resources/Localizable.xcstrings). Send changes to this fork through a pull request and test them on a Mac.
 
 ## Features
 
@@ -106,16 +110,6 @@ The inherited `scripts/release.sh`, `scripts/publish.sh`, and `appcast.xml` belo
 
 ### Works with AI agents
 - AI agents and scripts can build and edit projects directly: a `.comp` is a folder of PNG layers and a manifest, and an open project updates live as it's written. See [Writing Compositor projects](docs/writing-comp-files.md)
-
-## Other platforms
-
-Compositor is a macOS app. Report issues with these ports in their own repositories.
-
-- [CompositorWindows](https://github.com/Cengokill/CompositorWindows) by [@Cengokill](https://github.com/Cengokill): Windows
-- [Composa](https://github.com/dvdstelt/Composa) by [@dvdstelt](https://github.com/dvdstelt): Windows and Linux
-- [CompositorLX](https://github.com/ClaudiuJitea/compositorLX) by [@ClaudiuJitea](https://github.com/ClaudiuJitea): Linux
-
-More are listed in [#23 (Windows)](https://github.com/robbietilton/Compositor/issues/23) and [#19 (Linux)](https://github.com/robbietilton/Compositor/issues/19).
 
 ## License
 
