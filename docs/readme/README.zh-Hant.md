@@ -12,6 +12,12 @@ Compositor Localization 是 Robbie Tilton 的 Compositor 的非官方多語言�
 - macOS 26 或更新版本
 - 從原始碼建置需要 Xcode。原專案的持續整合環境使用 Xcode 26.6。
 
+## 下載 macOS 版
+
+從發行頁面下載 [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg)，適用於執行 **macOS 26 或更新版本且搭載 Apple 晶片的 Mac**。同一頁面提供 `SHA256SUMS.txt`，可用於驗證下載檔案。打開磁碟映像檔後，將應用程式拷貝至「應用程式」資料夾。[GitHub 預覽發行版本](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+
+此應用程式採用臨時簽署（ad hoc signing），未經 Apple 公證。Gatekeeper 可能會在第一次開啟時阻擋執行。你也可以依照下文說明從原始碼建置。[Apple 的 Mac 應用程式開啟指南](https://support.apple.com/zh-tw/102445)
+
 ## 主要功能
 
 - **圖層與遮色片。** 支援圖層、資料夾、混合模式、剪裁遮色片和圖層遮色片。可隨時編輯筆畫、陰影和光暈等圖層效果。
@@ -32,7 +38,7 @@ Compositor Localization 是 Robbie Tilton 的 Compositor 的非官方多語言�
 
 ## 從原始碼建置
 
-可在本分支的 GitHub Releases 取得附有版本標籤的原始碼。[版本發行頁面](https://github.com/coderscsy/Compositor-Localization/releases)
+各版本的原始碼可透過對應的 Git 標籤取得。以下指令會使用預設分支。
 
 ```sh
 git clone https://github.com/coderscsy/Compositor-Localization.git
@@ -45,11 +51,11 @@ open build/Build/Products/Release/Compositor.app
 
 也可以在 Xcode 開啟 `Compositor.xcodeproj`，執行 **Compositor** scheme。以 Debug 或 Release 在本機建置時，會使用臨時簽署（ad hoc signing）、應用程式沙盒和獨立的套件識別碼。
 
-若要與原專案的應用程式並存，可將建置結果以 `Compositor Localization.app` 的名稱拷貝到「應用程式」資料夾。更新時，請取得本分支的新版本並重新建置。
+若要與原專案的應用程式並存，可將建置結果以 `Compositor Localization.app` 的名稱拷貝到「應用程式」資料夾。若要更新本機建置的版本，請取得本分支的新版本並重新建置。
 
 經原作者簽署與公證的應用程式可從原專案的發行頁面下載。[原專案發行頁面](https://github.com/robbietilton/Compositor/releases/latest)
 
-程式碼庫保留了原專案發行流程所用的 `scripts/release.sh`、`scripts/publish.sh` 及 `appcast.xml`。本分支透過自己的 GitHub Releases 發行附有版本標籤的原始碼。
+程式碼庫保留了原專案發行流程所用的 `scripts/release.sh`、`scripts/publish.sh` 及 `appcast.xml`。
 
 ## 回報與貢獻
 

@@ -28,6 +28,7 @@ struct TransformInspector: View {
                 Toggle(isOn: Binding(get: { session.locksTransformRatio != held.contains(.shift) },
                                      set: { session.locksTransformRatio = $0 != held.contains(.shift) })) { Image(systemName: "link") }
                     .toggleStyle(.button).help("Lock aspect ratio. Hold Shift while dragging a handle to turn it the other way.")
+                    .accessibilityLabel("Lock aspect ratio")
                 TransformValueField(label: "Scale", suffix: "%", fieldWidth: Self.shortField, value: value.scalePercent(pixelSize: pixelSize), range: 0.1...30_000, finish: finish, returned: releaseFocus) { number in
                     change { value in
                         guard number > 0 else { return }

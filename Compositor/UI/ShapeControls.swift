@@ -52,7 +52,7 @@ struct ShapeControls: View {
                     AppSlider(value: Binding(get: { min(50, strokeWidth.wrappedValue) },
                                           set: { strokeWidth.wrappedValue = $0.rounded() }), in: 0...50,
                               onEditingChanged: { if $0 { session.beginShapeStyleEdit() } else { session.finishShapeStyleEdit() } })
-                        .frame(width: 100)
+                        .frame(width: 100).accessibilityLabel("Width")
                     TextField("Width", value: strokeWidth, format: .number.precision(.fractionLength(0)))
                         .frame(width: 48).textFieldStyle(.roundedBorder)
                         .arrowSteps(value: { session.displayedStrokeWidth },
@@ -68,7 +68,7 @@ struct ShapeControls: View {
                     AppSlider(value: Binding(get: { min(50, lineWidth.wrappedValue) },
                                           set: { lineWidth.wrappedValue = $0.rounded() }), in: 1...50,
                               onEditingChanged: { if $0 { session.beginShapeStyleEdit() } else { session.finishShapeStyleEdit() } })
-                        .frame(width: 100)
+                        .frame(width: 100).accessibilityLabel("Width")
                     TextField("Width", value: lineWidth, format: .number.precision(.fractionLength(0)))
                         .frame(width: 48).textFieldStyle(.roundedBorder)
                         .arrowSteps(value: { session.displayedLineWidth },
@@ -106,7 +106,7 @@ struct ShapeControls: View {
                     AppSlider(value: Binding(get: { min(200, cornerRadius.wrappedValue) },
                                           set: { cornerRadius.wrappedValue = $0.rounded() }), in: 0...200,
                               onEditingChanged: { if $0 { session.beginShapeStyleEdit() } else { session.finishShapeStyleEdit() } })
-                        .frame(width: 100)
+                        .frame(width: 100).accessibilityLabel("Radius")
                     TextField("Radius", value: cornerRadius, format: .number.precision(.fractionLength(0)))
                         .frame(width: 48).textFieldStyle(.roundedBorder)
                         .arrowSteps(value: { session.displayedCornerRadius },

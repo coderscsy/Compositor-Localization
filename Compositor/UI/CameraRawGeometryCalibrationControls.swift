@@ -94,15 +94,16 @@ struct CameraRawCalibrationControls: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            let summary = L10n.text(raw.calibration.process.summary)
             Picker("Process", selection: binding(\.process)) {
                 ForEach(CameraRawProcessVersion.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
             }
             .help("Chooses how strongly the calibration sliders below are applied. Version 6 is the current default.")
-            Text(L10n.text(raw.calibration.process.summary))
+            Text(summary)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .help(raw.calibration.process.summary)
+                .help(summary)
             Text("Shadows").font(.subheadline)
             calibrationSlider("Tint", \.shadowTint, help: "Adds green or magenta to the darkest tones.")
             Text("Red Primary").font(.subheadline)

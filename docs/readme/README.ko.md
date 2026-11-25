@@ -12,6 +12,12 @@ Compositor Localization은 Robbie Tilton의 Compositor를 여러 언어로 제�
 - macOS 26 이상
 - 소스에서 빌드하려면 Xcode가 필요합니다. 원본 프로젝트의 지속적 통합 환경에서는 Xcode 26.6을 사용합니다.
 
+## macOS용 다운로드
+
+**macOS 26 이상을 실행하는 Apple Silicon Mac**용 [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg)를 다운로드하세요. 같은 페이지에 있는 `SHA256SUMS.txt`로 다운로드한 파일을 확인할 수 있습니다. 디스크 이미지를 열고 앱을 응용 프로그램 폴더에 복사하세요. [GitHub 미리 보기 릴리스](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+
+이 앱은 임시 서명(ad hoc signing)을 사용하며 Apple의 공증을 받지 않았습니다. 처음 열 때 Gatekeeper가 실행을 차단할 수 있습니다. 아래 안내에 따라 소스에서 빌드할 수도 있습니다. [Apple의 Mac 앱 열기 안내](https://support.apple.com/ko-kr/102445)
+
 ## 주요 기능
 
 - **레이어와 마스크.** 레이어와 폴더, 혼합 모드, 클리핑 마스크, 레이어 마스크를 지원합니다. 획, 그림자, 광선 등의 레이어 효과를 적용한 뒤에도 편집할 수 있습니다.
@@ -32,7 +38,7 @@ Compositor Localization은 Robbie Tilton의 Compositor를 여러 언어로 제�
 
 ## 소스에서 빌드
 
-버전 태그가 붙은 소스 코드는 이 포크의 GitHub Releases에서 받을 수 있습니다. [릴리스](https://github.com/coderscsy/Compositor-Localization/releases)
+각 버전의 소스 코드는 해당 Git 태그에서 받을 수 있습니다. 아래 명령은 기본 브랜치를 사용합니다.
 
 ```sh
 git clone https://github.com/coderscsy/Compositor-Localization.git
@@ -45,11 +51,11 @@ open build/Build/Products/Release/Compositor.app
 
 Xcode에서 `Compositor.xcodeproj`를 열고 **Compositor** 스킴을 실행할 수도 있습니다. 로컬 Debug 및 Release 빌드에는 임시 서명(ad hoc signing), 앱 샌드박스, 별도의 번들 식별자가 적용됩니다.
 
-원본 앱과 함께 설치하려면 결과물을 `Compositor Localization.app`이라는 이름으로 응용 프로그램 폴더에 복사하세요. 업데이트하려면 이 포크의 새 릴리스를 받아 다시 빌드하세요.
+원본 앱과 함께 설치하려면 결과물을 `Compositor Localization.app`이라는 이름으로 응용 프로그램 폴더에 복사하세요. 로컬 빌드를 업데이트하려면 이 포크의 새 릴리스를 받아 다시 빌드하세요.
 
 원본 개발자가 서명하고 Apple이 공증한 앱은 원본 프로젝트의 릴리스 페이지에서 받을 수 있습니다. [원본 릴리스](https://github.com/robbietilton/Compositor/releases/latest)
 
-저장소에 포함된 `scripts/release.sh`, `scripts/publish.sh`, `appcast.xml`은 원본 프로젝트의 릴리스 절차에서 사용하는 파일입니다. 이 포크는 자체 GitHub Releases에서 버전 태그가 붙은 소스를 배포합니다.
+저장소에 포함된 `scripts/release.sh`, `scripts/publish.sh`, `appcast.xml`은 원본 프로젝트의 릴리스 절차에서 사용하는 파일입니다.
 
 ## 문제 제보와 기여
 

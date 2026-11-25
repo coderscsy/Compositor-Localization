@@ -602,7 +602,7 @@ extension EditorSession {
         let map = ready ? await Task.detached(priority: .userInitiated) { VolumetricLighting.depthMap(for: image, settings: settings) }.value : nil
         guard let map, let thumbnail = try? PixelAdjust.thumbnail(of: map), canEditLayers,
               let index = document?.layers.firstIndex(where: { $0.id == source.id }) else { NSSound.beep(); return }
-        var layer = ImageLayer(asset: ImportedImage(image: map, thumbnail: thumbnail, name: "Depth"), origin: source.origin)
+        var layer = ImageLayer(asset: ImportedImage(image: map, thumbnail: thumbnail, name: L10n.text("Depth Map")), origin: source.origin)
         layer.transform = source.transform
         layer.name = "Depth"
         layer.parentID = source.parentID

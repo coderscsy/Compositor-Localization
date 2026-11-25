@@ -27,6 +27,7 @@ struct ColorRangeSheet: View {
                 Text("Fuzziness").fixedSize()
                     .scrubbable(sensitivity: 1, value: fuzziness, range: ColorRangeEdit.fuzzinessRange)
                 AppSlider(value: fuzziness, in: ColorRangeEdit.fuzzinessRange)
+                    .accessibilityLabel("Fuzziness")
                 TextField("Fuzziness", value: fuzziness, format: .number.precision(.fractionLength(0)))
                     .frame(width: 48).textFieldStyle(.roundedBorder).multilineTextAlignment(.trailing)
             }

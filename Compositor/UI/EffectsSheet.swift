@@ -175,6 +175,7 @@ struct EffectsSheet: View {
             // to the end of the slider until the user drags it again.
             AppSlider(value: Binding(get: { min(range.upperBound, max(range.lowerBound, value.wrappedValue)) },
                                   set: { value.wrappedValue = $0 }), in: range)
+                .accessibilityLabel(L10n.text(title))
             TextField(L10n.text(title), value: Binding(get: { Double(value.wrappedValue) },
                                             set: setAmount),
                       format: .number.precision(.fractionLength(0)))

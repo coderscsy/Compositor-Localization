@@ -134,7 +134,7 @@ final class ProjectController {
     static func fileName(_ name: String) -> String {
         let cleaned = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return cleaned.isEmpty || cleaned.hasPrefix(".") ? "Layer" + cleaned : cleaned
+        return cleaned.isEmpty || cleaned.hasPrefix(".") ? L10n.text("Layer") + cleaned : cleaned
     }
 
     private func run(_ panel: NSSavePanel) async -> Bool {
@@ -197,7 +197,7 @@ final class ProjectController {
 
     /// The name an export starts with: the project's, or the image the document began as, or Untitled.
     static func exportName(projectURL: URL?, source: URL?, format: ExportFormat) -> String {
-        ((projectURL ?? source)?.deletingPathExtension().lastPathComponent ?? "Untitled")
+        ((projectURL ?? source)?.deletingPathExtension().lastPathComponent ?? L10n.text("Untitled"))
             + "." + (format.type.preferredFilenameExtension ?? format.rawValue.lowercased())
     }
 
@@ -332,7 +332,8 @@ final class ProjectController {
             // A document that began as an image is saved, by default, beside it and under its name.
             let source = session.projectURL == nil ? session.sourceImageURL : nil
             panel.nameFieldStringValue = session.projectURL?.lastPathComponent
-                ?? source.map { $0.deletingPathExtension().lastPathComponent + ".comp" } ?? "Untitled.comp"
+                ?? source.map { $0.deletingPathExtension().lastPathComponent + ".comp" }
+                ?? L10n.text("Untitled") + ".comp"
             if let source { panel.directoryURL = source.deletingLastPathComponent() }
             panel.title = L10n.text(asNew ? "Save Project As" : "Save Project")
             let response: NSApplication.ModalResponse

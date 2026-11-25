@@ -8,6 +8,12 @@ Compositor Localization ist ein inoffizieller mehrsprachiger Fork von [Robbie Ti
 
 Dieses Projekt ist ausschließlich für macOS bestimmt. Es setzt einen Mac mit Apple-Chip und macOS 26 oder neuer voraus. Zum Bauen aus dem Quellcode wird Xcode benötigt. Die CI des Originalprojekts verwendet Xcode 26.6.
 
+## Download für macOS
+
+Lade [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg) für einen **Mac mit Apple-Chip und macOS 26 oder neuer** herunter. Mit `SHA256SUMS.txt` auf derselben Seite kannst du die heruntergeladene Datei prüfen. Öffne das Disk-Image und kopiere die App in den Ordner „Programme“. [Vorschauversion auf GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+
+Die App ist ad hoc signiert und wurde nicht von Apple notarisiert. Gatekeeper kann den ersten Start blockieren. Du kannst die App auch wie unten beschrieben aus dem Quellcode bauen. [Apple-Anleitung zum Öffnen von Mac-Apps](https://support.apple.com/de-de/102445)
+
 ## Funktionen
 
 - Ebenen, Ordner, Mischmodi, Ebenenmasken, Schnittmasken und Einstellungsebenen.
@@ -36,7 +42,7 @@ Die deutschen, französischen, spanischen, japanischen und koreanischen Überset
 
 ## Aus dem Quellcode bauen
 
-Die [GitHub Releases dieses Forks](https://github.com/coderscsy/Compositor-Localization/releases) enthalten Quellcode mit Versions-Tags. Die folgenden Befehle verwenden den Standardbranch. Wenn du eine bestimmte Version bauen möchtest, wechsle vor dem Erstellen zum entsprechenden Tag.
+Den Quellcode jeder Version findest du unter dem zugehörigen Git-Tag. Die folgenden Befehle verwenden den Standardbranch. Wenn du eine bestimmte Version bauen möchtest, wechsle vor dem Erstellen zum entsprechenden Tag.
 
 ```sh
 git clone https://github.com/coderscsy/Compositor-Localization.git
@@ -49,7 +55,7 @@ open build/Build/Products/Release/Compositor.app
 
 Du kannst auch `Compositor.xcodeproj` in Xcode öffnen und das Schema **Compositor** ausführen. Lokale Debug- und Release-Builds verwenden eine Ad-hoc-Signatur, die App Sandbox und eine separate Bundle-ID. Wenn du beide Ausgaben im Ordner „Programme“ behalten möchtest, kopiere die erstellte App als `Compositor Localization.app` dorthin.
 
-Erstelle die App zum Aktualisieren aus einer neueren Version dieses Forks. Die signierte und von Apple notarisierte Original-App findest du auf der [Release-Seite des Originalprojekts](https://github.com/robbietilton/Compositor/releases/latest).
+Um deinen lokalen Build zu aktualisieren, erstelle die App aus einer neueren Version dieses Forks. Die signierte und von Apple notarisierte Original-App findest du auf der [Release-Seite des Originalprojekts](https://github.com/robbietilton/Compositor/releases/latest).
 
 ## Fehler melden und mitarbeiten
 
