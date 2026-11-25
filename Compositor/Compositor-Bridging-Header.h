@@ -11,3 +11,4 @@
 #import "Rendering/TonePixels.h"
 #import "Rendering/RetouchFilters.h"
 #import "Rendering/BlendPixels.h"
+#import "Rendering/LayerStylePixels.h"

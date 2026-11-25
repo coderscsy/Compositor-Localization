@@ -17,11 +17,10 @@ extension UTType {
 
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
-    static let current = 26
-    /// Every version `load` accepts: each one a release has written (1 through `current`), and 27 from the
-    /// GIF branch's own builds. Leaving out 15 and 16 once locked out projects saved by 1.5.4 and 1.5.5.
-    /// The package-header and manifest checks both read this, so they can't drift apart when `current` is bumped.
-    static let supported = Set(1...current).union([27])
+    /// Note: version 27 was historically used by the GIF branch, so new features after 26 begin at 28.
+    static let current = 28
+    /// Every version `load` accepts (1 through `current`, including historical GIF v27).
+    static let supported = Set(1...current)
 
     var format = "com.compositor.project"
     var version = ProjectManifest.current
@@ -412,6 +411,12 @@ actor ProjectStore {
             if let fillOpacity = layer.fillOpacity {
                 guard manifest.version >= 24, layer.isGroup != true,
                       fillOpacity.isFinite, (0...1).contains(fillOpacity) else { throw ProjectError.invalid }
+            }
+            if let effects = layer.effects {
+                guard effects.isValid, layer.isGroup != true else { throw ProjectError.invalid }
+                if effects.hasVersion28Features {
+                    guard manifest.version >= 28 else { throw ProjectError.invalid }
+                }
             }
             if let text = layer.text {
                 // Per-letter colors arrived in version 10, per-letter faces in version 11.

@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 import CoreImage
 
-/// A line drawn around what the layer shows, outside its edge or inside it.
+/// A line drawn around what the layer shows, outside its edge, centered on it, or inside it.
 nonisolated struct StrokeEffect: Codable, Equatable, Sendable {
     /// Supported document-pixel width; preview work is bounded independently of this value.
     static let maxSize: CGFloat = 500
@@ -14,6 +14,16 @@ nonisolated struct StrokeEffect: Codable, Equatable, Sendable {
     var blue: CGFloat = 0
     var opacity: Double = 1
     var inside = false
+    /// Explicit placement (`Outside`, `Center`, `Inside`), arrived in format v28. Nil falls back to `inside`.
+    var position: StrokePosition? = nil
+    var blendMode: EffectBlendMode? = nil
+    var resolvedPosition: StrokePosition {
+        get { position ?? (inside ? .inside : .outside) }
+        set {
+            position = newValue
+            inside = (newValue == .inside)
+        }
+    }
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var isValid: Bool {
         size.isFinite && (0...StrokeEffect.maxSize).contains(size) && opacity.isFinite && (0...1).contains(opacity)
@@ -30,6 +40,8 @@ nonisolated struct ShadowEffect: Codable, Equatable, Sendable {
     var angle: CGFloat = 90
     var distance: CGFloat = 20
     var blur: CGFloat = 20
+    var spread: CGFloat? = nil
+    var blendMode: EffectBlendMode? = nil
     var red: CGFloat = 0
     var green: CGFloat = 0
     var blue: CGFloat = 0
@@ -44,6 +56,7 @@ nonisolated struct ShadowEffect: Codable, Equatable, Sendable {
     var isValid: Bool {
         [angle, distance, blur].allSatisfy(\.isFinite) && (-360...360).contains(angle)
             && (0...5000).contains(distance) && (0...500).contains(blur)
+            && (spread.map { $0.isFinite && (0...100).contains($0) } ?? true)
             && opacity.isFinite && (0...1).contains(opacity)
             && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
     }
@@ -57,6 +70,7 @@ nonisolated struct ColorOverlayEffect: Codable, Equatable, Sendable {
     var green: CGFloat = 0
     var blue: CGFloat = 0
     var opacity: Double = 1
+    var blendMode: EffectBlendMode? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var isValid: Bool {
         opacity.isFinite && (0...1).contains(opacity) && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
@@ -70,6 +84,8 @@ nonisolated struct InnerShadowEffect: Codable, Equatable, Sendable {
     var angle: CGFloat = 90
     var distance: CGFloat = 10
     var blur: CGFloat = 10
+    var spread: CGFloat? = nil
+    var blendMode: EffectBlendMode? = nil
     var red: CGFloat = 0
     var green: CGFloat = 0
     var blue: CGFloat = 0
@@ -83,6 +99,7 @@ nonisolated struct InnerShadowEffect: Codable, Equatable, Sendable {
     var isValid: Bool {
         [angle, distance, blur].allSatisfy(\.isFinite) && (-360...360).contains(angle)
             && (0...5000).contains(distance) && (0...500).contains(blur)
+            && (spread.map { $0.isFinite && (0...100).contains($0) } ?? true)
             && opacity.isFinite && (0...1).contains(opacity)
             && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
     }
@@ -93,6 +110,8 @@ nonisolated struct OuterGlowEffect: Codable, Equatable, Sendable {
     var enabled: Bool? = nil
     var isEnabled: Bool { enabled ?? true }
     var size: CGFloat = 20
+    var spread: CGFloat? = nil
+    var blendMode: EffectBlendMode? = nil
     var red: CGFloat = 1
     var green: CGFloat = 1
     var blue: CGFloat = 1
@@ -100,6 +119,7 @@ nonisolated struct OuterGlowEffect: Codable, Equatable, Sendable {
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var isValid: Bool {
         size.isFinite && (0...500).contains(size)
+            && (spread.map { $0.isFinite && (0...100).contains($0) } ?? true)
             && opacity.isFinite && (0...1).contains(opacity)
             && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
     }
@@ -110,6 +130,8 @@ nonisolated struct InnerGlowEffect: Codable, Equatable, Sendable {
     var enabled: Bool? = nil
     var isEnabled: Bool { enabled ?? true }
     var size: CGFloat = 10
+    var spread: CGFloat? = nil
+    var blendMode: EffectBlendMode? = nil
     var red: CGFloat = 1
     var green: CGFloat = 1
     var blue: CGFloat = 1
@@ -117,6 +139,7 @@ nonisolated struct InnerGlowEffect: Codable, Equatable, Sendable {
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var isValid: Bool {
         size.isFinite && (0...500).contains(size)
+            && (spread.map { $0.isFinite && (0...100).contains($0) } ?? true)
             && opacity.isFinite && (0...1).contains(opacity)
             && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
     }
@@ -131,11 +154,30 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
     var innerShadow: InnerShadowEffect? = nil
     var outerGlow: OuterGlowEffect? = nil
     var innerGlow: InnerGlowEffect? = nil
-    var isEmpty: Bool { stroke == nil && shadow == nil && colorOverlay == nil && innerShadow == nil && outerGlow == nil && innerGlow == nil }
+    var bevelEmboss: BevelEmbossEffect? = nil
+    var gradientOverlay: GradientOverlayEffect? = nil
+    var patternOverlay: PatternOverlayEffect? = nil
+    var isEmpty: Bool {
+        stroke == nil && shadow == nil && colorOverlay == nil && innerShadow == nil
+            && outerGlow == nil && innerGlow == nil
+            && bevelEmboss == nil && gradientOverlay == nil && patternOverlay == nil
+    }
     var isValid: Bool {
         (stroke?.isValid ?? true) && (shadow?.isValid ?? true)
             && (colorOverlay?.isValid ?? true) && (innerShadow?.isValid ?? true)
             && (outerGlow?.isValid ?? true) && (innerGlow?.isValid ?? true)
+            && (bevelEmboss?.isValid ?? true) && (gradientOverlay?.isValid ?? true)
+            && (patternOverlay?.isValid ?? true)
+    }
+    /// True when any format-v28 style feature is present (used both for version checks and choosing the renderer path).
+    var hasVersion28Features: Bool {
+        bevelEmboss != nil || gradientOverlay != nil || patternOverlay != nil
+            || stroke?.position != nil || stroke?.blendMode != nil
+            || shadow?.spread != nil || shadow?.blendMode != nil
+            || colorOverlay?.blendMode != nil
+            || innerShadow?.spread != nil || innerShadow?.blendMode != nil
+            || outerGlow?.spread != nil || outerGlow?.blendMode != nil
+            || innerGlow?.spread != nil || innerGlow?.blendMode != nil
     }
     /// The effects for an image resampled by `factor`: every size, distance and blur in pixels scaled with it, held to
     /// the ranges `isValid` accepts.
@@ -149,6 +191,8 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         result.innerShadow?.blur = scale(innerShadow?.blur, upTo: 500)
         result.outerGlow?.size = scale(outerGlow?.size, upTo: 500)
         result.innerGlow?.size = scale(innerGlow?.size, upTo: 500)
+        result.bevelEmboss?.size = scale(bevelEmboss?.size, upTo: 250)
+        result.bevelEmboss?.soften = scale(bevelEmboss?.soften, upTo: 16)
         return result
     }
     var kinds: [LayerEffectKind] { LayerEffectKind.allCases.filter { contains($0) } }
@@ -157,9 +201,12 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .stroke: return stroke != nil
         case .shadow: return shadow != nil
         case .colorOverlay: return colorOverlay != nil
+        case .gradientOverlay: return gradientOverlay != nil
+        case .patternOverlay: return patternOverlay != nil
         case .innerShadow: return innerShadow != nil
         case .outerGlow: return outerGlow != nil
         case .innerGlow: return innerGlow != nil
+        case .bevelEmboss: return bevelEmboss != nil
         }
     }
     func isEnabled(_ kind: LayerEffectKind) -> Bool {
@@ -167,9 +214,12 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .stroke: return stroke?.isEnabled == true
         case .shadow: return shadow?.isEnabled == true
         case .colorOverlay: return colorOverlay?.isEnabled == true
+        case .gradientOverlay: return gradientOverlay?.isEnabled == true
+        case .patternOverlay: return patternOverlay?.isEnabled == true
         case .innerShadow: return innerShadow?.isEnabled == true
         case .outerGlow: return outerGlow?.isEnabled == true
         case .innerGlow: return innerGlow?.isEnabled == true
+        case .bevelEmboss: return bevelEmboss?.isEnabled == true
         }
     }
     /// The effect's own color, and a way to put a new one back.
@@ -178,9 +228,12 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .stroke: return stroke?.color
         case .shadow: return shadow?.color
         case .colorOverlay: return colorOverlay?.color
+        case .gradientOverlay: return gradientOverlay?.startColor
+        case .patternOverlay: return patternOverlay?.color
         case .innerShadow: return innerShadow?.color
         case .outerGlow: return outerGlow?.color
         case .innerGlow: return innerGlow?.color
+        case .bevelEmboss: return bevelEmboss?.highlightColor
         }
     }
     mutating func setColor(_ color: PaletteColor, for kind: LayerEffectKind) {
@@ -188,9 +241,18 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .stroke: stroke?.red = color.red; stroke?.green = color.green; stroke?.blue = color.blue
         case .shadow: shadow?.red = color.red; shadow?.green = color.green; shadow?.blue = color.blue
         case .colorOverlay: colorOverlay?.red = color.red; colorOverlay?.green = color.green; colorOverlay?.blue = color.blue
+        case .gradientOverlay:
+            if gradientOverlay?.stops.isEmpty == false {
+                gradientOverlay?.stops[0].red = color.red
+                gradientOverlay?.stops[0].green = color.green
+                gradientOverlay?.stops[0].blue = color.blue
+            }
+        case .patternOverlay: patternOverlay?.red = color.red; patternOverlay?.green = color.green; patternOverlay?.blue = color.blue
         case .innerShadow: innerShadow?.red = color.red; innerShadow?.green = color.green; innerShadow?.blue = color.blue
         case .outerGlow: outerGlow?.red = color.red; outerGlow?.green = color.green; outerGlow?.blue = color.blue
         case .innerGlow: innerGlow?.red = color.red; innerGlow?.green = color.green; innerGlow?.blue = color.blue
+        case .bevelEmboss:
+            bevelEmboss?.highlightRed = color.red; bevelEmboss?.highlightGreen = color.green; bevelEmboss?.highlightBlue = color.blue
         }
     }
     mutating func remove(_ kind: LayerEffectKind) {
@@ -198,9 +260,12 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .stroke: stroke = nil
         case .shadow: shadow = nil
         case .colorOverlay: colorOverlay = nil
+        case .gradientOverlay: gradientOverlay = nil
+        case .patternOverlay: patternOverlay = nil
         case .innerShadow: innerShadow = nil
         case .outerGlow: outerGlow = nil
         case .innerGlow: innerGlow = nil
+        case .bevelEmboss: bevelEmboss = nil
         }
     }
     mutating func setEnabled(_ enabled: Bool, for kind: LayerEffectKind) {
@@ -208,9 +273,12 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .stroke: stroke?.enabled = enabled
         case .shadow: shadow?.enabled = enabled
         case .colorOverlay: colorOverlay?.enabled = enabled
+        case .gradientOverlay: gradientOverlay?.enabled = enabled
+        case .patternOverlay: patternOverlay?.enabled = enabled
         case .innerShadow: innerShadow?.enabled = enabled
         case .outerGlow: outerGlow?.enabled = enabled
         case .innerGlow: innerGlow?.enabled = enabled
+        case .bevelEmboss: bevelEmboss?.enabled = enabled
         }
     }
     var visible: LayerEffects {
@@ -219,12 +287,23 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
                      colorOverlay: colorOverlay?.isEnabled == true ? colorOverlay : nil,
                      innerShadow: innerShadow?.isEnabled == true ? innerShadow : nil,
                      outerGlow: outerGlow?.isEnabled == true ? outerGlow : nil,
-                     innerGlow: innerGlow?.isEnabled == true ? innerGlow : nil)
+                     innerGlow: innerGlow?.isEnabled == true ? innerGlow : nil,
+                     bevelEmboss: bevelEmboss?.isEnabled == true ? bevelEmboss : nil,
+                     gradientOverlay: gradientOverlay?.isEnabled == true ? gradientOverlay : nil,
+                     patternOverlay: patternOverlay?.isEnabled == true ? patternOverlay : nil)
     }
 }
 
 nonisolated enum LayerEffectKind: String, CaseIterable, Sendable {
-    case stroke = "Stroke", shadow = "Drop Shadow", colorOverlay = "Color Overlay", innerShadow = "Inner Shadow", outerGlow = "Outer Glow", innerGlow = "Inner Glow"
+    case bevelEmboss = "Bevel & Emboss"
+    case stroke = "Stroke"
+    case innerShadow = "Inner Shadow"
+    case innerGlow = "Inner Glow"
+    case colorOverlay = "Color Overlay"
+    case gradientOverlay = "Gradient Overlay"
+    case patternOverlay = "Pattern Overlay"
+    case outerGlow = "Outer Glow"
+    case shadow = "Drop Shadow"
 }
 
 struct LayerEffectSelection: Equatable {
@@ -271,6 +350,19 @@ extension EditorSession {
             effects.outerGlow = OuterGlowEffect()
         case .innerGlow where effects.innerGlow == nil:
             effects.innerGlow = InnerGlowEffect()
+        case .bevelEmboss where effects.bevelEmboss == nil:
+            effects.bevelEmboss = BevelEmbossEffect()
+        case .gradientOverlay where effects.gradientOverlay == nil:
+            var new = GradientOverlayEffect()
+            new.stops = [
+                GradientOverlayStop(position: 0, red: foregroundColor.red, green: foregroundColor.green, blue: foregroundColor.blue),
+                GradientOverlayStop(position: 1, red: backgroundColor.red, green: backgroundColor.green, blue: backgroundColor.blue),
+            ]
+            effects.gradientOverlay = new
+        case .patternOverlay where effects.patternOverlay == nil:
+            var new = PatternOverlayEffect()
+            new.red = foregroundColor.red; new.green = foregroundColor.green; new.blue = foregroundColor.blue
+            effects.patternOverlay = new
         default: break
         }
         setEffects(effects, on: id, name: L10n.format("Add %@", L10n.text(kind.rawValue)))
@@ -304,9 +396,12 @@ extension EditorSession {
             case .stroke: effects.stroke = original.stroke
             case .shadow: effects.shadow = original.shadow
             case .colorOverlay: effects.colorOverlay = original.colorOverlay
+            case .gradientOverlay: effects.gradientOverlay = original.gradientOverlay
+            case .patternOverlay: effects.patternOverlay = original.patternOverlay
             case .innerShadow: effects.innerShadow = original.innerShadow
             case .outerGlow: effects.outerGlow = original.outerGlow
             case .innerGlow: effects.innerGlow = original.innerGlow
+            case .bevelEmboss: effects.bevelEmboss = original.bevelEmboss
             }
             setEffects(effects, on: editing.layerID, name: L10n.format("Cancel %@", L10n.text(editing.kind.rawValue)))
         }
@@ -356,9 +451,12 @@ extension EditorSession {
         case .stroke: effects.stroke = original.stroke
         case .shadow: effects.shadow = original.shadow
         case .colorOverlay: effects.colorOverlay = original.colorOverlay
+        case .gradientOverlay: effects.gradientOverlay = original.gradientOverlay
+        case .patternOverlay: effects.patternOverlay = original.patternOverlay
         case .innerShadow: effects.innerShadow = original.innerShadow
         case .outerGlow: effects.outerGlow = original.outerGlow
         case .innerGlow: effects.innerGlow = original.innerGlow
+        case .bevelEmboss: effects.bevelEmboss = original.bevelEmboss
         }
         setEffects(effects, on: target, name: L10n.format("Copy %@", L10n.text(kind.rawValue)))
         selectEffect(kind, on: target)
@@ -439,14 +537,34 @@ nonisolated enum LayerEffectsRenderer {
     static func margin(for effects: LayerEffects) -> CGFloat {
         let effects = effects.visible
         var margin: CGFloat = 0
-        if let stroke = effects.stroke, !stroke.inside { margin = max(margin, stroke.size) }
+        if let stroke = effects.stroke {
+            switch stroke.resolvedPosition {
+            case .outside: margin = max(margin, stroke.size)
+            case .center: margin = max(margin, ceil(stroke.size / 2))
+            case .inside: break
+            }
+        }
         if let shadow = effects.shadow {
             margin = max(margin, shadow.distance + shadow.blur * 3)
         }
         if let glow = effects.outerGlow {
             margin = max(margin, glow.size * 3)
         }
+        if let bevel = effects.bevelEmboss, bevel.style != .innerBevel {
+            margin = max(margin, bevel.size + bevel.soften + 4)
+        }
         return ceil(margin) + 2
+    }
+
+    private static func maskBytes(_ image: CGImage, width: Int, height: Int, spread: CGFloat? = nil) throws -> (context: CGContext, bytes: UnsafeMutablePointer<UInt8>, stride: Int32) {
+        let ctx = try BrushRaster.context(width: width, height: height, mask: true)
+        BrushRaster.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height), mask: true, context: ctx)
+        guard let raw = ctx.data else { throw ExportError.render }
+        let bytes = raw.assumingMemoryBound(to: UInt8.self)
+        if let spread, spread > 0 {
+            style_apply_spread(bytes, Int32(ctx.bytesPerRow), Int32(width), Int32(height), Float(spread))
+        }
+        return (ctx, bytes, Int32(ctx.bytesPerRow))
     }
 
     /// `image` with `effects` around it. `mask` (the layer's own mask, in its pixel grid) hides part of the layer
@@ -462,7 +580,7 @@ nonisolated enum LayerEffectsRenderer {
         let full = CGRect(x: 0, y: 0, width: CGFloat(width), height: CGFloat(height))
         // The layer as it is shown: its pixels through its mask.
         let shown = try masked(image, mask: mask)
-        if let metal = MetalLayerEffects.shared {
+        if !effects.hasVersion28Features, let metal = MetalLayerEffects.shared {
             // The pixels with room around them, then the stroke and shadow drawn on the GPU.
             let padded = try BrushRaster.context(width: width, height: height, mask: false)
             BrushRaster.draw(shown, in: placed, mask: false, context: padded)
@@ -471,29 +589,44 @@ nonisolated enum LayerEffectsRenderer {
             }
         }
         let context = try BrushRaster.context(width: width, height: height, mask: false)
+        guard let ctxRaw = context.data else { throw ExportError.render }
+        let ctxBytes = ctxRaw.assumingMemoryBound(to: UInt8.self)
+        let ctxStride = Int32(context.bytesPerRow)
+
+        let shapeAlphaImage = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: 0)
+        let shapeMask = try maskBytes(shapeAlphaImage, width: width, height: height)
+
         if let shadow = effects.shadow, shadow.opacity > 0 {
             let alpha = try coverage(shown, in: placed.offsetBy(dx: shadow.offset.width, dy: shadow.offset.height),
                                      size: CGSize(width: width, height: height), blur: shadow.blur)
-            fill(shadow.color, alpha: shadow.opacity, coverage: alpha, in: full, context: context)
+            let cov = try maskBytes(alpha, width: width, height: height, spread: shadow.spread)
+            style_blend_solid(ctxBytes, ctxStride, cov.bytes, cov.stride, nil, 0, Int32(width), Int32(height),
+                              Float(shadow.red), Float(shadow.green), Float(shadow.blue), Float(shadow.opacity),
+                              (shadow.blendMode ?? .normal).kernelIndex)
         }
         if let glow = effects.outerGlow, glow.opacity > 0 {
             let alpha = try outerGlowCoverage(shown, placed: placed, size: CGSize(width: width, height: height), glow: glow)
-            fill(glow.color, alpha: glow.opacity, coverage: alpha, in: full, context: context)
+            let cov = try maskBytes(alpha, width: width, height: height, spread: glow.spread)
+            style_blend_solid(ctxBytes, ctxStride, cov.bytes, cov.stride, nil, 0, Int32(width), Int32(height),
+                              Float(glow.red), Float(glow.green), Float(glow.blue), Float(glow.opacity),
+                              (glow.blendMode ?? .normal).kernelIndex)
         }
-        // An outside stroke sits behind the layer's own pixels; an inside one is drawn over them, or the pixels
-        // would simply cover it.
+        // Outside stroke sits behind the layer's pixels; Center and Inside draw over them.
         let stroke = effects.stroke.flatMap { $0.size > 0 && $0.opacity > 0 ? $0 : nil }
         func drawStroke(_ stroke: StrokeEffect) throws {
             let alpha = try strokeCoverage(shown, placed: placed, size: CGSize(width: width, height: height), stroke: stroke)
-            fill(stroke.color, alpha: stroke.opacity, coverage: alpha, in: full, context: context)
+            let cov = try maskBytes(alpha, width: width, height: height)
+            style_blend_solid(ctxBytes, ctxStride, cov.bytes, cov.stride, nil, 0, Int32(width), Int32(height),
+                              Float(stroke.red), Float(stroke.green), Float(stroke.blue), Float(stroke.opacity),
+                              (stroke.blendMode ?? .normal).kernelIndex)
         }
-        if let stroke, !stroke.inside { try drawStroke(stroke) }
-        // Source-over preserves effects beneath transparent pixels. BrushRaster.draw uses .copy,
-        // which would erase the stroke/shadow everywhere inside the source's rectangular bounds.
-        // The layer's own pixels, recolored by a color overlay, then an inner glow and an inner shadow, each keeping
-        // the pixels' alpha as Photoshop's do, so a translucent pixel takes them fully and the effects beneath stay
-        // untinted.
+        if let stroke, stroke.resolvedPosition == .outside { try drawStroke(stroke) }
+
+        // Layer interior: fill pixels, Pattern Overlay, Gradient Overlay, Color Overlay, Inner Glow, Inner Shadow, Inner Bevel.
         let layer = try BrushRaster.context(width: width, height: height, mask: false)
+        guard let layerRaw = layer.data else { throw ExportError.render }
+        let layerBytes = layerRaw.assumingMemoryBound(to: UInt8.self)
+        let layerStride = Int32(layer.bytesPerRow)
         if fillOpacity > 0 {
             layer.saveGState()
             layer.translateBy(x: placed.minX, y: placed.maxY)
@@ -502,37 +635,57 @@ nonisolated enum LayerEffectsRenderer {
             layer.draw(shown, in: CGRect(origin: .zero, size: placed.size))
             layer.restoreGState()
         }
+        if let pattern = effects.patternOverlay, pattern.isEnabled, pattern.opacity > 0 {
+            style_render_pattern_overlay(layerBytes, layerStride, shapeMask.bytes, shapeMask.stride,
+                                         Int32(width), Int32(height),
+                                         pattern.pattern.kernelIndex, Float(pattern.scale),
+                                         Float(pattern.red), Float(pattern.green), Float(pattern.blue),
+                                         Float(pattern.opacity), pattern.blendMode.kernelIndex)
+        }
+        if let gradient = effects.gradientOverlay, gradient.isEnabled, gradient.opacity > 0 {
+            let stops = gradient.sortedStops
+            stops.withUnsafeBufferPointer { buf in
+                style_render_gradient_overlay(layerBytes, layerStride, shapeMask.bytes, shapeMask.stride,
+                                              Int32(width), Int32(height),
+                                              Float(placed.minX), Float(placed.minY), Float(placed.width), Float(placed.height),
+                                              gradient.style.kernelIndex, Float(gradient.angle), Float(gradient.scale),
+                                              gradient.reverse ? 1 : 0, Float(gradient.opacity), gradient.blendMode.kernelIndex,
+                                              buf.baseAddress, Int32(buf.count))
+            }
+        }
         if let overlay = effects.colorOverlay, overlay.isEnabled, overlay.opacity > 0 {
-            let maskAlpha = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: 0)
-            fill(overlay.color, alpha: overlay.opacity, coverage: maskAlpha, in: full, context: layer)
+            style_blend_solid(layerBytes, layerStride, shapeMask.bytes, shapeMask.stride, nil, 0, Int32(width), Int32(height),
+                              Float(overlay.red), Float(overlay.green), Float(overlay.blue), Float(overlay.opacity),
+                              (overlay.blendMode ?? .normal).kernelIndex)
         }
         if let innerGlow = effects.innerGlow, innerGlow.isEnabled, innerGlow.opacity > 0,
            let insideGlow = try? innerGlowCoverage(shown, placed: placed, size: CGSize(width: width, height: height), glow: innerGlow) {
-            if fillOpacity < 1 {
-                let maskAlpha = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: 0)
-                layer.saveGState()
-                layer.translateBy(x: 0, y: full.height); layer.scaleBy(x: 1, y: -1)
-                layer.clip(to: full, mask: maskAlpha)
-                layer.scaleBy(x: 1, y: -1); layer.translateBy(x: 0, y: -full.height)
-                fill(innerGlow.color, alpha: innerGlow.opacity, coverage: insideGlow, in: full, context: layer)
-                layer.restoreGState()
-            } else {
-                recolor(layer, innerGlow.color, alpha: innerGlow.opacity, amount: insideGlow, in: full)
-            }
+            let cov = try maskBytes(insideGlow, width: width, height: height, spread: innerGlow.spread)
+            style_blend_solid(layerBytes, layerStride, cov.bytes, cov.stride, shapeMask.bytes, shapeMask.stride,
+                              Int32(width), Int32(height),
+                              Float(innerGlow.red), Float(innerGlow.green), Float(innerGlow.blue), Float(innerGlow.opacity),
+                              (innerGlow.blendMode ?? .normal).kernelIndex)
         }
         if let inner = effects.innerShadow, inner.isEnabled, inner.opacity > 0,
            let inside = try? innerCoverage(shown, placed: placed, size: CGSize(width: width, height: height), shadow: inner) {
-            if fillOpacity < 1 {
-                let maskAlpha = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: 0)
-                layer.saveGState()
-                layer.translateBy(x: 0, y: full.height); layer.scaleBy(x: 1, y: -1)
-                layer.clip(to: full, mask: maskAlpha)
-                layer.scaleBy(x: 1, y: -1); layer.translateBy(x: 0, y: -full.height)
-                fill(inner.color, alpha: inner.opacity, coverage: inside, in: full, context: layer)
-                layer.restoreGState()
-            } else {
-                recolor(layer, inner.color, alpha: inner.opacity, amount: inside, in: full)
-            }
+            let cov = try maskBytes(inside, width: width, height: height, spread: inner.spread)
+            style_blend_solid(layerBytes, layerStride, cov.bytes, cov.stride, shapeMask.bytes, shapeMask.stride,
+                              Int32(width), Int32(height),
+                              Float(inner.red), Float(inner.green), Float(inner.blue), Float(inner.opacity),
+                              (inner.blendMode ?? .normal).kernelIndex)
+        }
+        if let bevel = effects.bevelEmboss, bevel.isEnabled, bevel.style == .innerBevel, bevel.size > 0 {
+            let blurRadius = max(1, bevel.size + bevel.soften)
+            let heightImg = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: blurRadius)
+            let heightMask = try maskBytes(heightImg, width: width, height: height)
+            style_render_bevel_emboss(layerBytes, layerStride, shapeMask.bytes, shapeMask.stride,
+                                      heightMask.bytes, heightMask.stride, Int32(width), Int32(height),
+                                      bevel.style.kernelIndex, bevel.direction == .down ? 1 : 0,
+                                      Float(bevel.depth), Float(bevel.angle), Float(bevel.altitude),
+                                      Float(bevel.highlightRed), Float(bevel.highlightGreen), Float(bevel.highlightBlue),
+                                      Float(bevel.highlightOpacity), bevel.highlightBlendMode.kernelIndex,
+                                      Float(bevel.shadowRed), Float(bevel.shadowGreen), Float(bevel.shadowBlue),
+                                      Float(bevel.shadowOpacity), bevel.shadowBlendMode.kernelIndex)
         }
         guard let styled = layer.makeImage() else { throw ExportError.render }
         context.saveGState()
@@ -541,7 +694,21 @@ nonisolated enum LayerEffectsRenderer {
         context.setBlendMode(.normal)
         context.draw(styled, in: full)
         context.restoreGState()
-        if let stroke, stroke.inside { try drawStroke(stroke) }
+
+        if let bevel = effects.bevelEmboss, bevel.isEnabled, bevel.style != .innerBevel, bevel.size > 0 {
+            let blurRadius = max(1, bevel.size + bevel.soften)
+            let heightImg = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: blurRadius)
+            let heightMask = try maskBytes(heightImg, width: width, height: height)
+            style_render_bevel_emboss(ctxBytes, ctxStride, shapeMask.bytes, shapeMask.stride,
+                                      heightMask.bytes, heightMask.stride, Int32(width), Int32(height),
+                                      bevel.style.kernelIndex, bevel.direction == .down ? 1 : 0,
+                                      Float(bevel.depth), Float(bevel.angle), Float(bevel.altitude),
+                                      Float(bevel.highlightRed), Float(bevel.highlightGreen), Float(bevel.highlightBlue),
+                                      Float(bevel.highlightOpacity), bevel.highlightBlendMode.kernelIndex,
+                                      Float(bevel.shadowRed), Float(bevel.shadowGreen), Float(bevel.shadowBlue),
+                                      Float(bevel.shadowOpacity), bevel.shadowBlendMode.kernelIndex)
+        }
+        if let stroke, stroke.resolvedPosition != .outside { try drawStroke(stroke) }
         guard let result = context.makeImage() else { throw ExportError.render }
         return (result, inset)
     }
@@ -635,15 +802,31 @@ nonisolated enum LayerEffectsRenderer {
         let width = Int(size.width), height = Int(size.height)
         let shape = try coverage(image, in: placed, size: size, blur: 0)
         var levels = try GuidedMatte.levels(of: shape, width: width, height: height)
-        let reach = Float(stroke.size)
-        let distances = edgeDistances(levels, width: width, height: height, inside: stroke.inside,
-                                      limit: Int(reach.rounded(.up)) + 2)
-        for i in levels.indices {
-            // How much of this pixel the grown (or shrunk) shape covers. A pixel's center sits half a pixel past the
-            // edge of the nearest one counted as the shape, so the edge is at `distance - 0.5` and the reach blends
-            // across the pixel that straddles it.
-            let reached = min(1, max(0, reach + 1 - distances[i]))
-            levels[i] = stroke.inside ? max(0, levels[i] - (1 - reached)) : max(0, reached - levels[i])
+        switch stroke.resolvedPosition {
+        case .center:
+            let halfReach = Float(stroke.size) * 0.5
+            let limit = Int(halfReach.rounded(.up)) + 2
+            let outDistances = edgeDistances(levels, width: width, height: height, inside: false, limit: limit)
+            let inDistances = edgeDistances(levels, width: width, height: height, inside: true, limit: limit)
+            for i in levels.indices {
+                let outReached = min(1, max(0, halfReach + 1 - outDistances[i]))
+                let inReached = min(1, max(0, halfReach + 1 - inDistances[i]))
+                let outRing = max(0, outReached - levels[i])
+                let inRing = max(0, levels[i] - (1 - inReached))
+                levels[i] = min(1, outRing + inRing)
+            }
+        case .outside, .inside:
+            let inside = stroke.resolvedPosition == .inside
+            let reach = Float(stroke.size)
+            let distances = edgeDistances(levels, width: width, height: height, inside: inside,
+                                          limit: Int(reach.rounded(.up)) + 2)
+            for i in levels.indices {
+                // How much of this pixel the grown (or shrunk) shape covers. A pixel's center sits half a pixel past the
+                // edge of the nearest one counted as the shape, so the edge is at `distance - 0.5` and the reach blends
+                // across the pixel that straddles it.
+                let reached = min(1, max(0, reach + 1 - distances[i]))
+                levels[i] = inside ? max(0, levels[i] - (1 - reached)) : max(0, reached - levels[i])
+            }
         }
         return try GuidedMatte.image(levels, width: width, height: height)
     }
