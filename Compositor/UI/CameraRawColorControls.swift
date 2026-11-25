@@ -351,6 +351,7 @@ struct CameraRawMixerControls: View {
                 }
                 .buttonStyle(.plain)
                 .help("Edit \(L10n.text(CameraRawMixerSettings.names[index])).")
+                .accessibilityLabel("Edit \(L10n.text(CameraRawMixerSettings.names[index])).")
             }
         }
     }
@@ -363,6 +364,7 @@ struct CameraRawMixerControls: View {
                     session.brushRevision += 1
                 } label: { Image(systemName: "eyedropper") }
                 .help("Click the picture to save a color. Up to eight colors.")
+                .accessibilityLabel("Sample a point color")
                 .tint(edit?.samplesPointColor == true ? Color.accentColor : Color.secondary)
                 ForEach(raw.mixer.points.indices, id: \.self) { index in
                     let point = raw.mixer.points[index]
@@ -373,6 +375,7 @@ struct CameraRawMixerControls: View {
                     }
                     .buttonStyle(.plain)
                     .help("Select this picked color.")
+                    .accessibilityLabel("Select sampled color \(index + 1)")
                 }
             }
             if raw.mixer.points.indices.contains(edit?.cameraRawPointIndex ?? 0) {

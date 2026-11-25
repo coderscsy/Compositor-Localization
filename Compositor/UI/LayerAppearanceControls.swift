@@ -22,6 +22,7 @@ struct LayerAppearanceControls: View {
                 AppSlider(value: Binding(get: { session.activeLayer?.opacity ?? 1 },
                                       set: { session.setLayerOpacity($0) }), in: 0...1,
                        onEditingChanged: { if $0 { session.beginOpacityEdit() } else { session.finishOpacityEdit() } })
+                    .accessibilityLabel("Opacity")
                 HStack(spacing: 2) {
                     TextField("Opacity percent", text: $percentage)
                         .textFieldStyle(.roundedBorder).frame(width: 44).focused($focused)

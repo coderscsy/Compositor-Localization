@@ -367,7 +367,7 @@ extension EditorSession {
         }
         guard canEditLayers, document != nil, rect.width >= 1, rect.height >= 1 else { return }
         guard Int(rect.width) * Int(rect.height) <= Self.maxShapePixels else {
-            brushError = "That shape is too large. A shape can cover up to \(DocumentLimits.maxSurfaceMegapixels) megapixels."
+            brushError = L10n.format("That shape is too large. A shape can cover up to %lld megapixels.", DocumentLimits.maxSurfaceMegapixels)
             return
         }
         do {
@@ -392,10 +392,7 @@ extension EditorSession {
 
     /// "Rectangle 1", "Ellipse 2", … skipping names already in the document.
     func nextShapeName(_ kind: ShapeKind) -> String {
-        let names = Set(document?.layers.map(\.name) ?? [])
-        var number = 1
-        while names.contains("\(kind.rawValue) \(number)") { number += 1 }
-        return "\(kind.rawValue) \(number)"
+        nextNumberedLayerName(kind.rawValue + " %lld")
     }
 
     /// A shape layer scaled to a new size draws its shape again at that size, so a rounded corner keeps its radius

@@ -72,6 +72,7 @@ struct GridSettingsSheet: View {
                     .scrubbable(sensitivity: 0.5, value: $appearance.opacity, range: GridAppearance.opacityRange)
                 AppSlider(value: Binding(get: { Double(appearance.opacity) }, set: { appearance.opacity = Int($0.rounded()) }),
                        in: Double(GridAppearance.opacityRange.lowerBound)...Double(GridAppearance.opacityRange.upperBound))
+                    .accessibilityLabel("Opacity")
                 TextField("Opacity", value: Binding(get: { appearance.opacity }, set: setOpacity), format: .number)
                     .frame(width: 48).multilineTextAlignment(.trailing)
                     .arrowSteps(value: { Double(appearance.opacity) }, change: { setOpacity(Int($0.rounded())) })

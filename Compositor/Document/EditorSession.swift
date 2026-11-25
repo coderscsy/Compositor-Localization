@@ -918,10 +918,7 @@ final class EditorSession {
 
     func addBlankLayer() {
         guard canEditLayers, let document else { return }
-        let names = Set(document.layers.map(\.name))
-        var number = 1
-        while names.contains("Layer \(number)") { number += 1 }
-        var layer = ImageLayer(name: "Layer \(number)", blankSize: document.size)
+        var layer = ImageLayer(name: nextLayerName(), blankSize: document.size)
         layer.parentID = activeLayer?.isGroup == true ? activeLayerID : activeLayer?.parentID
         if let parent = layer.parentID { collapsedGroupIDs.remove(parent) }
         let insertion = newLayerIndex(in: document.layers)
@@ -1074,7 +1071,7 @@ final class EditorSession {
         }
         defer { for folder in folders { folder.stopAccessingSecurityScopedResource() } }
         if !empty.isEmpty {
-            let message = empty.map { "“\($0)” has no images to import." }.joined(separator: "\n")
+            let message = empty.map { L10n.format("“%@” has no images to import.", $0) }.joined(separator: "\n")
             importError = [importError, message].compactMap { $0 }.joined(separator: "\n\n")
         }
         guard !urls.isEmpty else { return }
@@ -1425,14 +1422,16 @@ final class EditorSession {
     /// A new canvas's layer: empty, or filled with the background color in full-size pixels, so painting on it keeps
     /// every pixel's detail.
     private static func firstLayer(size: CGSize, background: CGColor?) -> ImageLayer {
+        let blankName = String(format: L10n.text("Layer %lld"), 1)
         guard let background, let context = try? BrushRaster.context(width: Int(size.width), height: Int(size.height), mask: false)
-        else { return ImageLayer(name: "Layer 1", blankSize: size) }
+        else { return ImageLayer(name: blankName, blankSize: size) }
         context.setFillColor(background)
         context.fill(CGRect(origin: .zero, size: size))
         guard let image = context.makeImage(), let thumbnail = try? PixelAdjust.thumbnail(of: image)
-        else { return ImageLayer(name: "Layer 1", blankSize: size) }
-        var layer = ImageLayer(name: "Background", blankSize: size)
-        layer.asset = ImportedImage(image: image, thumbnail: thumbnail, name: "Background")
+        else { return ImageLayer(name: blankName, blankSize: size) }
+        let name = L10n.text("Background")
+        var layer = ImageLayer(name: name, blankSize: size)
+        layer.asset = ImportedImage(image: image, thumbnail: thumbnail, name: name)
         return layer
     }
 

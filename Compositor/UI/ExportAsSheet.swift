@@ -121,9 +121,11 @@ struct ExportAsSheet: View {
                 Button { zoomBy(1) } label: { Image(systemName: "plus.magnifyingglass") }
                     .disabled(JPEGPreview.step(from: shownZoom, in: 1) == nil)
                     .help("Zoom in (⌘+), now \(percent). At 100% each pixel of the export is one pixel of the screen")
+                    .accessibilityLabel("Zoom In")
                 Button { zoomBy(-1) } label: { Image(systemName: "minus.magnifyingglass") }
                     .disabled(JPEGPreview.step(from: shownZoom, in: -1) == nil)
                     .help("Zoom out (⌘−), now \(percent)")
+                    .accessibilityLabel("Zoom Out")
             }
             .padding(.bottom, -8)
             ZStack {
@@ -180,6 +182,7 @@ struct ExportAsSheet: View {
                         Text("Quality")
                         HStack {
                             AppSlider(value: $options.quality, in: 0...1, step: 0.01).frame(width: 300)
+                                .accessibilityLabel("Quality")
                             Text("\(Int((options.quality * 100).rounded()))%").monospacedDigit().frame(width: 45, alignment: .trailing)
                         }
                     }
