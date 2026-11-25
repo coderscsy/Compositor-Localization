@@ -240,6 +240,7 @@ final class TransformOverlay: NSView {
         if let line = progressiveLine { drawProgressiveLine(line) }
         if let center = rgbSplitCenter ?? volumetricLight { drawRGBSplitCenter(center) }
         else if session.tool == .crop { drawCrop() }
+        else if let warp = session.meshWarpEdit { drawMeshWarp(warp) }
         else if let line = gradientLine { drawGradientLine(line) }
         else { drawTransformHandles() }
         drawSelection()
@@ -516,8 +517,68 @@ final class TransformOverlay: NSView {
         context.restoreGState()
     }
 
+    /// Draws the 3×3 bicubic Bézier Mesh Warp wireframe and its 16 draggable control points.
+    private func drawMeshWarp(_ edit: MeshWarpEdit) {
+        guard let docToView = documentToView, let context = NSGraphicsContext.current?.cgContext else { return }
+        context.saveGState()
+        let mesh = edit.mesh
+
+        // Draw curved isoparametric lines at u, v ∈ {0, 1/3, 2/3, 1}.
+        let stops: [CGFloat] = [0, 1.0 / 3.0, 2.0 / 3.0, 1]
+        let steps = 24
+        context.setStrokeColor(NSColor.controlAccentColor.withAlphaComponent(0.9).cgColor)
+        context.setLineWidth(1.2)
+        for s in stops {
+            // Horizontal curve (v = s)
+            for i in 0...steps {
+                let p = mesh.evaluate(u: CGFloat(i) / CGFloat(steps), v: s).applying(docToView)
+                if i == 0 { context.move(to: p) } else { context.addLine(to: p) }
+            }
+            // Vertical curve (u = s)
+            for j in 0...steps {
+                let p = mesh.evaluate(u: s, v: CGFloat(j) / CGFloat(steps)).applying(docToView)
+                if j == 0 { context.move(to: p) } else { context.addLine(to: p) }
+            }
+        }
+        context.strokePath()
+
+        // Draw the 16 control handles (corners as squares, interior/edge handles as circles).
+        for (idx, pt) in mesh.points.enumerated() {
+            let vp = pt.applying(docToView)
+            let isCorner = idx == 0 || idx == 3 || idx == 12 || idx == 15
+            let r: CGFloat = isCorner ? 5 : 4
+            let rect = CGRect(x: vp.x - r, y: vp.y - r, width: r * 2, height: r * 2)
+            context.setFillColor(isCorner ? NSColor.white.cgColor : NSColor.systemBlue.cgColor)
+            context.setStrokeColor(isCorner ? NSColor.black.cgColor : NSColor.white.cgColor)
+            context.setLineWidth(1.2)
+            if isCorner {
+                context.fill(rect); context.stroke(rect)
+            } else {
+                context.fillEllipse(in: rect); context.strokeEllipse(in: rect)
+            }
+        }
+        context.restoreGState()
+    }
+
     private func drawTransformHandles() {
         guard let geometry, let context = NSGraphicsContext.current?.cgContext else { return }
+        // Draw custom reference point (pivot) crosshair when non-center or during persistent transform.
+        if let docToView = documentToView,
+           let layer = session.activeLayer,
+           (session.transformPivot != CGPoint(x: 0.5, y: 0.5) || session.transformEdit?.persistent == true) {
+            let t = session.transformEdit?.draft ?? session.editedTransform(for: layer)
+            let pivotView = t.point(session.transformPivot).applying(docToView)
+            context.saveGState()
+            context.setStrokeColor(NSColor.controlAccentColor.cgColor)
+            context.setLineWidth(1.2)
+            context.strokeEllipse(in: CGRect(x: pivotView.x - 5, y: pivotView.y - 5, width: 10, height: 10))
+            context.move(to: CGPoint(x: pivotView.x - 8, y: pivotView.y))
+            context.addLine(to: CGPoint(x: pivotView.x + 8, y: pivotView.y))
+            context.move(to: CGPoint(x: pivotView.x, y: pivotView.y - 8))
+            context.addLine(to: CGPoint(x: pivotView.x, y: pivotView.y + 8))
+            context.strokePath()
+            context.restoreGState()
+        }
         let path = CGMutablePath()
         path.move(to: geometry.handles[0])
         for index in [2, 4, 6] { path.addLine(to: geometry.handles[index]) }

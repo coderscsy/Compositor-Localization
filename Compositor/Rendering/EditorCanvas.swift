@@ -101,6 +101,8 @@ final class CanvasView: NSView {
     }
     /// Index (0…3) of the Perspective Crop corner being dragged, if any.
     private var perspectiveCropCornerDrag: Int?
+    /// Index (0…15) of the 3×3 Mesh Warp control point being dragged, if any.
+    private var meshWarpPointDrag: Int?
     private var guideDragging = false {
         didSet { if !guideDragging { releaseDragCursor() } }
     }
@@ -740,6 +742,8 @@ final class CanvasView: NSView {
         _ = session.cropStraightenLine
         _ = session.cropPerspectiveMode
         _ = session.perspectiveCropQuad
+        _ = session.meshWarpEdit
+        _ = session.transformPivot
         _ = session.document?.paths
         _ = session.activePathID
         _ = session.selectedAnchor
@@ -1173,6 +1177,11 @@ final class CanvasView: NSView {
                let warped = session.distortedEffects(for: layer, effects: effects.image, inset: effects.inset) {
                 LayerRenderer.draw(warped.image, transform: warped.transform, center: center(warped.transform.center),
                     scale: scale, opacity: opacity, blendMode: blendMode(of: layer), mask: nil, in: context)
+                return
+            }
+            if stroke == nil, let warped = session.meshWarpPreview(for: layer) {
+                LayerRenderer.draw(warped.image, transform: warped.transform, center: center(warped.transform.center),
+                    scale: scale, opacity: plainOpacity, blendMode: blendMode(of: layer), mask: nil, in: context)
                 return
             }
             if stroke == nil, let distorted = session.distortPreview(for: layer) {
@@ -2099,6 +2108,14 @@ final class CanvasView: NSView {
         } else if session.tool == .crop {
             beginCropDrag(at: point)
         } else if session.tool == .move {
+            if let warp = session.meshWarpEdit, let document = session.document {
+                let viewPts = warp.mesh.points.map { session.viewport.viewPoint(from: $0, documentSize: document.size) }
+                if let idx = viewPts.indices.min(by: { hypot(viewPts[$0].x - point.x, viewPts[$0].y - point.y) < hypot(viewPts[$1].x - point.x, viewPts[$1].y - point.y) }),
+                   hypot(viewPts[idx].x - point.x, viewPts[idx].y - point.y) <= 16 {
+                    meshWarpPointDrag = idx
+                }
+                return
+            }
             // Double-click live text to edit it, without switching to the Type tool first.
             if event.clickCount >= 2, beginLiveTextEdit(at: point) { return }
             if beginGuideDrag(at: point) { return }
@@ -2199,6 +2216,12 @@ final class CanvasView: NSView {
             line.end = session.viewport.documentPoint(from: point, documentSize: document.size)
             session.cropStraightenLine = line
             transformOverlay.needsDisplay = true
+            return
+        }
+        if let idx = meshWarpPointDrag, let document = session.document {
+            let docPt = session.viewport.documentPoint(from: point, documentSize: document.size)
+            session.moveMeshWarpPoint(at: idx, to: docPt)
+            synchronizeDisplay()
             return
         }
         if let idx = perspectiveCropCornerDrag, var quad = session.perspectiveCropQuad, let document = session.document {
@@ -2429,6 +2452,10 @@ final class CanvasView: NSView {
             session.cropStraightening = false
             transformOverlay.needsDisplay = true
         }
+        if meshWarpPointDrag != nil {
+            meshWarpPointDrag = nil
+            synchronizeDisplay()
+        }
         if perspectiveCropCornerDrag != nil {
             perspectiveCropCornerDrag = nil
             transformOverlay.needsDisplay = true
@@ -2568,6 +2595,12 @@ final class CanvasView: NSView {
         } else if event.keyCode == 53, session.guideDrag != nil {
             session.cancelGuideDrag()
             guideDragging = false
+        } else if event.keyCode == 53, session.meshWarpEdit != nil {
+            meshWarpPointDrag = nil
+            session.cancelMeshWarp()
+        } else if [36, 76].contains(event.keyCode), session.meshWarpEdit != nil {
+            meshWarpPointDrag = nil
+            session.commitMeshWarp()
         } else if event.keyCode == 53, session.transformEdit != nil {
             transformDrag = nil
             session.cancelTransform()
@@ -3548,6 +3581,10 @@ extension CanvasView {
                     warped = GPUBlend.masked(warped, by: shape)
                 }
                 return GPUBlend.faded(warped, opacity)
+            }
+            if let warped = session.meshWarpPreview(for: layer) {
+                guard let image = placement.place(transient: warped.image, transform: warped.transform) else { unsupported = true; return nil }
+                return GPUBlend.faded(image, plainOpacity)
             }
             if let distorted = session.distortPreview(for: layer) {
                 guard var image = placement.place(distorted.image, transform: distorted.transform) else { unsupported = true; return nil }

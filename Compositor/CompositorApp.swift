@@ -470,6 +470,8 @@ struct CompositorApp: App {
                             Button("Convert to 8-Bit") { session.convertLayers(toSixteenBit: false) }
                         }
                         Divider()
+                        Button("Mesh Warp") { session.beginMeshWarp() }
+                            .disabled(!session.canTransform || session.activeLayer?.asset == nil || session.activeLayer?.isGroup == true)
                         Button("Flip Layer Horizontal") { session.flipLayers(horizontally: true) }
                             .disabled(!session.canTransform)
                         Button("Flip Layer Vertical") { session.flipLayers(horizontally: false) }

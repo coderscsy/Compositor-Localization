@@ -1626,6 +1626,28 @@
         }
       }
     },
+    "3×3 bicubic Mesh Warp transform": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3×3 bicubic Mesh Warp transform"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3×3 双三次贝塞尔网格变形"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3×3 雙三次貝茲網格彎曲變形"
+          }
+        }
+      }
+    },
     "5 by 5 Average": {
       "extractionState": "manual",
       "localizations": {
@@ -34577,6 +34599,28 @@
         }
       }
     },
+    "Independent horizontal and vertical skew (-75° to 75°)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Independent horizontal and vertical skew (-75° to 75°)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "独立水平与垂直斜切（-75° 至 75°）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "獨立水平與垂直傾斜（-75° 至 75°）"
+          }
+        }
+      }
+    },
     "Inner Bevel": {
       "localizations": {
         "en": {
@@ -41791,6 +41835,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "合併圖層"
+          }
+        }
+      }
+    },
+    "Mesh Warp": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mesh Warp"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网格变形"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "網格彎曲"
           }
         }
       }
@@ -56379,6 +56445,28 @@
         }
       }
     },
+    "Scale width and height together, about the reference point": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scale width and height together, about the reference point"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "围绕参考点等比缩放宽高"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "圍繞參考點等比例縮放寬高"
+          }
+        }
+      }
+    },
     "Scanlines": {
       "extractionState": "manual",
       "localizations": {
@@ -60300,6 +60388,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "大小"
+          }
+        }
+      }
+    },
+    "Skew": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skew"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "斜切"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "傾斜"
           }
         }
       }
@@ -67655,6 +67765,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "變換選區"
+          }
+        }
+      }
+    },
+    "Transform reference point (pivot) for rotation, scaling, and skew": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transform reference point (pivot) for rotation, scaling, and skew"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旋转、缩放与斜切的变换参考点（枢轴）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旋轉、縮放與傾斜的變形參考點（樞軸）"
           }
         }
       }

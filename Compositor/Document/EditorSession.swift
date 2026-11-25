@@ -332,6 +332,13 @@ final class EditorSession {
     var perspectiveCropQuad: CropPerspectiveQuad?
     var cropError: String?
     var transformEdit: TransformEdit?
+    /// Transform reference point in unit layer coordinates (0…1, 0…1). Default is center (0.5, 0.5).
+    var transformPivot = CGPoint(x: 0.5, y: 0.5)
+    var transformSkewX: Double = 0
+    var transformSkewY: Double = 0
+    /// Interactive 3×3 bicubic Mesh Warp transform session.
+    var meshWarpEdit: MeshWarpEdit?
+    @ObservationIgnored var meshWarpPreviewCache: MeshWarpPreviewCache?
     @ObservationIgnored var distortPreviewCache: [UUID: DistortPreviewCache] = [:]
     @ObservationIgnored var distortEffectsCache: [UUID: DistortEffectsCache] = [:]
     /// Document positions a move has just snapped to, drawn as guides while it lasts.
@@ -715,6 +722,8 @@ final class EditorSession {
     }
     func commitTransform() {
         snapGuides = ([], [])
+        transformSkewX = 0
+        transformSkewY = 0
         blendPreview = nil
         finishOpacityEdit()
         guard let edit = transformEdit else { return }
@@ -757,6 +766,8 @@ final class EditorSession {
     }
     func cancelTransform() {
         snapGuides = ([], [])
+        transformSkewX = 0
+        transformSkewY = 0
         guard let edit = transformEdit else { return }
         transformEdit = nil
         if let duplicate = transformDuplicate {

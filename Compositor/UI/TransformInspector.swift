@@ -6,7 +6,43 @@ struct TransformInspector: View {
         session.transformEdit?.draft ?? session.activeLayer.map { session.editedTransform(for: $0) }
             ?? LayerTransform(origin: .zero, size: CGSize(width: 1, height: 1))
     }
+    @State private var showsSkewPopover = false
+
     var body: some View {
+        if let warp = session.meshWarpEdit {
+            meshWarpBar(warp)
+        } else {
+            standardTransformBar
+        }
+    }
+
+    private func meshWarpBar(_ warp: MeshWarpEdit) -> some View {
+        HStack(spacing: 12) {
+            Text("Warp").font(ToolHeaderStyle.titleFont).padding(.leading, 18)
+            Picker("Preset", selection: Binding(get: { warp.preset }, set: { session.updateMeshWarpPreset($0) })) {
+                ForEach(WarpMeshPreset.allCases, id: \.self) { p in
+                    Text(L10n.text(p.rawValue)).tag(p)
+                }
+            }
+            .pickerStyle(.menu).fixedSize()
+            if warp.preset != .custom {
+                HStack(spacing: 6) {
+                    Text("Bend")
+                    AppSlider(value: Binding(get: { warp.bend * 100 },
+                                             set: { session.updateMeshWarpPreset(warp.preset, bend: $0 / 100) }), in: -100...100)
+                        .frame(width: 110)
+                    Text("\(Int((warp.bend * 100).rounded()))%").monospacedDigit().frame(width: 40, alignment: .trailing)
+                }
+            }
+            Button("Reset") { session.resetMeshWarp() }
+            Spacer(minLength: 0)
+            Button("Cancel") { session.cancelMeshWarp() }.configuredNativeShortcut(.escape)
+            Button("Apply") { session.commitMeshWarp() }.configuredNativeShortcut(.return)
+        }
+        .padding(.trailing, 18).toolHeaderBar()
+    }
+
+    private var standardTransformBar: some View {
         HStack(spacing: 12) {
           Text(L10n.text(session.transformTargetsMask ? "Transform Mask" : "Transform")).font(ToolHeaderStyle.titleFont)
               .padding(.leading, 18)
@@ -20,6 +56,8 @@ struct TransformInspector: View {
           ScrollView(.horizontal) {
             HStack(spacing: 12) {
             HStack(spacing: 12) {
+                PivotGridControl(pivot: $session.transformPivot)
+                    .help("Transform reference point (pivot) for rotation, scaling, and skew")
                 field("X", value: value.origin.x) { $0.origin.x = $1 }.fixedSize()
                 field("Y", value: value.origin.y) { $0.origin.y = $1 }.fixedSize()
                 TransformValueField(label: "W", fieldWidth: Self.longField, value: value.size.width, range: 1...30_000, finish: finish, returned: releaseFocus) { resize($0, width: true) }.fixedSize()
@@ -32,12 +70,20 @@ struct TransformInspector: View {
                 TransformValueField(label: "Scale", suffix: "%", fieldWidth: Self.shortField, value: value.scalePercent(pixelSize: pixelSize), range: 0.1...30_000, finish: finish, returned: releaseFocus) { number in
                     change { value in
                         guard number > 0 else { return }
-                        value = value.scaled(toPercent: number, pixelSize: pixelSize)
+                        value = value.scaled(toPercent: number, pixelSize: pixelSize, aroundUnitPivot: session.transformPivot)
                     }
-                }.fixedSize().help("Scale width and height together, about the center")
+                }.fixedSize().help("Scale width and height together, about the reference point")
                 TransformValueField(label: "°", fieldWidth: Self.shortField, value: value.rotation, range: -360...360, finish: finish, returned: releaseFocus) { number in
-                    change { $0.rotation = number.truncatingRemainder(dividingBy: 360) }
+                    change { $0 = $0.rotated(toDegrees: number, aroundUnitPivot: session.transformPivot) }
                 }.fixedSize()
+                Button("Skew") { showsSkewPopover.toggle() }
+                    .popover(isPresented: $showsSkewPopover, arrowEdge: .bottom) {
+                        SkewPopover(session: session)
+                    }
+                    .help("Independent horizontal and vertical skew (-75° to 75°)")
+                Button("Warp") { session.beginMeshWarp() }
+                    .disabled(!session.canTransform || session.activeLayer?.asset == nil || session.activeLayer?.isGroup == true)
+                    .help("3×3 bicubic Mesh Warp transform")
                 Picker("Sampling", selection: Binding(get: { value.sampling }, set: { sampling in
                     change { $0.sampling = sampling }
                 })) {
@@ -113,6 +159,7 @@ struct TransformInspector: View {
     private func resize(_ number: CGFloat, width: Bool) {
         change { value in
             guard number >= 1 else { return }
+            let anchor = value.point(session.transformPivot)
             if width {
                 if session.locksTransformRatio { value.size.height *= number / value.size.width }
                 value.size.width = number
@@ -120,7 +167,70 @@ struct TransformInspector: View {
                 if session.locksTransformRatio { value.size.width *= number / value.size.height }
                 value.size.height = number
             }
+            let moved = value.point(session.transformPivot)
+            value.origin.x += anchor.x - moved.x
+            value.origin.y += anchor.y - moved.y
         }
+    }
+}
+
+/// Compact 3×3 Photoshop-style reference point (pivot) picker.
+private struct PivotGridControl: View {
+    @Binding var pivot: CGPoint
+    private let coords: [CGFloat] = [0, 0.5, 1]
+
+    var body: some View {
+        VStack(spacing: 2) {
+            ForEach(0..<3, id: \.self) { row in
+                HStack(spacing: 2) {
+                    ForEach(0..<3, id: \.self) { col in
+                        let pt = CGPoint(x: coords[col], y: coords[row])
+                        let selected = abs(pivot.x - pt.x) < 0.01 && abs(pivot.y - pt.y) < 0.01
+                        Button { pivot = pt } label: {
+                            Rectangle()
+                                .fill(selected ? Color.accentColor : Color.white.opacity(0.35))
+                                .frame(width: 5, height: 5)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(3)
+        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+    }
+}
+
+private struct SkewPopover: View {
+    @Bindable var session: EditorSession
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Skew").font(.headline)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Horizontal").font(.caption)
+                    Spacer()
+                    Text(String(format: "%.1f°", session.transformSkewX)).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                Slider(value: Binding(get: { session.transformSkewX },
+                                      set: { session.applyTransformSkew(skewX: $0, skewY: session.transformSkewY) }), in: -75...75)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Vertical").font(.caption)
+                    Spacer()
+                    Text(String(format: "%.1f°", session.transformSkewY)).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                Slider(value: Binding(get: { session.transformSkewY },
+                                      set: { session.applyTransformSkew(skewX: session.transformSkewX, skewY: $0) }), in: -75...75)
+            }
+            HStack {
+                Spacer()
+                Button("Reset") { session.applyTransformSkew(skewX: 0, skewY: 0) }.controlSize(.small)
+            }
+        }
+        .padding(14).frame(width: 240)
     }
 }
 
