@@ -14,6 +14,16 @@ struct ShapeControls: View {
         if let kind = session.editingShapeLayer?.liveShape?.style.kind { return kind == .rectangle }
         return session.shapeKind == .rectangle
     }
+    private var showsSides: Bool {
+        if showsLine { return false }
+        if let kind = session.editingShapeLayer?.liveShape?.style.kind { return kind.hasSides }
+        return session.shapeKind.hasSides
+    }
+    private var showsStarRatio: Bool {
+        if showsLine { return false }
+        if let kind = session.editingShapeLayer?.liveShape?.style.kind { return kind == .star }
+        return session.shapeKind == .star
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -24,8 +34,8 @@ struct ShapeControls: View {
             })) {
                 ForEach(ShapeKind.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
             }
-            .pickerStyle(.segmented).labelsHidden().fixedSize()
-            .help("Shift-U (or Tab) steps through Rectangle, Ellipse and Line")
+            .pickerStyle(.menu).labelsHidden().fixedSize()
+            .help("Shift-U (or Tab) steps through shape kinds")
             HStack(spacing: 6) {
                 Text(L10n.text(showsStroke ? "Fill" : "Color"))
                 Button { session.openShapeFillPicker() } label: {
@@ -52,13 +62,31 @@ struct ShapeControls: View {
                     AppSlider(value: Binding(get: { min(50, strokeWidth.wrappedValue) },
                                           set: { strokeWidth.wrappedValue = $0.rounded() }), in: 0...50,
                               onEditingChanged: { if $0 { session.beginShapeStyleEdit() } else { session.finishShapeStyleEdit() } })
-                        .frame(width: 100).accessibilityLabel("Width")
+                        .frame(width: 80).accessibilityLabel("Width")
                     TextField("Width", value: strokeWidth, format: .number.precision(.fractionLength(0)))
-                        .frame(width: 48).textFieldStyle(.roundedBorder)
+                        .frame(width: 44).textFieldStyle(.roundedBorder)
                         .arrowSteps(value: { session.displayedStrokeWidth },
                                     change: { session.setDisplayedStrokeWidth($0) })
+                    if session.displayedStrokeWidth > 0 {
+                        Picker("Position", selection: Binding(get: { session.displayedStrokePosition },
+                                                              set: { session.setDisplayedStrokePosition($0) })) {
+                            ForEach(StrokePosition.allCases, id: \.self) { pos in
+                                Text(L10n.text(pos.rawValue)).tag(pos)
+                            }
+                        }
+                        .pickerStyle(.menu).labelsHidden().fixedSize()
+                        .help("Stroke alignment: Inside, Center, or Outside")
+                        Picker("Style", selection: Binding(get: { session.displayedStrokeLineStyle },
+                                                           set: { session.setDisplayedStrokeLineStyle($0) })) {
+                            ForEach(ShapeLineStyle.allCases, id: \.self) { style in
+                                Image(nsImage: LineSample.style(style)).accessibilityLabel(L10n.text(style.rawValue)).tag(style)
+                            }
+                        }
+                        .pickerStyle(.menu).labelsHidden().fixedSize()
+                        .help("Solid, dashed, or dotted stroke")
+                    }
                 }
-                .help("Stroke drawn inside the shape, in pixels. 0 draws none")
+                .help("Stroke width in pixels. 0 draws none")
             }
             if showsLine {
                 HStack(spacing: 6) {
@@ -123,6 +151,29 @@ struct ShapeControls: View {
                     .help(L10n.text(session.displayedCornerRadius <= 0
                           ? "Set a radius above 0 to use smooth corners."
                           : "Use smooth squircle corners at 60% smoothing, matching Figma's iOS setting"))
+            }
+            if showsSides {
+                HStack(spacing: 6) {
+                    Text("Sides")
+                    Stepper(value: Binding(get: { session.displayedShapeSides },
+                                           set: { session.setDisplayedShapeSides($0) }), in: 3...32) {
+                        Text("\(session.displayedShapeSides)").monospacedDigit().frame(width: 24, alignment: .trailing)
+                    }
+                    .fixedSize()
+                }
+                .help("Number of polygon sides or star points (3–32)")
+            }
+            if showsStarRatio {
+                HStack(spacing: 6) {
+                    Text("Inner Radius")
+                    AppSlider(value: Binding(get: { session.displayedStarInnerRatio * 100 },
+                                             set: { session.setDisplayedStarInnerRatio($0 / 100) }), in: 10...95,
+                              onEditingChanged: { if $0 { session.beginShapeStyleEdit() } else { session.finishShapeStyleEdit() } })
+                        .frame(width: 72).accessibilityLabel("Inner Radius")
+                    Text("\(Int((session.displayedStarInnerRatio * 100).rounded()))%")
+                        .monospacedDigit().frame(width: 34, alignment: .trailing)
+                }
+                .help("Star inner radius ratio (10%–95%)")
             }
             Spacer(minLength: 0)
         }

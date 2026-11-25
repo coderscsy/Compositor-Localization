@@ -1410,11 +1410,14 @@ final class CanvasView: NSView {
             context.strokeShapeLine(from: center(ends.start), to: center(ends.end), width: thickness,
                                     style: draft.lineStyle, cap: draft.lineCap)
         } else {
-            // The same inside stroke the finished shape gets, so it shows while the box is still being dragged rather
-            // than only once the mouse is released.
-            let path = draft.kind.path(in: rect, cornerRadius: draft.cornerRadius * scale, smoothing: draft.smoothing)
-            EditorSession.fillShape(path, color: draft.fill.nsColor.cgColor, stroke: draft.strokeColor.nsColor.cgColor,
-                                    strokeWidth: min(draft.strokeWidth * scale, min(rect.width, rect.height) / 2), in: context)
+            // Draw the exact shape & stroke style (inside/center/outside + dash) during the drag preview.
+            EditorSession.drawClosedShape(draft.kind, in: rect, cornerRadius: draft.cornerRadius * scale, smoothing: draft.smoothing,
+                                          sides: draft.sides, starInnerRatio: draft.starInnerRatio,
+                                          color: draft.fill.nsColor.cgColor,
+                                          stroke: draft.strokeWidth > 0 ? draft.strokeColor.nsColor.cgColor : nil,
+                                          strokeWidth: min(draft.strokeWidth * scale, min(rect.width, rect.height) / 2),
+                                          strokePosition: draft.strokePosition, strokeLineStyle: draft.strokeLineStyle,
+                                          in: context)
         }
         context.restoreGState()
     }

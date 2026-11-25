@@ -3,18 +3,64 @@ import AppKit
 nonisolated enum ShapeKind: String, CaseIterable, Codable, Sendable {
     case rectangle = "Rectangle"
     case ellipse = "Ellipse"
+    case triangle = "Triangle"
+    case polygon = "Polygon"
+    case star = "Star"
     case line = "Line"
+
+    var isClosed: Bool { self != .line }
+    var hasSides: Bool { self == .polygon || self == .star }
+
     /// The shape filling `rect`. A rectangle's corners round by `cornerRadius`, at most half its shorter
-    /// side (so a large radius makes a pill); ellipses ignore it. A line runs corner to corner and is stroked,
-    /// not filled (see `linePath`).
-    func path(in rect: CGRect, cornerRadius: CGFloat = 0, smoothing: Bool = false) -> CGPath {
-        if self == .ellipse { return CGPath(ellipseIn: rect, transform: nil) }
-        let radius = min(max(0, cornerRadius), rect.width / 2, rect.height / 2)
-        guard radius > 0 else { return CGPath(rect: rect, transform: nil) }
-        if self == .rectangle, smoothing {
-            return smoothedRectangle(in: rect, radius: radius)
+    /// side (so a large radius makes a pill); ellipses ignore it. Polygons and stars inscribe their vertices
+    /// inside `rect` starting from the top. A line runs corner to corner and is stroked, not filled.
+    func path(in rect: CGRect, cornerRadius: CGFloat = 0, smoothing: Bool = false,
+              sides: Int = 6, starInnerRatio: CGFloat = 0.45) -> CGPath {
+        switch self {
+        case .ellipse:
+            return CGPath(ellipseIn: rect, transform: nil)
+        case .triangle:
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.closeSubpath()
+            return path
+        case .polygon:
+            let count = max(3, min(32, sides))
+            let rx = rect.width / 2, ry = rect.height / 2
+            let cx = rect.midX, cy = rect.midY
+            let path = CGMutablePath()
+            for i in 0..<count {
+                let angle = -CGFloat.pi / 2 + CGFloat(i) * (2 * .pi / CGFloat(count))
+                let pt = CGPoint(x: cx + cos(angle) * rx, y: cy + sin(angle) * ry)
+                if i == 0 { path.move(to: pt) } else { path.addLine(to: pt) }
+            }
+            path.closeSubpath()
+            return path
+        case .star:
+            let points = max(3, min(32, sides))
+            let ratio = max(0.1, min(0.95, starInnerRatio))
+            let rx = rect.width / 2, ry = rect.height / 2
+            let cx = rect.midX, cy = rect.midY
+            let total = points * 2
+            let path = CGMutablePath()
+            for i in 0..<total {
+                let angle = -CGFloat.pi / 2 + CGFloat(i) * (.pi / CGFloat(points))
+                let scale: CGFloat = (i % 2 == 0) ? 1.0 : ratio
+                let pt = CGPoint(x: cx + cos(angle) * rx * scale, y: cy + sin(angle) * ry * scale)
+                if i == 0 { path.move(to: pt) } else { path.addLine(to: pt) }
+            }
+            path.closeSubpath()
+            return path
+        case .rectangle, .line:
+            let radius = min(max(0, cornerRadius), rect.width / 2, rect.height / 2)
+            guard radius > 0 else { return CGPath(rect: rect, transform: nil) }
+            if self == .rectangle, smoothing {
+                return smoothedRectangle(in: rect, radius: radius)
+            }
+            return CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
         }
-        return CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
     }
 
     /// Figma's cubic–arc–cubic corner construction at 60% smoothing (the iOS squircle match).
@@ -173,16 +219,36 @@ nonisolated struct LayerShapeStyle: Codable, Equatable, Sendable {
     /// was before caps could be chosen, so those save as lines always have.
     var lineStyle: ShapeLineStyle? = nil
     var lineCap: ShapeLineCap? = nil
-    /// A rectangle or ellipse's stroke, drawn inside its box (format version 22). Nil means no stroke, as every
-    /// shape was before one could be set. Width is document pixels; the color is kept only while the width is above 0.
+    /// A closed shape's stroke (format version 22; center/outside position & dash style in format version 30).
+    /// Nil means no stroke. Width is document pixels; the color is kept only while the width is above 0.
     var strokeWidth: CGFloat? = nil
     var strokeRed: CGFloat? = nil
     var strokeGreen: CGFloat? = nil
     var strokeBlue: CGFloat? = nil
+    /// Polygon side count or star point count (3…32, format version 30). Nil for other shapes.
+    var sides: Int? = nil
+    /// Star inner radius ratio (0.1…0.95, format version 30). Nil for non-star shapes.
+    var starInnerRatio: CGFloat? = nil
+    /// Closed-shape stroke alignment (format version 30). Nil means `.inside`.
+    var strokePosition: StrokePosition? = nil
+    /// Closed-shape stroke dash pattern (format version 30). Nil means `.solid`.
+    var strokeLineStyle: ShapeLineStyle? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var strokeColor: PaletteColor? {
         guard let strokeRed, let strokeGreen, let strokeBlue else { return nil }
         return PaletteColor(red: strokeRed, green: strokeGreen, blue: strokeBlue)
+    }
+
+    var effectiveSides: Int { max(3, min(32, sides ?? (kind == .star ? 5 : 6))) }
+    var effectiveStarInnerRatio: CGFloat { max(0.1, min(0.95, starInnerRatio ?? 0.45)) }
+    var effectiveStrokePosition: StrokePosition { strokePosition ?? .inside }
+    var effectiveStrokeLineStyle: ShapeLineStyle { strokeLineStyle ?? .solid }
+
+    /// True when any version-30-only shape feature is in use.
+    var hasVersion30Features: Bool {
+        kind == .triangle || kind == .polygon || kind == .star
+            || sides != nil || starInnerRatio != nil
+            || strokePosition != nil || strokeLineStyle != nil
     }
 
     /// Remembers a stroke, or forgets it when the width is 0. Lines have none: their thickness is `lineWidth`.
@@ -193,6 +259,8 @@ nonisolated struct LayerShapeStyle: Codable, Equatable, Sendable {
             strokeRed = nil
             strokeGreen = nil
             strokeBlue = nil
+            strokePosition = nil
+            strokeLineStyle = nil
             return
         }
         strokeWidth = width
@@ -236,11 +304,15 @@ struct ShapeDraft: Equatable {
     /// A line's dashes and caps, fixed when the drag starts.
     var lineStyle = ShapeLineStyle.solid
     var lineCap = ShapeLineCap.square
-    /// The fill, a line's thickness, and a rectangle or ellipse's inside stroke, fixed when the drag starts.
+    /// The fill, a line's thickness, and a closed shape's stroke, fixed when the drag starts.
     var fill = PaletteColor.black
     var lineWidth: CGFloat = 4
     var strokeWidth: CGFloat = 0
     var strokeColor = PaletteColor.black
+    var strokePosition = StrokePosition.inside
+    var strokeLineStyle = ShapeLineStyle.solid
+    var sides: Int = 6
+    var starInnerRatio: CGFloat = 0.45
 }
 
 extension EditorSession {
@@ -258,6 +330,12 @@ extension EditorSession {
         let line = shapeKind == .line ? editingLineLayer?.liveShape?.style : nil
         let radius = editing?.kind == .rectangle ? editing?.cornerRadius : nil
         let smooth = editing?.kind == .rectangle ? editing?.smoothing == true : nil
+        let sides = shapeKind.hasSides
+            ? (editing?.kind == shapeKind ? editing?.effectiveSides : nil) ?? (shapeKind == .star ? shapeStarPoints : shapeSides)
+            : 6
+        let innerRatio = shapeKind == .star
+            ? (editing?.kind == .star ? editing?.effectiveStarInnerRatio : nil) ?? CGFloat(shapeStarInnerRatio)
+            : 0.45
         shapeDraft = ShapeDraft(kind: shapeKind, anchor: anchor, rect: CGRect(origin: anchor, size: .zero),
                                 cornerRadius: shapeKind == .rectangle ? (radius ?? CGFloat(shapeCornerRadius)) : 0,
                                 smoothing: shapeKind == .rectangle && (smooth ?? shapeSmoothing),
@@ -266,7 +344,11 @@ extension EditorSession {
                                 fill: nextShapeFill,
                                 lineWidth: line?.lineWidth ?? CGFloat(shapeLineWidth),
                                 strokeWidth: shapeKind == .line ? 0 : (editing == nil ? CGFloat(shapeStrokeWidth) : (editing?.strokeWidth ?? 0)),
-                                strokeColor: editing?.strokeColor ?? shapeStrokeColor)
+                                strokeColor: editing?.strokeColor ?? shapeStrokeColor,
+                                strokePosition: editing?.effectiveStrokePosition ?? shapeStrokePosition,
+                                strokeLineStyle: editing?.effectiveStrokeLineStyle ?? shapeStrokeLineStyle,
+                                sides: sides,
+                                starInnerRatio: innerRatio)
     }
 
     /// The line being dragged, from where it began to where the pointer is, in document pixels.
@@ -382,8 +464,16 @@ extension EditorSession {
                                         blue: draft.fill.blue, cornerRadius: draft.cornerRadius, smoothing: draft.smoothing ? true : nil,
                                         lineWidth: line ? thickness : nil, start: start, end: finish,
                                         lineStyle: line && draft.lineStyle != .solid ? draft.lineStyle : nil,
-                                        lineCap: line && draft.lineCap != .round ? draft.lineCap : nil)
-            if !line { style.setStroke(width: draft.strokeWidth, color: draft.strokeColor) }
+                                        lineCap: line && draft.lineCap != .round ? draft.lineCap : nil,
+                                        sides: draft.kind.hasSides ? draft.sides : nil,
+                                        starInnerRatio: draft.kind == .star ? draft.starInnerRatio : nil)
+            if !line {
+                style.setStroke(width: draft.strokeWidth, color: draft.strokeColor)
+                if (style.strokeWidth ?? 0) > 0 {
+                    style.strokePosition = draft.strokePosition == .inside ? nil : draft.strokePosition
+                    style.strokeLineStyle = draft.strokeLineStyle == .solid ? nil : draft.strokeLineStyle
+                }
+            }
             let image = try Self.shapeImage(style, size: rect.size)
             addPixelLayer(image, at: rect.origin, name: nextShapeName(draft.kind), editName: draft.kind.rawValue,
                           dropsSelection: false, shape: LayerShape(style: style, image: image))
@@ -439,13 +529,14 @@ extension EditorSession {
         return image
     }
 
-    /// The shape filling its box, anti-aliased where it curves. A rectangle or ellipse's stroke is drawn inside that
-    /// box: the path is filled, then stroked at twice the width and clipped to the path, so the outer edge stays put
-    /// and the fill gives way. The width is capped at half the shorter side, so it meets in the middle and no further.
+    /// The shape filling its box, anti-aliased where it curves. Supports inside, center, and outside strokes as well
+    /// as solid, dashed, long-dash, and dotted stroke line styles.
     nonisolated static func shapeImage(_ kind: ShapeKind, size: CGSize, color: PaletteColor, cornerRadius: CGFloat = 0, smoothing: Bool = false,
                            lineWidth: CGFloat = 0, start: CGPoint? = nil, end: CGPoint? = nil,
                            lineStyle: ShapeLineStyle = .solid, lineCap: ShapeLineCap = .round,
-                           strokeWidth: CGFloat = 0, strokeColor: PaletteColor? = nil) throws -> CGImage {
+                           strokeWidth: CGFloat = 0, strokeColor: PaletteColor? = nil,
+                           strokePosition: StrokePosition = .inside, strokeLineStyle: ShapeLineStyle = .solid,
+                           sides: Int = 6, starInnerRatio: CGFloat = 0.45) throws -> CGImage {
         let context = try BrushRaster.context(width: Int(size.width), height: Int(size.height), mask: false)
         let bounds = CGRect(origin: .zero, size: size)
         if kind == .line {
@@ -461,12 +552,108 @@ extension EditorSession {
             guard let image = context.makeImage() else { throw ExportError.render }
             return image
         }
-        let path = kind.path(in: bounds, cornerRadius: cornerRadius, smoothing: smoothing)
-        fillShape(path, color: CGColor(srgbRed: color.red, green: color.green, blue: color.blue, alpha: 1),
-                  stroke: strokeColor.map { CGColor(srgbRed: $0.red, green: $0.green, blue: $0.blue, alpha: 1) },
-                  strokeWidth: min(strokeWidth, min(size.width, size.height) / 2), in: context)
+        let maxStroke = min(size.width, size.height) / 2
+        let clampedStroke = min(strokeWidth, maxStroke)
+        let fillCG = CGColor(srgbRed: color.red, green: color.green, blue: color.blue, alpha: 1)
+        let strokeCG = strokeColor.map { CGColor(srgbRed: $0.red, green: $0.green, blue: $0.blue, alpha: 1) }
+        drawClosedShape(kind, in: bounds, cornerRadius: cornerRadius, smoothing: smoothing,
+                        sides: sides, starInnerRatio: starInnerRatio,
+                        color: fillCG, stroke: strokeCG, strokeWidth: clampedStroke,
+                        strokePosition: strokePosition, strokeLineStyle: strokeLineStyle, in: context)
         guard let image = context.makeImage() else { throw ExportError.render }
         return image
+    }
+
+    /// Draws any closed shape into `bounds` with fill, optional stroke (inside/center/outside), and optional dash pattern.
+    nonisolated static func drawClosedShape(_ kind: ShapeKind, in bounds: CGRect, cornerRadius: CGFloat, smoothing: Bool,
+                                            sides: Int, starInnerRatio: CGFloat,
+                                            color: CGColor, stroke: CGColor?, strokeWidth: CGFloat,
+                                            strokePosition: StrokePosition = .inside,
+                                            strokeLineStyle: ShapeLineStyle = .solid,
+                                            in context: CGContext) {
+        let hasStroke = strokeWidth > 0 && stroke != nil
+        let inset: CGFloat
+        if hasStroke {
+            switch strokePosition {
+            case .inside: inset = 0
+            case .center: inset = min(strokeWidth / 2, min(bounds.width, bounds.height) / 2 - 0.5)
+            case .outside: inset = min(strokeWidth, min(bounds.width, bounds.height) / 2 - 0.5)
+            }
+        } else {
+            inset = 0
+        }
+        let shapeRect = inset > 0 ? bounds.insetBy(dx: inset, dy: inset) : bounds
+        let effectiveRadius = max(0, cornerRadius - inset)
+        let path = kind.path(in: shapeRect, cornerRadius: effectiveRadius, smoothing: smoothing,
+                             sides: sides, starInnerRatio: starInnerRatio)
+        guard hasStroke, let stroke else {
+            context.setFillColor(color)
+            context.addPath(path)
+            context.fillPath()
+            return
+        }
+        if strokePosition == .inside && strokeLineStyle == .solid {
+            fillShape(path, color: color, stroke: stroke, strokeWidth: strokeWidth, in: context)
+            return
+        }
+        let dashLengths = strokeLineStyle.pattern.map { $0 * strokeWidth }
+        switch strokePosition {
+        case .inside:
+            // Dashed inside stroke: fill first, then clip to path and stroke at 2x width so gaps cleanly show the fill.
+            context.setFillColor(color)
+            context.addPath(path)
+            context.fillPath()
+            context.saveGState()
+            context.addPath(path)
+            context.clip()
+            context.setStrokeColor(stroke)
+            context.setLineWidth(strokeWidth * 2)
+            context.setLineJoin(.miter)
+            context.setMiterLimit(10)
+            context.setLineCap(strokeLineStyle == .dotted ? .round : .butt)
+            context.setLineDash(phase: 0, lengths: strokeLineStyle == .dotted ? strokeLineStyle.dashes(width: strokeWidth) : dashLengths)
+            context.addPath(path)
+            context.strokePath()
+            context.restoreGState()
+        case .center:
+            context.setFillColor(color)
+            context.addPath(path)
+            context.fillPath()
+            context.saveGState()
+            context.setStrokeColor(stroke)
+            context.setLineWidth(strokeWidth)
+            context.setLineJoin(.miter)
+            context.setMiterLimit(10)
+            context.setLineCap(strokeLineStyle == .dotted ? .round : .butt)
+            if !dashLengths.isEmpty {
+                context.setLineDash(phase: 0, lengths: strokeLineStyle == .dotted ? strokeLineStyle.dashes(width: strokeWidth) : dashLengths)
+            }
+            context.addPath(path)
+            context.strokePath()
+            context.restoreGState()
+        case .outside:
+            // Draw stroke outside `path` by even-odd clipping to `bounds - path` and stroking at 2x width, then fill cleanly.
+            context.saveGState()
+            let clip = CGMutablePath()
+            clip.addRect(bounds.insetBy(dx: -strokeWidth - 2, dy: -strokeWidth - 2))
+            clip.addPath(path)
+            context.addPath(clip)
+            context.clip(using: .evenOdd)
+            context.setStrokeColor(stroke)
+            context.setLineWidth(strokeWidth * 2)
+            context.setLineJoin(.miter)
+            context.setMiterLimit(10)
+            context.setLineCap(strokeLineStyle == .dotted ? .round : .butt)
+            if !dashLengths.isEmpty {
+                context.setLineDash(phase: 0, lengths: strokeLineStyle == .dotted ? strokeLineStyle.dashes(width: strokeWidth) : dashLengths)
+            }
+            context.addPath(path)
+            context.strokePath()
+            context.restoreGState()
+            context.setFillColor(color)
+            context.addPath(path)
+            context.fillPath()
+        }
     }
 
     /// Fills `path`, with an inside stroke `strokeWidth` wide when there is one: the whole shape in the stroke color,
@@ -498,7 +685,9 @@ extension EditorSession {
                        smoothing: style.smoothing == true, lineWidth: style.lineWidth ?? 0,
                        start: style.start, end: style.end, lineStyle: style.lineStyle ?? .solid,
                        lineCap: style.lineCap ?? .round,
-                       strokeWidth: style.kind == .line ? 0 : (style.strokeWidth ?? 0), strokeColor: style.strokeColor)
+                       strokeWidth: style.kind == .line ? 0 : (style.strokeWidth ?? 0), strokeColor: style.strokeColor,
+                       strokePosition: style.effectiveStrokePosition, strokeLineStyle: style.effectiveStrokeLineStyle,
+                       sides: style.effectiveSides, starInnerRatio: style.effectiveStarInnerRatio)
     }
 
     /// The rectangle or ellipse the Shape bar edits: the only selected layer, still the shape it was drawn as.
@@ -566,6 +755,34 @@ extension EditorSession {
         return shapeSmoothing
     }
 
+    var displayedShapeSides: Int {
+        if let shape = editingShapeLayer?.liveShape, shape.style.kind.hasSides {
+            return shape.style.effectiveSides
+        }
+        return shapeKind == .star ? shapeStarPoints : shapeSides
+    }
+
+    var displayedStarInnerRatio: Double {
+        if let shape = editingShapeLayer?.liveShape, shape.style.kind == .star {
+            return Double(shape.style.effectiveStarInnerRatio)
+        }
+        return shapeStarInnerRatio
+    }
+
+    var displayedStrokePosition: StrokePosition {
+        if let shape = editingShapeLayer?.liveShape {
+            return shape.style.effectiveStrokePosition
+        }
+        return shapeStrokePosition
+    }
+
+    var displayedStrokeLineStyle: ShapeLineStyle {
+        if let shape = editingShapeLayer?.liveShape {
+            return shape.style.effectiveStrokeLineStyle
+        }
+        return shapeStrokeLineStyle
+    }
+
     func beginShapeStyleEdit() {
         guard shapeStyleEditLayerID == nil, let layer = editingShapeLayer ?? editingLineLayer, canEditLayers else { return }
         if shapeColorPickerIsOpen { closeColorPicker(commit: true) }
@@ -625,6 +842,39 @@ extension EditorSession {
     func setDisplayedShapeSmoothing(_ on: Bool) {
         guard editingShapeLayer?.liveShape?.style.kind == .rectangle else { shapeSmoothing = on; return }
         changeLiveShape { $0.smoothing = on ? true : nil }
+    }
+
+    func setDisplayedShapeSides(_ count: Int) {
+        let clamped = max(3, min(32, count))
+        if let kind = editingShapeLayer?.liveShape?.style.kind, kind.hasSides {
+            changeLiveShape { $0.sides = clamped }
+        } else if shapeKind == .star {
+            shapeStarPoints = clamped
+        } else {
+            shapeSides = clamped
+        }
+    }
+
+    func setDisplayedStarInnerRatio(_ ratio: Double) {
+        let clamped = ratio.isFinite ? min(0.95, max(0.1, ratio)) : 0.45
+        guard editingShapeLayer?.liveShape?.style.kind == .star else { shapeStarInnerRatio = clamped; return }
+        changeLiveShape { $0.starInnerRatio = CGFloat(clamped) }
+    }
+
+    func setDisplayedStrokePosition(_ position: StrokePosition) {
+        guard editingShapeLayer != nil else { shapeStrokePosition = position; return }
+        changeLiveShape { style in
+            guard (style.strokeWidth ?? 0) > 0 else { return }
+            style.strokePosition = position == .inside ? nil : position
+        }
+    }
+
+    func setDisplayedStrokeLineStyle(_ lineStyle: ShapeLineStyle) {
+        guard editingShapeLayer != nil else { shapeStrokeLineStyle = lineStyle; return }
+        changeLiveShape { style in
+            guard (style.strokeWidth ?? 0) > 0 else { return }
+            style.strokeLineStyle = lineStyle == .solid ? nil : lineStyle
+        }
     }
 
     func openShapeFillPicker() {

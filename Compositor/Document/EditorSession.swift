@@ -412,14 +412,20 @@ final class EditorSession {
     /// Corner radius in pixels for rectangles the Shape tool draws; 0 keeps the corners square.
     var shapeCornerRadius: Double = 0
     var shapeSmoothing = false
+    /// Sides for Polygon (default 6) and points for Star (default 5), plus star inner radius ratio.
+    var shapeSides: Int = 6
+    var shapeStarPoints: Int = 5
+    var shapeStarInnerRatio: Double = 0.45
     /// A Line shape's thickness in document pixels.
     var shapeLineWidth: Double = 4
     /// A Line shape's dash pattern and the finish on its ends (and on each dash).
     var shapeLineStyle = ShapeLineStyle.solid
     var shapeLineCap = ShapeLineCap.square
-    /// The next rectangle or ellipse's inside stroke. 0 draws none, which is how every shape started.
+    /// The next closed shape's stroke settings. 0 draws none.
     var shapeStrokeWidth: Double = 0
     var shapeStrokeColor = PaletteColor.black
+    var shapeStrokePosition = StrokePosition.inside
+    var shapeStrokeLineStyle = ShapeLineStyle.solid
     /// A fill picked in the Shape bar, and the foreground color when it was: the next shape uses it until the
     /// foreground changes. Otherwise the next shape is the foreground color.
     var shapeFillChoice: (fill: PaletteColor, foreground: PaletteColor)?

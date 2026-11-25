@@ -18,7 +18,7 @@ extension UTType {
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
     /// Note: version 27 was historically used by the GIF branch, so new features after 26 begin at 28.
-    static let current = 29
+    static let current = 30
     /// Every version `load` accepts (1 through `current`, including historical GIF v27).
     static let supported = Set(1...current)
 
@@ -393,14 +393,26 @@ actor ProjectStore {
             if let shape = layer.shape, shape.lineStyle != nil || shape.lineCap != nil {
                 guard manifest.version >= 15, shape.kind == .line else { throw ProjectError.invalid }
             }
-            // A rectangle or ellipse's inside stroke arrived in version 22, and only those shapes have one.
+            // A closed shape's stroke arrived in version 22 (Rectangle/Ellipse), and extended shapes/stroke positions/dashes arrived in version 30.
             if let shape = layer.shape,
                shape.strokeWidth != nil || shape.strokeRed != nil || shape.strokeGreen != nil || shape.strokeBlue != nil {
-                guard manifest.version >= 22, shape.kind == .rectangle || shape.kind == .ellipse,
+                guard manifest.version >= 22, shape.kind != .line,
                       let width = shape.strokeWidth, width.isFinite, width > 0, width <= 5000,
                       let red = shape.strokeRed, let green = shape.strokeGreen, let blue = shape.strokeBlue,
                       red.isFinite, green.isFinite, blue.isFinite,
                       (0...1).contains(red), (0...1).contains(green), (0...1).contains(blue) else { throw ProjectError.invalid }
+            }
+            if let shape = layer.shape, shape.hasVersion30Features {
+                guard manifest.version >= 30 else { throw ProjectError.invalid }
+                if let sides = shape.sides {
+                    guard shape.kind.hasSides, (3...32).contains(sides) else { throw ProjectError.invalid }
+                }
+                if let ratio = shape.starInnerRatio {
+                    guard shape.kind == .star, ratio.isFinite, (0.1...0.95).contains(ratio) else { throw ProjectError.invalid }
+                }
+                if shape.strokePosition != nil || shape.strokeLineStyle != nil {
+                    guard shape.kind != .line, (shape.strokeWidth ?? 0) > 0 else { throw ProjectError.invalid }
+                }
             }
             // Per-layer edit locks arrived in version 23; transparent-pixel lock only applies to non-group, non-adjustment layers.
             if let lock = layer.lock, !lock.isEmpty {

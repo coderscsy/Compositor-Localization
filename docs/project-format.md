@@ -84,3 +84,5 @@ Version 26 adds the `Dissolve`, `Darker Color`, and `Lighter Color` blend modes,
 Version 27 was reserved by legacy GIF timeline builds. Version 28 adds extended layer styles on `effects`: `bevelEmboss`, `gradientOverlay`, `patternOverlay`, explicit `stroke.position` (`Outside` / `Center` / `Inside`), per-effect `blendMode`, and shadow/glow `spread`. Files declaring versions 1–27 cannot contain these version-28 style fields, and older app builds reject v28.
 
 Version 29 adds non-destructive live Gradient Fill layers (`gradientFill` on `ProjectLayerRecord`, storing multi-stop gradient stops, shape, angle, scale, and reversal alongside the rendered raster). Files declaring versions 1–28 cannot contain `gradientFill`, and older app builds reject v29.
+
+Version 30 extends `LayerShapeStyle` with `Triangle`, `Polygon`, and `Star` shape kinds (`sides` 3–32, `starInnerRatio` 0.1–0.95), closed-shape `strokePosition` (`Inside` / `Center` / `Outside`), and closed-shape `strokeLineStyle` (`Solid` / `Dotted` / `Dashed` / `Long Dash`). Files declaring versions 1–29 cannot contain these shape kinds or fields, and older app builds reject v30.
