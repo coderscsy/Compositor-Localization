@@ -18,7 +18,7 @@ extension UTType {
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
     /// Note: version 27 was historically used by the GIF branch, so new features after 26 begin at 28.
-    static let current = 31
+    static let current = 32
     /// Every version `load` accepts (1 through `current`, including historical GIF v27).
     static let supported = Set(1...current)
 
@@ -70,6 +70,8 @@ nonisolated struct ProjectLayerRecord: Codable, Sendable {
     var text: LayerTextStyle? = nil
     /// Non-destructive live Gradient Fill parameters (format version 29).
     var gradientFill: LiveGradientFill? = nil
+    /// Non-destructive vector mask (format version 32).
+    var vectorMask: LayerVectorMask? = nil
     /// The embedded animation and masks scoped to individual frames. Missing before version 27.
     var gif: ProjectGIFRecord? = nil
 }
@@ -437,6 +439,9 @@ actor ProjectStore {
             if let gradientFill = layer.gradientFill {
                 guard manifest.version >= 29, gradientFill.isValid,
                       layer.isGroup != true, layer.adjustment == nil else { throw ProjectError.invalid }
+            }
+            if let vectorMask = layer.vectorMask {
+                guard manifest.version >= 32, vectorMask.isValid else { throw ProjectError.invalid }
             }
             if let text = layer.text {
                 // Per-letter colors arrived in version 10, per-letter faces in version 11.

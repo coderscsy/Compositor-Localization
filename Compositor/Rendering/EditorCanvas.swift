@@ -1129,6 +1129,14 @@ final class CanvasView: NSView {
                 defer { normalBlendLayerID = nil }
                 if SeparableBlend.draw(mode, blendIf: blendIf, in: context, body: { drawOwn(id, $0) }) { return }
             }
+            let hasVectorMask = layer.vectorMask?.isEnabled == true
+            if let vm = layer.vectorMask, vm.isEnabled {
+                let docCorner = center(.zero)
+                let docToCtx = CGAffineTransform(translationX: docCorner.x, y: docCorner.y).scaledBy(x: scale, y: scale)
+                context.saveGState()
+                vm.clipContext(context, documentSize: document.size, transform: docToCtx)
+            }
+            defer { if hasVectorMask { context.restoreGState() } }
             let stroke = session.brushStroke?.layer.id == layer.id ? session.brushStroke
                 : session.gradientEdit?.raster.layer.id == layer.id ? session.gradientEdit?.raster
                 : session.pixelMove?.raster.layer.id == layer.id ? session.pixelMove?.raster : nil
@@ -1321,7 +1329,12 @@ final class CanvasView: NSView {
         }
         let area = context.boundingBoxOfClipPath
         live.adjustmentClip = { [weak self] id, ctx in
-            guard let self, let layer = byID[id], layer.mask?.isEnabled == true else { return }
+            guard let self, let layer = byID[id] else { return }
+            if let vm = layer.vectorMask, vm.isEnabled {
+                let docToCtx = CGAffineTransform(translationX: corner.x, y: corner.y).scaledBy(x: scale, y: scale)
+                vm.clipContext(ctx, documentSize: document.size, transform: docToCtx)
+            }
+            guard layer.mask?.isEnabled == true else { return }
             // Mid-stroke the mask exists only as the edit's tiles, so the adjustment is clipped by those, the same
             // way a folder's mask is — otherwise the stroke would only appear once it was committed.
             if let edit = self.liveMaskEdit(for: id),
@@ -1339,15 +1352,26 @@ final class CanvasView: NSView {
         }
         live.prepareStacks(document.renderLayers.map(\.id), parent: { byID[$0]?.parentID }, blend: { byID[$0].map { session.displayedBlendMode(for: $0) } ?? .normal })
         FolderMaskClip.draw(document.renderLayers.map(\.id), parent: { byID[$0]?.parentID }, clip: { id in
-            guard let folder = byID[id], let mask = folder.mask, mask.isEnabled else { return nil }
-            if let edit = liveMaskEdit(for: folder.id),
-               let clip = liveFolderMaskClip(edit, area: area, scale: scale, center: center, in: context) {
-                return clip
+            guard let folder = byID[id] else { return nil }
+            let vectorMask = folder.vectorMask.flatMap { $0.isEnabled ? $0 : nil }
+            var rasterClip: ((CGContext) -> Void)?
+            if let mask = folder.mask, mask.isEnabled {
+                if let edit = liveMaskEdit(for: folder.id),
+                   let clip = liveFolderMaskClip(edit, area: area, scale: scale, center: center, in: context) {
+                    rasterClip = clip
+                } else {
+                    let transform = session.displayedTransform(for: folder)
+                    let clip = FolderMaskClip(image: displayImage(mask.asset.image, width: transform.size.width * scale, in: context), transform: transform)
+                    let origin = center(transform.center)
+                    rasterClip = { clip.apply(scale: scale, center: origin, in: $0) }
+                }
             }
-            let transform = session.displayedTransform(for: folder)
-            let clip = FolderMaskClip(image: displayImage(mask.asset.image, width: transform.size.width * scale, in: context), transform: transform)
-            let origin = center(transform.center)
-            return { clip.apply(scale: scale, center: origin, in: $0) }
+            guard rasterClip != nil || vectorMask != nil else { return nil }
+            let docToCtx = CGAffineTransform(translationX: corner.x, y: corner.y).scaledBy(x: scale, y: scale)
+            return { ctx in
+                rasterClip?(ctx)
+                vectorMask?.clipContext(ctx, documentSize: document.size, transform: docToCtx)
+            }
         }, isolated: { id in
             guard let folder = byID[id], isIsolated(folder) else { return nil }
             return IsolatedFolderStyle(opacity: folder.effectiveOpacity(in: byID, isIsolated: isIsolated),
@@ -3388,7 +3412,13 @@ extension CanvasView {
         var ownPrint: String?
         func own(_ layer: ImageLayer) -> CIImage? {
             ownPrint = nil
-            let image = ownImage(layer)
+            var image = ownImage(layer)
+            if let img = image, let vm = layer.vectorMask, vm.isEnabled,
+               let maskImg = vm.rasterizedMask(width: document.width, height: document.height),
+               let placedMask = placement.place(transient: maskImg, transform: LayerTransform(origin: .zero, size: document.size), mask: true) {
+                image = GPUBlend.masked(img, by: placedMask)
+                ownPrint = nil
+            }
             prints.append(ownPrint ?? transient())
             return image
         }
@@ -3586,6 +3616,11 @@ extension CanvasView {
             if layer.mask?.isEnabled == true, let edit = liveMaskEdit(for: layer.id), let placed = paintedMask(edit) {
                 multiply(placed)
             } else if let own = layer.mask?.enabledImage, let placed = placement.place(own, transform: layer.transform, mask: true) {
+                multiply(placed)
+            }
+            if let vm = layer.vectorMask, vm.isEnabled,
+               let maskImg = vm.rasterizedMask(width: document.width, height: document.height),
+               let placed = placement.place(transient: maskImg, transform: LayerTransform(origin: .zero, size: document.size), mask: true) {
                 multiply(placed)
             }
             if folders {

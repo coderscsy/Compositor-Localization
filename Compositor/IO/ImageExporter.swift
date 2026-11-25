@@ -46,6 +46,7 @@ actor ImageExporter {
             }
             try LiveMaskGraph.validate(snapshot.manifest.layers)
             var liveRef: LiveMaskRenderer?
+            let docSize = CGSize(width: width, height: height)
             let live = LiveMaskRenderer(bounds: CGRect(x: 0, y: 0, width: width, height: height), source: { records[$0]?.maskSourceID }) { id, target in
                 guard let layer = records[id], let asset = snapshot.images[id] else { return }
                 let image = sixteenBit ? (try? DeepLayer.flattened(asset)) ?? asset.image : asset.image
@@ -54,6 +55,11 @@ actor ImageExporter {
                 let mask = snapshot.mask(for: layer).flatMap { $0.clipImage(placement: $0.placement, over: layer.transform, width: image.width, height: image.height) }
                 let effects = LayerEffectsRenderer.cached(image, mask: mask, effects: layer.effects, fillOpacity: fill)
                 func drawLayer(_ mode: LayerBlendMode, _ into: CGContext) {
+                    if let vm = layer.vectorMask, vm.isEnabled {
+                        into.saveGState()
+                        vm.clipContext(into, documentSize: docSize)
+                    }
+                    defer { if let vm = layer.vectorMask, vm.isEnabled { into.restoreGState() } }
                     if let effects {
                         let grown = LayerEffectsRenderer.placed(layer.transform, image: effects.image, inset: effects.inset)
                         LayerRenderer.draw(effects.image, transform: grown, center: grown.center,
@@ -87,12 +93,23 @@ actor ImageExporter {
                 if let layer = records[id], let image = snapshot.mask(for: layer)?.enabledImage {
                     FolderMaskClip(image: image, transform: layer.transform).apply(center: layer.transform.center, in: ctx)
                 }
+                if let layer = records[id], let vm = layer.vectorMask, vm.isEnabled {
+                    vm.clipContext(ctx, documentSize: docSize)
+                }
             }
             live.prepareStacks(LayerHierarchy.visibleLayers(snapshot.manifest.layers).map(\.id), parent: { records[$0]?.parentID }, blend: { records[$0]?.blendMode ?? .normal })
             FolderMaskClip.draw(LayerHierarchy.visibleLayers(snapshot.manifest.layers).map(\.id), parent: { records[$0]?.parentID }, clip: { id in
-                guard let folder = records[id], let image = snapshot.mask(for: folder)?.enabledImage else { return nil }
-                let clip = FolderMaskClip(image: image, transform: folder.transform)
-                return { clip.apply(center: folder.transform.center, in: $0) }
+                guard let folder = records[id] else { return nil }
+                let rasterClip: ((CGContext) -> Void)? = snapshot.mask(for: folder)?.enabledImage.map { image in
+                    let clip = FolderMaskClip(image: image, transform: folder.transform)
+                    return { clip.apply(center: folder.transform.center, in: $0) }
+                }
+                let vectorMask = folder.vectorMask.flatMap { $0.isEnabled ? $0 : nil }
+                guard rasterClip != nil || vectorMask != nil else { return nil }
+                return { ctx in
+                    rasterClip?(ctx)
+                    vectorMask?.clipContext(ctx, documentSize: docSize)
+                }
             }, isolated: { id in
                 guard let folder = records[id], folder.isIsolatedGroup else { return nil }
                 return IsolatedFolderStyle(opacity: folder.effectiveOpacity(in: records),

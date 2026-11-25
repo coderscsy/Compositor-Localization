@@ -65,8 +65,17 @@ struct PathsPanel: View {
         .onTapGesture { session.selectPath(path.id) }
         .contextMenu {
             Button("Make Selection") { session.pathToSelection(path.id) }.disabled(path.isEmpty)
+            Button("Add as Vector Mask") { session.addVectorMask(from: path.id) }
+                .disabled(path.isEmpty || session.activeLayer == nil || !session.canEditLayers)
             Button("Fill Path") { session.fillPath(path.id) }.disabled(path.isEmpty || !session.canEditLayers)
             Button("Stroke Path") { session.strokePath(path.id) }.disabled(path.isEmpty || !session.canEditLayers)
+            if let activeID = session.activePathID, activeID != path.id, session.activePath?.isEmpty == false, !path.isEmpty {
+                Menu("Combine with Active Path") {
+                    ForEach(VectorBooleanOperation.allCases, id: \.self) { op in
+                        Button(L10n.text(op.rawValue)) { _ = session.combinePaths(activeID, with: path.id, operation: op) }
+                    }
+                }
+            }
             Divider()
             Button("Duplicate Path") { session.duplicatePath(path.id) }
             Button("Delete Path", role: .destructive) { session.deletePath(path.id) }

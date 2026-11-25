@@ -270,7 +270,7 @@ extension EditorSession {
                 transform: original.transform, parentID: original.parentID.map { mapping[$0] ?? $0 },
                 isGroup: original.isGroup, opacity: original.opacity, fillOpacity: original.fillOpacity, blendMode: original.blendMode, isPassThrough: original.isPassThrough, blendIf: original.blendIf, lock: original.lock,
                 mask: original.mask, maskSourceID: original.maskSourceID.map { mapping[$0] ?? $0 },
-                adjustment: original.adjustment, shape: original.shape, effects: original.effects, text: original.text, gradientFill: original.gradientFill,
+                adjustment: original.adjustment, shape: original.shape, effects: original.effects, text: original.text, gradientFill: original.gradientFill, vectorMask: original.vectorMask,
                 gifAnimation: currentGIFAnimation(for: original))
         }
         document?.layers.insert(contentsOf: copies, at: index + 1)

@@ -350,6 +350,50 @@
         }
       }
     },
+    "%@ Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 路徑"
+          }
+        }
+      }
+    },
+    "%@ Shape": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ Shape"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 形状"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 形狀"
+          }
+        }
+      }
+    },
     "%@ Stroke": {
       "localizations": {
         "en": {
@@ -2459,6 +2503,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "新增顯示全部的遮色片"
+          }
+        }
+      }
+    },
+    "Add Vector Mask from Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Vector Mask from Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从当前路径添加矢量蒙版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從目前路徑加入向量遮色片"
+          }
+        }
+      }
+    },
+    "Add as Vector Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add as Vector Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设为图层矢量蒙版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設為圖層向量遮色片"
           }
         }
       }
@@ -13169,6 +13257,50 @@
         }
       }
     },
+    "Combine Shapes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combine Shapes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合并形状"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合併形狀"
+          }
+        }
+      }
+    },
+    "Combine with Active Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combine with Active Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与当前路径布尔运算"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "與目前路徑布林運算"
+          }
+        }
+      }
+    },
     "Component": {
       "localizations": {
         "de": {
@@ -22776,6 +22908,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esc 鍵"
+          }
+        }
+      }
+    },
+    "Exclude Overlapping": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exclude Overlapping"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排除重叠形状"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排除重疊"
           }
         }
       }
@@ -34595,6 +34749,28 @@
         }
       }
     },
+    "Intersect": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intersect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与形状区域相交"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "交集"
+          }
+        }
+      }
+    },
     "Inverse": {
       "localizations": {
         "de": {
@@ -34824,6 +35000,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "反相畫素/遮色片"
+          }
+        }
+      }
+    },
+    "Invert Vector Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invert Vector Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "反相矢量蒙版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "反轉向量遮色片"
           }
         }
       }
@@ -51469,6 +51667,28 @@
         }
       }
     },
+    "Rasterize Vector Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rasterize Vector Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "栅格化矢量蒙版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點陣化向量遮色片"
+          }
+        }
+      }
+    },
     "Ratio": {
       "localizations": {
         "de": {
@@ -52699,6 +52919,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "移除連結並刪除"
+          }
+        }
+      }
+    },
+    "Remove Vector Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove Vector Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除矢量蒙版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除向量遮色片"
           }
         }
       }
@@ -62621,6 +62863,28 @@
         }
       }
     },
+    "Subtract Front": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtract Front"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "减去顶层形状"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "減去頂層"
+          }
+        }
+      }
+    },
     "Sunset": {
       "localizations": {
         "en": {
@@ -63983,6 +64247,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "線條起點的模糊程度。"
+          }
+        }
+      }
+    },
+    "The boolean operation produced an empty shape.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The boolean operation produced an empty shape."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "布尔运算结果为空形状。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "布林運算結果為空形狀。"
           }
         }
       }
@@ -65817,6 +66103,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "切換色階預覽"
+          }
+        }
+      }
+    },
+    "Toggle Vector Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle Vector Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用/停用矢量蒙版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "啟用/停用向量遮色片"
           }
         }
       }
@@ -67679,6 +67987,28 @@
         }
       }
     },
+    "Unite": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unite"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合并形状"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聯集"
+          }
+        }
+      }
+    },
     "Units": {
       "localizations": {
         "de": {
@@ -68507,6 +68837,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "使用鋼筆工具 (P) 繪製貝茲路徑，或從目前選取範圍建立路徑。"
+          }
+        }
+      }
+    },
+    "Vector Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vector Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "矢量蒙版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "向量遮色片"
           }
         }
       }

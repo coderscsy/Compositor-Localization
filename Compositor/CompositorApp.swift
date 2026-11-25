@@ -434,6 +434,25 @@ struct CompositorApp: App {
                         Button("Show Paths Panel") { session.rightPanelTab = .paths }
                             .disabled(session.document == nil)
                     }
+                    Menu("Vector Mask") {
+                        Button("Add Vector Mask from Path") { session.addVectorMaskFromActivePath() }
+                            .disabled(!session.canAddVectorMask)
+                        Button("Toggle Vector Mask") { session.toggleVectorMaskEnabled() }
+                            .disabled(!session.hasActiveLayerVectorMask || !session.canEditLayers)
+                        Button("Invert Vector Mask") { session.invertVectorMask() }
+                            .disabled(!session.hasActiveLayerVectorMask || !session.canEditLayers)
+                        Divider()
+                        Button("Rasterize Vector Mask") { session.rasterizeVectorMask() }
+                            .disabled(!session.hasActiveLayerVectorMask || !session.canEditLayers)
+                        Button("Remove Vector Mask") { session.removeVectorMask() }
+                            .disabled(!session.hasActiveLayerVectorMask || !session.canEditLayers)
+                    }
+                    Menu("Combine Shapes") {
+                        ForEach(VectorBooleanOperation.allCases, id: \.self) { op in
+                            Button(L10n.text(op.rawValue)) { session.combineSelectedShapes(op) }
+                        }
+                    }
+                    .disabled(!session.canCombineSelectedShapes)
                     Divider()
                     Button("Move Layer Up") { session.moveActiveLayer(by: 1) }
                         .configuredKeyboardShortcut("]").disabled(!session.canMoveActiveLayer(by: 1))
