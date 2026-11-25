@@ -8,8 +8,17 @@ struct CompositorApp: App {
     @AppStorage("navigator.visible") private var showsNavigator = false
     private var session: EditorSession { applicationDelegate.session }
     private func filterMenuItem(_ kind: FilterKind) -> some View {
-        Button("\(kind.rawValue)…") { session.beginFilter(kind) }
+        Button(L10n.text(kind.rawValue) + "…") { session.beginFilter(kind) }
             .disabled(!(kind == .vignette ? session.canVignette : session.canAdjustColors) || session.hueSaturation != nil)
+    }
+    private var deleteLayerMenuTitle: String {
+        if let effect = session.selectedEffect {
+            return L10n.format("Delete %@", L10n.text(effect.kind.rawValue))
+        }
+        if session.isMaskSelected, let layer = session.activeLayer, session.selectedMask(for: layer) != nil {
+            return L10n.text("Delete Layer Mask")
+        }
+        return L10n.text(session.selectedLayerIDs.count > 1 ? "Delete Layers" : "Delete Layer")
     }
     var body: some Scene {
         Window("Compositor", id: "editor") {
@@ -45,12 +54,12 @@ struct CompositorApp: App {
                             .configuredKeyboardShortcut("z", modifiers: [.command, .shift])
                     } else {
                         // A Save or Open panel's name field undoes its own typing (see `isEditingText`).
-                        Button(session.history.canUndo ? "Undo \(session.history.undoName)" : "Undo") {
+                        Button(session.history.canUndo ? L10n.format("Undo %@", L10n.text(session.history.undoName)) : L10n.text("Undo")) {
                             if NSApp.keyWindow is NSSavePanel { NSApp.sendAction(NSSelectorFromString("undo:"), to: nil, from: nil) }
                             else { session.undo() }
                         }
                             .configuredKeyboardShortcut("z").disabled(!session.canUndo)
-                        Button(session.history.canRedo ? "Redo \(session.history.redoName)" : "Redo") {
+                        Button(session.history.canRedo ? L10n.format("Redo %@", L10n.text(session.history.redoName)) : L10n.text("Redo")) {
                             if NSApp.keyWindow is NSSavePanel { NSApp.sendAction(NSSelectorFromString("redo:"), to: nil, from: nil) }
                             else { session.redo() }
                         }
@@ -108,7 +117,9 @@ struct CompositorApp: App {
                 // Grouped: a commands builder takes at most ten items.
                 Group {
                     CommandGroup(after: .appInfo) {
-                        Button("Check for Updates…") { applicationDelegate.updater.checkForUpdates() }
+                        if CompositorApplicationDelegate.updatesAvailable {
+                            Button("Check for Updates…") { applicationDelegate.updater.checkForUpdates() }
+                        }
                     }
                     CommandGroup(after: .toolbar) {
                         Button("Search Commands…") {
@@ -317,10 +328,9 @@ struct CompositorApp: App {
                     Button("Hue/Saturation…") { session.beginHueSaturation() }
                         .configuredKeyboardShortcut("u").disabled(!session.canAdjustColors)
                     ForEach([FilterKind.blackWhite, .colorBalance, .exposure, .gradientMap, .grain], id: \.self) { kind in
-                        Button("\(kind.rawValue)…") { session.beginFilter(kind) }
-                            .disabled(!session.canAdjustColors || session.hueSaturation != nil)
+                        filterMenuItem(kind)
                     }
-                    Button(session.isMaskSelected ? "Invert Mask" : "Invert") { Task { await session.invertPixels() } }
+                    Button(L10n.text(session.isMaskSelected ? "Invert Mask" : "Invert")) { Task { await session.invertPixels() } }
                         .configuredKeyboardShortcut("i")
                         .disabled(!session.canInvert)
                     Divider()
@@ -345,7 +355,7 @@ struct CompositorApp: App {
                     }
                 }
                 CommandMenu("Filter") {
-                    Button(session.lastFilter.map { "Last Filter: " + $0.rawValue } ?? "Last Filter") {
+                    Button(session.lastFilter.map { L10n.format("Last Filter: %@", L10n.text($0.rawValue)) } ?? L10n.text("Last Filter")) {
                         Task { await session.repeatLastFilter() }
                     }
                         // ⌃⌘F, as in Photoshop; ⌘F is the command palette.
@@ -362,23 +372,23 @@ struct CompositorApp: App {
                     Menu("New Adjustment Layer") {
                         // The Image menu's adjustments, then the Filter menu's filters.
                         ForEach(AdjustmentKind.imageAdjustments, id: \.self) { kind in
-                            Button(kind.rawValue + (kind.isEditable ? "…" : "")) { session.addAdjustment(kind) }
+                            Button(L10n.text(kind.rawValue) + (kind.isEditable ? "…" : "")) { session.addAdjustment(kind) }
                         }
                         Divider()
                         ForEach(AdjustmentKind.filters, id: \.self) { kind in
-                            Button(kind.rawValue + "…") { session.addAdjustment(kind) }
+                            Button(L10n.text(kind.rawValue) + "…") { session.addAdjustment(kind) }
                         }
                     }.disabled(!session.canEditLayers || session.document == nil)
                     Button("Edit Adjustment…") {
                         session.adjustmentEditingID = session.activeLayerID
                     }.disabled(!session.canEditLayers || session.activeLayer?.adjustment == nil)
                     Divider()
-                    Button(session.canTransformSelection ? "Transform Selection" : "Transform Layer") { session.transformCommand() }
+                    Button(L10n.text(session.canTransformSelection ? "Transform Selection" : "Transform Layer")) { session.transformCommand() }
                         .configuredKeyboardShortcut("t").disabled(!session.canTransform && !session.canTransformSelection)
-                    Button(session.selection == nil ? "Duplicate Layer" : "Layer via Copy") { session.layerViaCopy() }
+                    Button(L10n.text(session.selection == nil ? "Duplicate Layer" : "Layer via Copy")) { session.layerViaCopy() }
                         .configuredKeyboardShortcut("j").disabled(!session.canCopyPixels && !(session.selection == nil && session.canEditLayers && session.activeLayer != nil))
                     Divider()
-                    Button(session.selectedClippingTitle) { session.toggleSelectedClipping() }
+                    Button(L10n.text(session.selectedClippingTitle)) { session.toggleSelectedClipping() }
                     .configuredKeyboardShortcut("g", modifiers: [.command, .option])
                     .disabled(!session.canToggleSelectedClipping)
                     Divider()
@@ -392,7 +402,7 @@ struct CompositorApp: App {
                         .configuredKeyboardShortcut("n", modifiers: [.command, .shift]).disabled(!session.canEditLayers)
                     Button("Rename Layer…") { session.renamingLayerID = session.activeLayerID }
                         .disabled(!session.canEditLayers || session.activeLayer == nil)
-                    Button(session.visibilityTitle) {
+                    Button(L10n.text(session.visibilityTitle)) {
                         session.toggleSelectedLayersVisibility()
                     }.disabled(!session.canEditLayers || session.activeLayer == nil)
                     Divider()
@@ -401,7 +411,7 @@ struct CompositorApp: App {
                     Button("Move Layer Down") { session.moveActiveLayer(by: -1) }
                         .configuredKeyboardShortcut("[").disabled(!session.canMoveActiveLayer(by: -1))
                     Group {
-                        Button(session.mergeTitle) { session.mergeLayers() }
+                        Button(L10n.text(session.mergeTitle)) { session.mergeLayers() }
                             .configuredKeyboardShortcut("e").disabled(!session.canMergeLayers)
                         // As in the Layers panel's menu: whichever would change a selected layer, both for a mix.
                         if session.canConvertToSixteenBit || !session.canConvertToEightBit {
@@ -418,31 +428,34 @@ struct CompositorApp: App {
                             .disabled(!session.canTransform)
                         Menu("Align") {
                             ForEach(LayerAlignment.allCases, id: \.self) { alignment in
-                                Button(alignment.rawValue) { session.alignLayers(alignment) }
+                                Button(L10n.text(alignment.rawValue)) { session.alignLayers(alignment) }
                             }
                         }
                             .disabled(!session.canAlignLayers)
                         Menu("Distribute") {
                             ForEach(LayerDistribution.allCases, id: \.self) { distribution in
-                                Button(distribution.rawValue) { session.distributeLayers(distribution) }
+                                Button(L10n.text(distribution.rawValue)) { session.distributeLayers(distribution) }
                             }
                         }
                             .disabled(!session.canDistributeLayers)
                     }
                     Divider()
-                    Button(session.selectedEffect != nil ? "Delete " + session.selectedEffect!.kind.rawValue : session.isMaskSelected && session.activeLayer.flatMap({ session.selectedMask(for: $0) }) != nil ? "Delete Layer Mask" : session.selectedLayerIDs.count > 1 ? "Delete Layers" : "Delete Layer") {
+                    Button(deleteLayerMenuTitle) {
                         session.deleteLayerOrMask()
                     }
                         .disabled(!session.canEditLayers || session.activeLayer == nil)
                 }
             }
+        Settings {
+            LanguageSettingsView()
+        }
     }
 
     /// View › CMYK › Profile › Load Profile: a CMYK ICC profile picked from anywhere, kept and chosen.
     private func loadCMYKProfile() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "icc") ?? .data, UTType(filenameExtension: "icm") ?? .data]
-        panel.message = "Choose a CMYK ICC profile, such as the one your printer gave you"
+        panel.message = L10n.text("Choose a CMYK ICC profile, such as the one your printer gave you")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do { session.proofProfile = try CMYK.load(url) }
         catch { session.importError = error.localizedDescription }

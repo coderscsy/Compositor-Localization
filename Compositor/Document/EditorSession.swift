@@ -1154,7 +1154,7 @@ final class EditorSession {
                     }
                     for page in pages.reversed() { insert(page, centeredAt: point) }
                 } else if PSDReader.matches(url) {
-                    beginPSDReading(title: "Open “\(url.lastPathComponent)”?", confirmTitle: "Import")
+                    beginPSDReading(title: L10n.format("Open “%@”?", url.lastPathComponent), confirmTitle: "Import")
                     let imported: PSDImport
                     do {
                         let parsed = try await ImageImporter.shared.loadPhotoshop(url, remainingPixels: DocumentLimits.documentPixelBudget - usedPixels)
@@ -1286,7 +1286,7 @@ final class EditorSession {
             refreshCanvasPreview?()
         } catch {
             guard gifFrameSelectionRequestID == requestID else { return }
-            importError = "Couldn’t read GIF frame \(index + 1): \(error.localizedDescription)"
+            importError = L10n.format("Couldn’t read GIF frame %lld: %@", index + 1, error.localizedDescription)
         }
     }
 
@@ -1349,7 +1349,7 @@ final class EditorSession {
     /// One Photoshop artboard's layers as this tab's document, after the conversion report when there's anything in it.
     func importArtboard(_ parsed: PSDDocument, named name: String) async {
         do {
-            beginPSDReading(title: "Open “\(name)”?", confirmTitle: "Import")
+            beginPSDReading(title: L10n.format("Open “%@”?", name), confirmTitle: "Import")
             let imported: PSDImport
             do {
                 let assets = try await ImageImporter.shared.photoshopAssets(parsed)
