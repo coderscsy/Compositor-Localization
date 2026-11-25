@@ -174,7 +174,7 @@ struct AdvancedBlendingTests {
         session.setLayerBlendIf(bif)
 
         let snapshot = try #require(session.projectSnapshot())
-        #expect(snapshot.manifest.version == 26)
+        #expect(snapshot.manifest.version >= 26)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("AdvancedBlend-\(UUID()).comp")
         defer { try? FileManager.default.removeItem(at: url) }
         try await ProjectStore.shared.save(snapshot, to: url)

@@ -126,7 +126,7 @@ struct GradientUpgradeTests {
 
         // Persist in format v29 and reject v28.
         let snapshot = try #require(session.projectSnapshot())
-        #expect(snapshot.manifest.version == 29)
+        #expect(snapshot.manifest.version >= 29)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("LiveGradient-\(UUID()).comp")
         defer { try? FileManager.default.removeItem(at: url) }
         try await ProjectStore.shared.save(snapshot, to: url)

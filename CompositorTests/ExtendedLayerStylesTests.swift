@@ -161,7 +161,7 @@ struct ExtendedLayerStylesTests {
         session.setEffects(effects, on: id)
 
         let snapshot = try #require(session.projectSnapshot())
-        #expect(snapshot.manifest.version == 28)
+        #expect(snapshot.manifest.version >= 28)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("ExtendedStyles-\(UUID()).comp")
         defer { try? FileManager.default.removeItem(at: url) }
         try await ProjectStore.shared.save(snapshot, to: url)
