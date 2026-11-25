@@ -35,36 +35,6 @@ nonisolated enum BrushBlendMode: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Built-in Photoshop-style brush tip presets.
-nonisolated struct BrushPreset: Identifiable, Equatable, Sendable {
-    let id: String
-    let name: String
-    let diameter: CGFloat
-    let hardness: CGFloat
-    let opacity: CGFloat
-    let flow: CGFloat
-    let roundness: CGFloat
-    let angle: CGFloat
-    let spacing: CGFloat
-    let scatter: CGFloat
-    let airbrush: Bool
-
-    static let builtIn: [BrushPreset] = [
-        BrushPreset(id: "soft-round", name: "Soft Round", diameter: 60, hardness: 0, opacity: 1, flow: 1,
-                    roundness: 1, angle: 0, spacing: 0.10, scatter: 0, airbrush: false),
-        BrushPreset(id: "hard-round", name: "Hard Round", diameter: 40, hardness: 1, opacity: 1, flow: 1,
-                    roundness: 1, angle: 0, spacing: 0.05, scatter: 0, airbrush: false),
-        BrushPreset(id: "airbrush-soft", name: "Airbrush Soft", diameter: 80, hardness: 0, opacity: 1, flow: 0.20,
-                    roundness: 1, angle: 0, spacing: 0.12, scatter: 0, airbrush: true),
-        BrushPreset(id: "calligraphy-flat", name: "Calligraphy Flat", diameter: 36, hardness: 1, opacity: 1, flow: 1,
-                    roundness: 0.28, angle: 35, spacing: 0.04, scatter: 0, airbrush: false),
-        BrushPreset(id: "dry-charcoal", name: "Dry Charcoal", diameter: 48, hardness: 0.65, opacity: 0.85, flow: 0.35,
-                    roundness: 0.65, angle: -20, spacing: 0.16, scatter: 0.18, airbrush: false),
-        BrushPreset(id: "spatter", name: "Spatter", diameter: 32, hardness: 0.85, opacity: 0.9, flow: 0.65,
-                    roundness: 0.85, angle: 0, spacing: 0.45, scatter: 0.75, airbrush: false),
-    ]
-}
-
 /// Modes grouped under the Fill / Gradient tool (`G`).
 nonisolated enum FillToolMode: String, CaseIterable, Sendable {
     case gradient = "Gradient"
@@ -81,17 +51,10 @@ nonisolated struct PaintBucketSettings: Equatable, Sendable {
 
 extension EditorSession {
     func applyBrushPreset(_ preset: BrushPreset) {
-        brushSettings.diameter = preset.diameter
-        brushSettings.hardness = preset.hardness
-        brushSettings.opacity = preset.opacity
-        brushSettings.flow = preset.flow
-        brushSettings.roundness = preset.roundness
-        brushSettings.angle = preset.angle
-        brushSettings.spacing = preset.spacing
-        brushSettings.scatter = preset.scatter
-        brushSettings.airbrush = preset.airbrush
-        brushSettings.antialiased = true
-        brushPresetID = preset.id
+        var settings = brushSettings
+        preset.apply(to: &settings)
+        brushSettings = settings
+        selectedBrushPresetID = preset.id
     }
 
     func startAirbrushTimer(at point: CGPoint, pressure: CGFloat) {

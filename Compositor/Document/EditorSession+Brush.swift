@@ -1,6 +1,14 @@
 import AppKit
 
 extension EditorSession {
+    func selectBrushPreset(_ preset: BrushPreset) {
+        guard tool == .brush, brushStroke == nil else { return }
+        var settings = brushSettings
+        preset.apply(to: &settings)
+        brushSettings = settings
+        selectedBrushPresetID = preset.id
+    }
+
     /// An explicitly empty selection leaves nothing paintable, so painting never starts.
     var canPaint: Bool {
         let targetMask = activeLayer.flatMap { selectedMask(for: $0) }
@@ -42,7 +50,7 @@ extension EditorSession {
     }
     /// Tiled raster edit of the active layer's pixels or mask, within the shared pixel budgets.
     func makeRasterEdit(for layer: ImageLayer, settings: BrushSettings = BrushSettings(), growsMask: Bool = false,
-                        useGPU: Bool = true) throws -> BrushStroke {
+                        useGPU: Bool = true, dabSeed: UInt64? = nil) throws -> BrushStroke {
         guard let document else { throw ProjectError.tooLarge }
         pauseGIFForEditing(for: layer.id)
         let sourceLayer = pixelEditingLayer(for: layer)
@@ -54,7 +62,7 @@ extension EditorSession {
             resolvedSettings.eraseBlue = backgroundColor.blue
         }
         let stroke = try BrushStroke(layer: sourceLayer, mask: isMaskSelected, settings: resolvedSettings, canvas: document.size,
-                                     useGPU: useGPU, growsMask: growsMask)
+                                     useGPU: useGPU, growsMask: growsMask, dabSeed: dabSeed)
         func maskPixels(_ candidate: ImageLayer) -> Int {
             candidate.mask.map { $0.asset.image.width * $0.asset.image.height } ?? 0
         }
@@ -103,13 +111,19 @@ extension EditorSession {
                 settings.pressureSize = false
                 settings.pressureOpacity = false
                 settings.antialiased = true
+                settings.tip = nil
+                settings.spacing = nil
                 settings.flow = 1
                 settings.airbrush = false
                 settings.blendMode = .normal
                 settings.angle = 0
                 settings.roundness = 1
-                settings.spacing = 0
                 settings.scatter = 0
+                settings.scatterCount = 1
+                settings.scatterBothAxes = false
+                settings.sizeJitter = 0
+                settings.angleJitter = 0
+                settings.opacityJitter = 0
             }
             // A pencil is always hard.
             if !settings.antialiased { settings.hardness = 1 }
@@ -268,7 +282,8 @@ extension EditorSession {
     /// Starts the stroke again from its first point: on the layer resampled to its displayed size, or on the CPU.
     private func restartBrush(from stroke: BrushStroke, atDisplayedSize: Bool, onGPU: Bool) throws {
         let layer = atDisplayedSize ? try Self.atDisplayedSize(stroke.layer) : stroke.layer
-        let fresh = try makeRasterEdit(for: layer, settings: stroke.settings, growsMask: tool == .brush, useGPU: onGPU)
+        let fresh = try makeRasterEdit(for: layer, settings: stroke.settings, growsMask: tool == .brush,
+                                       useGPU: onGPU, dabSeed: stroke.dabSeed)
         fresh.originalLayer = stroke.originalLayer
         fresh.clone = stroke.clone
         fresh.healingSource = stroke.healingSource
@@ -425,7 +440,7 @@ extension EditorSession {
     }
     /// Shift-[ / Shift-]: hardness in Photoshop's 25% steps (0, 25, 50, 75, 100%).
     func changeBrushHardness(increase: Bool) {
-        guard brushStroke == nil else { return }
+        guard brushStroke == nil, !usesSampledBrushTip else { return }
         // Snap to the next step up or down, so 80% goes to 100% or 75%.
         let quarter = brushSettings.hardness * 4
         let step = increase ? floor(quarter + 0.001) + 1 : ceil(quarter - 0.001) - 1

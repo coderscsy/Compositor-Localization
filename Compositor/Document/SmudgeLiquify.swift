@@ -458,8 +458,14 @@ extension EditorSession {
             settings.blendMode = .normal
             settings.roundness = 1
             settings.angle = 0
-            settings.spacing = 0
+            settings.tip = nil
+            settings.spacing = nil
             settings.scatter = 0
+            settings.scatterCount = 1
+            settings.scatterBothAxes = false
+            settings.sizeJitter = 0
+            settings.angleJitter = 0
+            settings.opacityJitter = 0
             let stroke = try makeRasterEdit(for: current, settings: settings)
             stroke.clone = (result, CGRect(x: 0, y: 0, width: result.width, height: result.height), false)
             // A 16-bit working copy goes into the layer's 16-bit pixels.

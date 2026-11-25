@@ -418,7 +418,9 @@ final class EditorSession {
     var backgroundColor = PaletteColor.white { didSet { refreshGradient() } }
     var fillToolMode: FillToolMode = .gradient
     var paintBucketSettings = PaintBucketSettings()
-    var brushPresetID: String? = nil
+    var brushLibrary: BrushLibrary { .shared }
+    var selectedBrushPresetID = BrushPreset.defaultID
+    var usesSampledBrushTip: Bool { tool == .brush && brushSettings.tip != nil }
     @ObservationIgnored var airbrushTimer: Timer?
     @ObservationIgnored var airbrushPoint: CGPoint = .zero
     @ObservationIgnored var airbrushPressure: CGFloat = 1

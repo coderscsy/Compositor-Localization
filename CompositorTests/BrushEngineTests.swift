@@ -119,12 +119,12 @@ struct BrushEngineTests {
         #expect(vert.a == 0)
     }
 
-    @Test func brushPresetsConfigureEngineParameters() {
+    @Test func brushPresetsConfigureEngineParameters() throws {
         let session = EditorSession()
-        let calligraphy = try! #require(BrushPreset.builtIn.first { $0.id == "calligraphy-flat" })
-        session.applyBrushPreset(calligraphy)
-        #expect(session.brushSettings.roundness < 0.5 && session.brushSettings.angle == 35)
-        let airbrush = try! #require(BrushPreset.builtIn.first { $0.id == "airbrush-soft" })
+        let chisel = try #require(BrushPreset.builtIn.first { $0.id == "chisel" })
+        session.applyBrushPreset(chisel)
+        #expect(session.brushSettings.roundness < 0.5 && session.brushSettings.angle == 30)
+        let airbrush = try #require(BrushPreset.builtIn.first { $0.id == "airbrush-soft" })
         session.applyBrushPreset(airbrush)
         #expect(session.brushSettings.airbrush && session.brushSettings.flow < 0.5)
     }

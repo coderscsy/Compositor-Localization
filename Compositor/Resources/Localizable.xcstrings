@@ -329,6 +329,7 @@
       }
     },
     "%@ Fill": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -351,6 +352,7 @@
       }
     },
     "%@ Path": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -373,6 +375,7 @@
       }
     },
     "%@ Shape": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -395,6 +398,7 @@
       }
     },
     "%@ Stroke": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -853,7 +857,18 @@
       }
     },
     "%lld": {},
+    "%lld %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld %2$@"
+          }
+        }
+      }
+    },
     "%lld anchors": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1202,6 +1217,7 @@
       }
     },
     "%lld states": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1269,7 +1285,18 @@
         }
       }
     },
+    "%lld × %lld px · %lld ppi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld × %2$lld px · %3$lld ppi"
+          }
+        }
+      }
+    },
     "%lld%%": {},
+    "%lld°": {},
     "%lld°  %lld": {
       "localizations": {
         "en": {
@@ -1374,6 +1401,7 @@
         }
       }
     },
+    "0": {},
     "1 frame · Still canvas": {
       "extractionState": "manual",
       "localizations": {
@@ -1532,6 +1560,7 @@
         }
       }
     },
+    "16-bit": {},
     "16-bit layer: keeps 16 bits a channel": {
       "extractionState": "manual",
       "localizations": {
@@ -1717,6 +1746,7 @@
         }
       }
     },
+    "8-bit": {},
     "A layer with no visible pixels, such as an adjustment layer, isn’t saved as a PNG.": {
       "extractionState": "manual",
       "localizations": {
@@ -3319,6 +3349,7 @@
       }
     },
     "Airbrush Soft": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -3733,6 +3764,7 @@
       }
     },
     "Align justified": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -3941,6 +3973,7 @@
       }
     },
     "All Caps": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -4056,6 +4089,7 @@
       }
     },
     "Altitude": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -4403,6 +4437,53 @@
         }
       }
     },
+    "Angle Jitter": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Winkel-Jitter"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variación de ángulo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variation d’angle"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角度のジッター"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "각도 지터"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角度抖动"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角度抖動"
+          }
+        }
+      }
+    },
     "Animated GIF: select it to show its frames under the canvas": {
       "extractionState": "manual",
       "localizations": {
@@ -4728,6 +4809,7 @@
         }
       }
     },
+    "Apply a built-in brush preset": {},
     "Apply current canvas operation": {
       "extractionState": "manual",
       "localizations": {
@@ -4915,6 +4997,7 @@
       }
     },
     "Arc": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -4937,6 +5020,7 @@
       }
     },
     "Arch": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -5208,6 +5292,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "「自動」根據平均顏色校正白平衡。「自定」使用色溫和色調的設定。"
+          }
+        }
+      }
+    },
+    "Automatic Spacing": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatischer Abstand"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espaciado automático"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espacement automatique"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "間隔を自動調整"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "자동 간격"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动间距"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動間距"
           }
         }
       }
@@ -5758,6 +5889,7 @@
       }
     },
     "Behind": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -6111,6 +6243,7 @@
       }
     },
     "Black to White": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -6616,6 +6749,7 @@
       }
     },
     "Bloat": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -7105,6 +7239,7 @@
       }
     },
     "Border": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -7918,6 +8053,194 @@
         }
       }
     },
+    "Brush Dynamics": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinseldynamik"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dinámica del pincel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamique du pinceau"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシの動的設定"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 동적 설정"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画笔动态"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "筆刷動態"
+          }
+        }
+      }
+    },
+    "Brush Library": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinselbibliothek"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biblioteca de pinceles"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bibliothèque de pinceaux"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシライブラリ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 라이브러리"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画笔库"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "筆刷資料庫"
+          }
+        }
+      }
+    },
+    "Brush Presets": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinselvorgaben"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes preestablecidos de pincel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Préréglages de pinceau"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシプリセット"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 사전 설정"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画笔预设"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "筆刷預設"
+          }
+        }
+      }
+    },
+    "Brush Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinseleinstellungen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes del pincel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paramètres du pinceau"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシ設定"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 설정"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画笔设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "筆刷設定"
+          }
+        }
+      }
+    },
     "Brush Stroke": {
       "extractionState": "manual",
       "localizations": {
@@ -7987,6 +8310,101 @@
         }
       }
     },
+    "Brush blend mode": {},
+    "Brush presets could not be loaded.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Pinselvorgaben konnten nicht geladen werden."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudieron cargar los ajustes de pincel."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger les préréglages de pinceau."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシプリセットを読み込めませんでした。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 사전 설정을 불러올 수 없습니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法载入画笔预设。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法載入筆刷預設。"
+          }
+        }
+      }
+    },
+    "Brush presets could not be saved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Pinselvorgaben konnten nicht gespeichert werden."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudieron guardar los ajustes de pincel."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d’enregistrer les préréglages de pinceau."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシプリセットを保存できませんでした。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 사전 설정을 저장할 수 없습니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法保存画笔预设。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法儲存筆刷預設。"
+          }
+        }
+      }
+    },
     "Brush tool": {
       "extractionState": "manual",
       "localizations": {
@@ -8035,6 +8453,7 @@
       }
     },
     "Bulge": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -8361,6 +8780,7 @@
       }
     },
     "Calligraphy Flat": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -9347,6 +9767,7 @@
       }
     },
     "Checkerboard": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -9364,6 +9785,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "棋盤格"
+          }
+        }
+      }
+    },
+    "Chisel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meißel"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biselado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biseauté"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チゼル"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "끌 모양"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "斜角笔尖"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "斜角筆尖"
           }
         }
       }
@@ -10833,6 +11301,7 @@
       }
     },
     "Click corners · Drag smooth Bézier handles · Option breaks tangent · Click start or Return to close · Tab switches mode": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -13958,6 +14427,7 @@
         }
       }
     },
+    "Continue depositing paint while holding the mouse button down": {},
     "Contract": {
       "extractionState": "manual",
       "localizations": {
@@ -14287,6 +14757,7 @@
       }
     },
     "Convert Point": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -14783,6 +15254,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "僅從當前圖層取樣，或從畫面中所有可見圖層取樣"
+          }
+        }
+      }
+    },
+    "Could not read “%@”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ konnte nicht gelesen werden."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo leer «%@»."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de lire « %@ »."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」を読み取れませんでした。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” 파일을 읽을 수 없습니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取“%@”。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法讀取「%@」。"
           }
         }
       }
@@ -15465,6 +15983,7 @@
         }
       }
     },
+    "Create a non-destructive live Gradient Fill layer": {},
     "Create canvas": {
       "localizations": {
         "de": {
@@ -15812,6 +16331,7 @@
       }
     },
     "Crosshatch": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -17494,6 +18014,7 @@
       }
     },
     "Delete Anchor": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -18443,6 +18964,7 @@
       }
     },
     "Detach Path": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -18558,6 +19080,7 @@
       }
     },
     "Diagonal": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -18580,6 +19103,7 @@
       }
     },
     "Diagonal Stripes": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -18602,6 +19126,7 @@
       }
     },
     "Diamond": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -18810,6 +19335,7 @@
       }
     },
     "Direct Select": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -20041,6 +20567,7 @@
       }
     },
     "Down": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -21680,6 +22207,7 @@
       }
     },
     "Dry Charcoal": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -22384,6 +22912,7 @@
         }
       }
     },
+    "Edit multi-stop gradient": {},
     "Editable Photoshop text becomes pixels and can’t be retyped.": {
       "extractionState": "manual",
       "localizations": {
@@ -22730,6 +23259,7 @@
       }
     },
     "Emboss": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -23078,6 +23608,7 @@
       }
     },
     "End Color": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -23441,6 +23972,7 @@
       }
     },
     "Exclude Overlapping": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -25895,6 +26427,7 @@
       }
     },
     "Fine Noise": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -26011,6 +26544,7 @@
       }
     },
     "Fish": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -26171,6 +26705,7 @@
       }
     },
     "Flag": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -26517,10 +27052,40 @@
     },
     "Flow": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fluss"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Flow"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flujo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flux"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "流量"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "흐름"
           }
         },
         "zh-Hans": {
@@ -27115,6 +27680,7 @@
       }
     },
     "Forward Warp": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -27323,6 +27889,7 @@
       }
     },
     "Freeze Mask": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -27950,6 +28517,7 @@
       }
     },
     "Golden Ratio": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -27972,6 +28540,7 @@
       }
     },
     "Gradient": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -28065,6 +28634,7 @@
       }
     },
     "Gradient / Paint Bucket (G)": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -28109,6 +28679,7 @@
       }
     },
     "Gradient Fill": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -29100,6 +29671,7 @@
       }
     },
     "HEIC": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -29121,6 +29693,7 @@
         }
       }
     },
+    "HSB": {},
     "HSL": {
       "extractionState": "manual",
       "localizations": {
@@ -29638,11 +30211,42 @@
       }
     },
     "Hard Round": {
+      "extractionState": "stale",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hart rund"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Hard Round"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Circular definido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rond dur"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ハード円ブラシ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "단단한 원형"
           }
         },
         "zh-Hans": {
@@ -29753,6 +30357,7 @@
       }
     },
     "Healing Brush": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -30448,6 +31053,7 @@
       }
     },
     "Hide path": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -30747,6 +31353,7 @@
       }
     },
     "Highlight Color": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -31044,6 +31651,7 @@
       }
     },
     "History": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -31228,6 +31836,7 @@
       }
     },
     "Horizontal Distortion": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -34164,6 +34773,53 @@
         }
       }
     },
+    "Import ABR…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ABR importieren…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar ABR…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer un ABR…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ABRを読み込む…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ABR 가져오기…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入 ABR…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入 ABR…"
+          }
+        }
+      }
+    },
     "Import Photoshop File": {
       "extractionState": "manual",
       "localizations": {
@@ -34886,6 +35542,7 @@
       }
     },
     "Info": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -34930,6 +35587,7 @@
       }
     },
     "Initial State": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -34951,7 +35609,55 @@
         }
       }
     },
+    "Ink Flecks": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tintensprenkel"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motas de tinta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mouchetures d’encre"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インクの飛沫"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "잉크 얼룩"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "墨点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "墨點"
+          }
+        }
+      }
+    },
     "Inner Bevel": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -35274,6 +35980,7 @@
       }
     },
     "Inside": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -35564,6 +36271,7 @@
       }
     },
     "Intersect": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -35841,6 +36549,7 @@
       }
     },
     "Justified": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -37089,6 +37798,7 @@
       }
     },
     "Layers, folders and masks kept · sRGB": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -39019,6 +39729,7 @@
       }
     },
     "Linear runs along the line; Radial spreads out from the start point": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -39110,6 +39821,7 @@
         }
       }
     },
+    "Linear, Radial, Angle, Reflected, or Diamond gradient": {},
     "Lines": {
       "extractionState": "manual",
       "localizations": {
@@ -41933,6 +42645,7 @@
       }
     },
     "Mean": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -41955,6 +42668,7 @@
       }
     },
     "Median": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -44643,6 +45357,7 @@
       }
     },
     "New Layer with Mask": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -45229,6 +45944,100 @@
           "stringUnit": {
             "state": "translated",
             "value": "下一個混合模式"
+          }
+        }
+      }
+    },
+    "No brush presets": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Pinselvorgaben"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay pinceles preestablecidos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun préréglage de pinceau"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシプリセットがありません"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 사전 설정이 없습니다"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有画笔预设"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有筆刷預設"
+          }
+        }
+      }
+    },
+    "No brushes match": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine passenden Pinsel"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay pinceles que coincidan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun pinceau correspondant"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一致するブラシがありません"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "일치하는 브러시가 없습니다"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有匹配的画笔"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有相符的筆刷"
           }
         }
       }
@@ -46447,6 +47256,7 @@
       }
     },
     "Ocean": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -46709,6 +47519,7 @@
       }
     },
     "On Black": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -46731,6 +47542,7 @@
       }
     },
     "On Path": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -46753,6 +47565,7 @@
       }
     },
     "On White": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -47048,6 +47861,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "不透明度"
+          }
+        }
+      }
+    },
+    "Opacity Jitter": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deckkraft-Jitter"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variación de opacidad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variation d’opacité"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不透明度のジッター"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "불투명도 지터"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不透明度抖动"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不透明度抖動"
           }
         }
       }
@@ -48098,6 +48958,7 @@
       }
     },
     "Option-click where Healing Brush should sample from first.": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -48420,6 +49281,7 @@
       }
     },
     "Outer Bevel": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -48604,6 +49466,7 @@
       }
     },
     "Outside": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -48836,6 +49699,7 @@
       }
     },
     "Paint Bucket": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -49044,6 +49908,7 @@
         }
       }
     },
+    "Panel": {},
     "Panels": {
       "localizations": {
         "en": {
@@ -49251,6 +50116,7 @@
       }
     },
     "Path %lld": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -49295,6 +50161,7 @@
       }
     },
     "Paths": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -49544,6 +50411,7 @@
       }
     },
     "Pen (P) · Tab switches mode": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -49752,6 +50620,7 @@
       }
     },
     "Perspective Crop": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -49820,6 +50689,7 @@
       }
     },
     "Pillow Emboss": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -50401,6 +51271,7 @@
       }
     },
     "Polka Dots": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -50423,6 +51294,7 @@
       }
     },
     "Polygon": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -50445,6 +51317,7 @@
       }
     },
     "Polygon %lld": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -51001,6 +51874,53 @@
         }
       }
     },
+    "Preset Name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name der Vorgabe"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre del ajuste preestablecido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom du préréglage"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリセット名"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사전 설정 이름"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预设名称"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預設名稱"
+          }
+        }
+      }
+    },
     "Preset sizes": {
       "localizations": {
         "de": {
@@ -51094,6 +52014,7 @@
       }
     },
     "Presets": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -52065,6 +52986,7 @@
       }
     },
     "Pucker": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -52367,6 +53289,7 @@
       }
     },
     "Push Left": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -52481,6 +53404,7 @@
       }
     },
     "Quick Mask": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -53152,6 +54076,7 @@
       }
     },
     "Reconstruct": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -53751,6 +54676,7 @@
       }
     },
     "Refined": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -53773,6 +54699,7 @@
       }
     },
     "Refined Selection": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -53795,6 +54722,7 @@
       }
     },
     "Reflected": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -54111,6 +55039,53 @@
         }
       }
     },
+    "Remove Brush Preset": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinselvorgabe entfernen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar ajuste preestablecido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer le préréglage"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシプリセットを削除"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 사전 설정 제거"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除画笔预设"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除筆刷預設"
+          }
+        }
+      }
+    },
     "Remove Chromatic Aberration": {
       "localizations": {
         "de": {
@@ -54243,6 +55218,7 @@
         }
       }
     },
+    "Remove color stop": {},
     "Remove every guide line.": {
       "localizations": {
         "de": {
@@ -55331,6 +56307,7 @@
       }
     },
     "Restore %@": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -55836,6 +56813,7 @@
       }
     },
     "Rise": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -56279,6 +57257,7 @@
       }
     },
     "Rule of Thirds": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -56913,6 +57892,53 @@
         }
       }
     },
+    "Save Current Brush…": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinsel speichern…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar pincel actual…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer le pinceau…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のブラシを保存…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "현재 브러시 저장…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存当前画笔…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "儲存目前的筆刷…"
+          }
+        }
+      }
+    },
     "Save Project": {
       "extractionState": "manual",
       "localizations": {
@@ -57148,6 +58174,7 @@
       }
     },
     "Scale width and height together, about the center": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -57264,10 +58291,40 @@
     },
     "Scatter": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streuung"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Scatter"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dispersión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diffusion"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "散布"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "분산"
           }
         },
         "zh-Hans": {
@@ -57280,6 +58337,100 @@
           "stringUnit": {
             "state": "translated",
             "value": "散佈"
+          }
+        }
+      }
+    },
+    "Scatter Count": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anzahl der Pinselspitzen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cantidad de huellas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre d’empreintes"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "散布の数"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "분산 개수"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "散布数量"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "散佈數量"
+          }
+        }
+      }
+    },
+    "Scatter on Both Axes": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf beiden Achsen streuen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dispersar en ambos ejes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diffuser sur les deux axes"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "両軸に散布"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "양쪽 축에 분산"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双轴散布"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雙軸散佈"
           }
         }
       }
@@ -57327,6 +58478,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "濾色"
+          }
+        }
+      }
+    },
+    "Search Brushes": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinsel suchen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscar pinceles"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher un pinceau"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシを検索"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 검색"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索画笔"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋筆刷"
           }
         }
       }
@@ -59011,6 +60209,7 @@
       }
     },
     "Shadow Color": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -59241,6 +60440,7 @@
       }
     },
     "Shape (U) · Shift-U switches shape kinds": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -59613,6 +60813,7 @@
       }
     },
     "Shift-U (or Tab) steps through Rectangle, Ellipse and Line": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -60885,6 +62086,7 @@
       }
     },
     "Show path": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -61224,6 +62426,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "大小"
+          }
+        }
+      }
+    },
+    "Size Jitter": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Größen-Jitter"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variación de tamaño"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variation de taille"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サイズのジッター"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "크기 지터"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大小抖动"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大小抖動"
           }
         }
       }
@@ -62105,6 +63354,7 @@
       }
     },
     "Snapshot %lld": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -62196,11 +63446,42 @@
       }
     },
     "Soft Round": {
+      "extractionState": "stale",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weich rund"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Soft Round"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Circular difuso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rond doux"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソフト円ブラシ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "부드러운 원형"
           }
         },
         "zh-Hans": {
@@ -62218,6 +63499,7 @@
       }
     },
     "Soften": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -62484,10 +63766,40 @@
     },
     "Spacing": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abstand"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Spacing"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espaciado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espacement"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "間隔"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "간격"
           }
         },
         "zh-Hans": {
@@ -62505,6 +63817,7 @@
       }
     },
     "Spatter": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -62527,6 +63840,7 @@
       }
     },
     "Spectrum": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -63086,6 +64400,7 @@
       }
     },
     "Star": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -63108,6 +64423,7 @@
       }
     },
     "Star %lld": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -63199,6 +64515,7 @@
       }
     },
     "Start Color": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -63336,6 +64653,7 @@
       }
     },
     "Std Dev": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -63991,6 +65309,7 @@
       }
     },
     "Strikethrough": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -64013,6 +65332,7 @@
       }
     },
     "Stripes": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -64193,6 +65513,7 @@
       }
     },
     "Stroke drawn inside the shape, in pixels. 0 draws none": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -64492,6 +65813,7 @@
       }
     },
     "Subtract Front": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -64514,6 +65836,7 @@
       }
     },
     "Sunset": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -65532,6 +66855,7 @@
       }
     },
     "Thaw Mask": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -65880,6 +67204,7 @@
       }
     },
     "The boolean operation produced an empty shape.": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -65897,6 +67222,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "布林運算結果為空形狀。"
+          }
+        }
+      }
+    },
+    "The brush library is full.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Pinselbibliothek ist voll."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La biblioteca de pinceles está llena."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La bibliothèque de pinceaux est pleine."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラシライブラリがいっぱいです。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "브러시 라이브러리가 가득 찼습니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画笔库已满。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "筆刷資料庫已滿。"
           }
         }
       }
@@ -66641,10 +68013,40 @@
     },
     "This Layer": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Schicht"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This Layer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta capa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce calque"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このレイヤー"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 레이어"
           }
         },
         "zh-Hans": {
@@ -67480,6 +68882,7 @@
       }
     },
     "Tip": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -68949,6 +70352,7 @@
       }
     },
     "Triangle": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -68971,6 +70375,7 @@
       }
     },
     "Triangle %lld": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -69131,6 +70536,7 @@
       }
     },
     "Twirl CCW": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -69153,6 +70559,7 @@
       }
     },
     "Twirl CW": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -69384,6 +70791,7 @@
       }
     },
     "Underline": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -69660,6 +71068,7 @@
       }
     },
     "Unite": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -70124,6 +71533,7 @@
       }
     },
     "Up": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -71005,6 +72415,7 @@
       }
     },
     "Vertical Distortion": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -71074,6 +72485,7 @@
       }
     },
     "Vertical Text": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -71659,6 +73071,7 @@
       }
     },
     "Wave": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -71775,6 +73188,7 @@
       }
     },
     "WebP": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -73911,6 +75325,53 @@
         }
       }
     },
+    "“%@” contains no supported brush tips.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ enthält keine unterstützten Pinselspitzen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» no contiene puntas de pincel compatibles."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %@ » ne contient aucune pointe de pinceau prise en charge."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」に対応するブラシ先端が含まれていません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@”에 지원되는 브러시 팁이 없습니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@”不包含受支持的画笔笔尖。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」不包含受支援的筆刷筆尖。"
+          }
+        }
+      }
+    },
     "“%@” has no images to import.": {
       "extractionState": "manual",
       "localizations": {
@@ -74045,6 +75506,100 @@
           "stringUnit": {
             "state": "translated",
             "value": "「%@」已鎖定。請在圖層面板中解鎖後再編輯。"
+          }
+        }
+      }
+    },
+    "“%@” is too large to import.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ ist zu groß für den Import."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» es demasiado grande para importarlo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %@ » est trop volumineux pour être importé."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」は大きすぎるため読み込めません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” 파일이 너무 커서 가져올 수 없습니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@”过大，无法导入。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」過大，無法匯入。"
+          }
+        }
+      }
+    },
+    "“%@” uses an unsupported ABR version.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ verwendet eine nicht unterstützte ABR-Version."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» usa una versión de ABR no compatible."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %@ » utilise une version ABR non prise en charge."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」のABRバージョンには対応していません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@”에서 지원하지 않는 ABR 버전을 사용합니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@”使用了不受支持的 ABR 版本。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」使用不受支援的 ABR 版本。"
           }
         }
       }

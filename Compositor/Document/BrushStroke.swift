@@ -20,13 +20,21 @@ nonisolated struct BrushSettings: Sendable {
     var airbrush = false
     /// Tool blend mode (Normal, Multiply, Screen, Behind, Clear, etc.).
     var blendMode: BrushBlendMode = .normal
-    /// Brush tip angle in degrees (-180…180) and elliptical roundness (0.05…1).
+    /// A sampled tip uses its own edge coverage instead of the round tip's hardness.
+    var tip: BrushTip?
+    /// Distance between dabs as a fraction of the tip's diameter. Nil uses the round brush's automatic spacing.
+    var spacing: CGFloat?
+    /// Counterclockwise rotation of the tip in document coordinates (-360…360).
     var angle: CGFloat = 0
+    /// Elliptical / tip roundness (0.01…1).
     var roundness: CGFloat = 1
-    /// Explicit dab spacing as a fraction of diameter (0 uses the default automatic spacing).
-    var spacing: CGFloat = 0
-    /// Deterministic dab scatter fraction (0…1) for dry/spatter presets.
+    /// Maximum scatter distance as a fraction of the tip's diameter (0…10).
     var scatter: CGFloat = 0
+    var scatterCount = 1
+    var scatterBothAxes = false
+    var sizeJitter: CGFloat = 0
+    var angleJitter: CGFloat = 0
+    var opacityJitter: CGFloat = 0
     /// 0–100. The brush trails the pointer on a string of this length, so a shaky hand
     /// draws a smooth line; 0 follows the pointer exactly.
     var smoothing: CGFloat = 0
@@ -50,9 +58,12 @@ nonisolated struct BrushSettings: Sendable {
     var eraseGreen: CGFloat = 1
     var eraseBlue: CGFloat = 1
 
+    var variesDabs: Bool { scatter > 0 || sizeJitter > 0 || angleJitter > 0 || opacityJitter > 0 }
+
     /// Whether any advanced brush engine feature requires the tiled dab renderer rather than the round GPU fast path.
-    var usesAdvancedTip: Bool {
-        flow < 0.999 || airbrush || blendMode != .normal || roundness < 0.999 || abs(angle) > 0.01 || spacing > 0 || scatter > 0
+    var requiresIndividualDabs: Bool {
+        tip != nil || spacing != nil || flow != 1 || airbrush || blendMode != .normal
+            || roundness != 1 || abs(angle) > 0.01 || scatterCount != 1 || variesDabs
     }
 
     /// What a press of `pressure` (0–1) does to the tip: its size as a share of the full diameter, and its strength.
@@ -178,6 +189,8 @@ final class BrushStroke {
     /// The brush tip, rendered once and stamped for every dab. Only worth it up to
     /// `stampLimit`: past that, blitting the big tip costs more than drawing the falloff.
     private let stamp: CGImage?
+    private let sampledTip: CGImage?
+    private let tipRotation: CGFloat
     static let stampLimit: CGFloat = 160
     /// The tip again, sized in layer pixels so dabs land 1:1 on the grid with nothing for
     /// Core Graphics to resample — which is most of what a wide dab used to cost. Only for
@@ -237,8 +250,10 @@ final class BrushStroke {
     private var previousPressure: CGFloat = 1
     /// Coverage under the provisional tail; nil where the tile had no coverage yet.
     private var tailBackup: [Int: CGImage?] = [:]
+    private var drawingTail = false
     private var distanceToNext: CGFloat = 0
-    private var dabIndex: UInt32 = 0
+    let dabSeed: UInt64
+    private var dabSequence: UInt64 = 0
     private(set) var dirtyDocumentRect: CGRect?
     private struct Tile { let rect: CGRect; let context: CGContext; var image: CGImage?; let base: CGImage? }
     private var tiles: [Int: Tile] = [:]
@@ -258,8 +273,18 @@ final class BrushStroke {
 
     /// `growsMask`: a brush on a mask can paint anywhere on the canvas, as Photoshop's does, growing the mask past its
     /// layer. Other edits of a mask stay within it.
-    init(layer: ImageLayer, mask: Bool, settings: BrushSettings, canvas: CGSize, useGPU: Bool = true, growsMask: Bool = false) throws {
-        gpu = (useGPU && !settings.usesAdvancedTip) ? MetalBrushCoverage.shared : nil
+    init(layer: ImageLayer, mask: Bool, settings: BrushSettings, canvas: CGSize, useGPU: Bool = true, growsMask: Bool = false,
+         dabSeed: UInt64? = nil) throws {
+        // A customized tip lays individual dabs. Keep the GPU's continuous round-stroke pipeline for the defaults.
+        gpu = useGPU && !settings.requiresIndividualDabs ? MetalBrushCoverage.shared : nil
+        self.dabSeed = dabSeed ?? (settings.variesDabs ? UInt64.random(in: .min ... .max) : 0)
+        if let tip = settings.tip {
+            guard let image = tip.image else { throw ExportError.render }
+            sampledTip = image
+        } else {
+            sampledTip = nil
+        }
+        tipRotation = -settings.angle * .pi / 180
         self.layer = layer
         originalLayer = layer
         isMask = mask
@@ -293,7 +318,12 @@ final class BrushStroke {
               (1...DocumentLimits.maxSide).contains(originalWidth), (1...DocumentLimits.maxSide).contains(originalHeight),
               settings.diameter.isFinite, (1...Self.maxDiameter).contains(settings.diameter),
               settings.hardness.isFinite, (0...1).contains(settings.hardness),
-              settings.opacity.isFinite, (0.01...1).contains(settings.opacity) else { throw ProjectError.tooLarge }
+              settings.opacity.isFinite, (0.01...1).contains(settings.opacity),
+              settings.spacing.map({ (0.01...10).contains($0) }) ?? true,
+              (0...1).contains(settings.flow), (-360...360).contains(settings.angle),
+              (0.01...1).contains(settings.roundness), (0...10).contains(settings.scatter),
+              (1...16).contains(settings.scatterCount), (0...1).contains(settings.sizeJitter),
+              (0...1).contains(settings.angleJitter), (0...1).contains(settings.opacityJitter) else { throw ProjectError.tooLarge }
         let space = mask ? CGColorSpaceCreateDeviceGray() : CGColorSpace(name: CGColorSpace.sRGB)!
         let components: [CGFloat] = mask ? [settings.red, 1] : [settings.red, settings.green, settings.blue, 1]
         paintColor = CGColor(colorSpace: space, components: components)!
@@ -309,12 +339,13 @@ final class BrushStroke {
         let square = abs(pixelToDocument.b) < 1e-9 && abs(pixelToDocument.c) < 1e-9
             && scaleX > 1e-9 && abs(scaleX - scaleY) < 1e-9
         let gridDiameter = settings.diameter / scaleX
-        gridTip = gpu == nil && !settings.usesAdvancedTip && settings.antialiased && square && gridDiameter >= 1 && gridDiameter <= Self.gridTipLimit
+        let roundDabs = sampledTip == nil && settings.roundness == 1
+        gridTip = gpu == nil && roundDabs && settings.antialiased && square && gridDiameter >= 1 && gridDiameter <= Self.gridTipLimit
             ? try Self.tip(diameter: gridDiameter, hardness: settings.hardness, falloff: falloff) : nil
         // Drawn through the tile transform, the stamp is rendered as finely as the layer's pixels: magnified onto
         // the finer grid of a scaled-down layer, it left blocky dabs that showed once the layer was scaled back up.
         let stampDiameter = settings.diameter / min(1, scaleX, scaleY)
-        stamp = gpu == nil && settings.antialiased && gridTip == nil && stampDiameter <= Self.stampLimit
+        stamp = gpu == nil && roundDabs && settings.antialiased && gridTip == nil && stampDiameter <= Self.stampLimit
             ? try Self.tip(diameter: stampDiameter, hardness: settings.hardness, falloff: falloff) : nil
     }
 
@@ -359,7 +390,7 @@ final class BrushStroke {
                       before: samples[max(0, count - 4)], after: samples[count - 1],
                       pressures: (pressures[count - 3], pressures[count - 2]), changed: &changed)
         }
-        if count >= 2 { try drawTail(from: samples[count - 2], to: point, pressure: pressure, changed: &changed) }
+        if count >= 2 { try drawTail(to: point, pressure: pressure, changed: &changed) }
         try publish(changed)
     }
 
@@ -427,7 +458,7 @@ final class BrushStroke {
     /// Whether a dab at `point` (document pixels) reaches past the layer's own pixels.
     func reachesPastSource(at point: CGPoint) -> Bool {
         let scale = max(1e-9, min(hypot(pixelToDocument.a, pixelToDocument.b), hypot(pixelToDocument.c, pixelToDocument.d)))
-        let radius = settings.diameter / 2 / scale
+        let radius = maximumDabReach / scale
         return !sourceRect.insetBy(dx: radius, dy: radius).contains(point.applying(pixelToDocument.inverted()))
     }
 
@@ -531,25 +562,14 @@ final class BrushStroke {
 
     /// Draws a straight tail to the cursor, first saving the coverage it can touch and the
     /// dab spacing state, so `removeTail()` can put both back exactly.
-    private func drawTail(from start: CGPoint, to end: CGPoint, pressure: CGFloat, changed: inout Set<Int>) throws {
-        let reach = settings.diameter / 2 + 2
-        let box = CGRect(x: min(start.x, end.x), y: min(start.y, end.y), width: abs(end.x - start.x), height: abs(end.y - start.y))
-            .insetBy(dx: -reach, dy: -reach).intersection(canvas)
-        if !box.isNull, !box.isEmpty {
-            let affected = box.applying(pixelToDocument.inverted()).integral.intersection(CGRect(x: 0, y: 0, width: width, height: height))
-            if !affected.isNull, !affected.isEmpty {
-                let columns = (width + Self.tileSize - 1) / Self.tileSize
-                for y in Int(affected.minY) / Self.tileSize...Int(ceil(affected.maxY) - 1) / Self.tileSize {
-                    for x in Int(affected.minX) / Self.tileSize...Int(ceil(affected.maxX) - 1) / Self.tileSize {
-                        let key = y * columns + x
-                        tailBackup[key] = .some(coverage[key]?.makeImage())
-                    }
-                }
-            }
+    private func drawTail(to point: CGPoint, pressure: CGFloat, changed: inout Set<Int>) throws {
+        let saved = (previous, distanceToNext, previousPressure, dabSequence)
+        drawingTail = true
+        defer {
+            drawingTail = false
+            (previous, distanceToNext, previousPressure, dabSequence) = saved
         }
-        let saved = (previous, distanceToNext, previousPressure)
-        try walk(to: end, pressure: pressure, changed: &changed)
-        (previous, distanceToNext, previousPressure) = saved
+        try walk(to: point, pressure: pressure, changed: &changed)
     }
 
     private func removeTail() -> Set<Int> {
@@ -594,36 +614,31 @@ final class BrushStroke {
     func airbrushPulse(at point: CGPoint, pressure: CGFloat = 1) throws {
         guard settings.airbrush, gpu == nil else { return }
         var changed = Set<Int>()
-        try dab(point, pressure: pressure, changed: &changed)
+        try layDabs(at: point, pressure: pressure, direction: CGPoint(x: 1, y: 0), changed: &changed)
         try publish(changed)
     }
 
     /// Lays evenly spaced dabs along a straight run from the previous dab position.
     private func walk(to point: CGPoint, pressure: CGFloat = 1, changed: inout Set<Int>) throws {
-        let fraction: CGFloat
-        if settings.spacing > 0 {
-            fraction = min(2, max(0.01, settings.spacing))
-        } else if settings.flow < 0.999 {
-            fraction = 0.12
-        } else {
-            fraction = Self.spacingFraction(settings.hardness)
-        }
+        let fraction = settings.spacing ?? (sampledTip == nil ? Self.spacingFraction(settings.hardness) : 0.25)
         let spacing = max(0.25, settings.diameter * fraction)
         if let previous {
             let dx = point.x - previous.x, dy = point.y - previous.y
             let length = hypot(dx, dy)
             if length > 0 {
+                let direction = CGPoint(x: dx / length, y: dy / length)
                 var distance = distanceToNext
                 while distance <= length {
                     let along = distance / length
-                    try dab(CGPoint(x: previous.x + dx * along, y: previous.y + dy * along),
-                            pressure: previousPressure + (pressure - previousPressure) * along, changed: &changed)
+                    try layDabs(at: CGPoint(x: previous.x + dx * along, y: previous.y + dy * along),
+                                pressure: previousPressure + (pressure - previousPressure) * along,
+                                direction: direction, changed: &changed)
                     distance += spacing
                 }
                 distanceToNext = distance - length
             }
         } else {
-            try dab(point, pressure: pressure, changed: &changed)
+            try layDabs(at: point, pressure: pressure, direction: CGPoint(x: 1, y: 0), changed: &changed)
             distanceToNext = spacing
         }
         previous = point
@@ -806,35 +821,65 @@ final class BrushStroke {
     private static let eraseColor = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
     private static let healingWash = CGColor(srgbRed: 0.12, green: 0.12, blue: 0.12, alpha: 1)
 
-    private static func scatterHash(_ n: UInt32) -> CGFloat {
-        var x = n
-        x ^= x >> 16; x &*= 0x7feb352d
-        x ^= x >> 15; x &*= 0x846ca68b
-        x ^= x >> 16
-        return CGFloat(x >> 8) / 16777216.0
+    private var transformsTip: Bool { sampledTip != nil || settings.roundness != 1 }
+
+    private var maximumDabReach: CGFloat {
+        // A rotated rectangular tip can reach to the diagonal of its enclosing square.
+        let tipReach = settings.diameter / 2 * (transformsTip ? sqrt(2) : 1)
+        return tipReach + settings.diameter * settings.scatter
     }
 
-    private func dab(_ rawPoint: CGPoint, pressure: CGFloat = 1, changed: inout Set<Int>) throws {
+    private func layDabs(at point: CGPoint, pressure: CGFloat, direction: CGPoint, changed: inout Set<Int>) throws {
         let dynamics = settings.dynamics(pressure)
-        let flow = min(1, max(0.01, settings.flow))
-        let strength = dynamics.strength * flow
-        guard strength > 0 else { return }
-        dabIndex &+= 1
-        var point = rawPoint
-        if settings.scatter > 0 {
-            let spread = settings.diameter * min(1, settings.scatter)
-            let ox = (Self.scatterHash(dabIndex &* 2654435761) - 0.5) * 2 * spread
-            let oy = (Self.scatterHash(dabIndex &* 2246822519 ^ 0x9e3779b1) - 0.5) * 2 * spread
-            point = CGPoint(x: rawPoint.x + ox, y: rawPoint.y + oy)
-        }
-        let roundness = min(1, max(0.05, settings.roundness))
-        let angleRadians = settings.angle * .pi / 180
-        let elliptical = roundness < 0.999 || abs(angleRadians) > 0.0001
-        // A dab smaller, fainter, or elliptical is drawn through the tip transform rather than blitted.
-        let full = dynamics.scale == 1 && strength == 1 && !elliptical
         let radius = settings.diameter / 2 * dynamics.scale
+        let strength = dynamics.strength * settings.flow
+        guard strength > 0 else { return }
+        for _ in 0..<settings.scatterCount {
+            if !settings.variesDabs {
+                try dab(point, radius: radius, strength: strength, rotation: tipRotation, changed: &changed)
+                continue
+            }
+            let sequence = dabSequence
+            dabSequence &+= 1
+            let center = scattered(point, direction: direction, sequence: sequence)
+            let size = max(0.5, radius * (1 - settings.sizeJitter * random(sequence, 2)))
+            let rotation = tipRotation + settings.angleJitter * .pi * (2 * random(sequence, 3) - 1)
+            let opacity = strength * (1 - settings.opacityJitter * random(sequence, 4))
+            try dab(center, radius: size, strength: opacity, rotation: rotation, changed: &changed)
+        }
+    }
+
+    private func scattered(_ point: CGPoint, direction: CGPoint, sequence: UInt64) -> CGPoint {
+        let reach = settings.scatter * settings.diameter
+        guard reach > 0 else { return point }
+        if settings.scatterBothAxes {
+            let angle = random(sequence, 0) * 2 * .pi
+            let distance = sqrt(random(sequence, 1)) * reach
+            return CGPoint(x: point.x + cos(angle) * distance, y: point.y + sin(angle) * distance)
+        }
+        let distance = (2 * random(sequence, 0) - 1) * reach
+        return CGPoint(x: point.x - direction.y * distance, y: point.y + direction.x * distance)
+    }
+
+    /// SplitMix64 provides stable independent samples, so replay and provisional tail redraws agree.
+    private func random(_ sequence: UInt64, _ component: UInt64) -> CGFloat {
+        let index = sequence &* 5 &+ component &+ 1
+        var value = dabSeed &+ index &* 0x9e3779b97f4a7c15
+        value = (value ^ (value >> 30)) &* 0xbf58476d1ce4e5b9
+        value = (value ^ (value >> 27)) &* 0x94d049bb133111eb
+        return CGFloat((value ^ (value >> 31)) >> 11) / CGFloat(1 << 53)
+    }
+
+    private func dab(_ point: CGPoint, radius: CGFloat, strength: CGFloat, rotation: CGFloat,
+                     changed: inout Set<Int>) throws {
+        // A dab smaller or fainter than the full tip is drawn rather than blitted from the full-size one.
+        let full = radius == settings.diameter / 2 && strength == 1
         let circle = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
-        let clipped = circle.intersection(canvas)
+        let shaped = transformsTip
+        let tipRect = shaped ? localTipRect(radius: radius) : .zero
+        let tipToCanvas = shaped ? CGAffineTransform(translationX: point.x, y: point.y).rotated(by: rotation) : .identity
+        let clipped = (shaped ? tipRect.applying(tipToCanvas) : circle).intersection(canvas)
+        let blend: CGBlendMode = settings.hardness >= 1 && sampledTip == nil && settings.flow == 1 && !settings.airbrush ? .lighten : .screen
         guard !clipped.isNull, !clipped.isEmpty else { return }
         let inverse = pixelToDocument.inverted()
         let pixelCanvas = canvas.applying(inverse)
@@ -862,6 +907,10 @@ final class BrushStroke {
                 if !touched.isNull, !touched.isEmpty {
                     dirtyTiles[key] = dirtyTiles[key].map { $0.union(touched) } ?? touched
                 }
+                if drawingTail, tailBackup[key] == nil {
+                    // A scattered tail can reach many tiles. Save only each tile it actually changes, before the first dab.
+                    tailBackup[key] = .some(coverage[key]?.makeImage())
+                }
                 if coverage[key] == nil {
                     let layer = try BrushRaster.context(width: Int(tile.rect.width), height: Int(tile.rect.height), mask: true)
                     layer.clear(CGRect(origin: .zero, size: tile.rect.size))
@@ -871,7 +920,7 @@ final class BrushStroke {
                 context.saveGState()
                 if full, let gridTip, let blit {
                     context.clip(to: pixelCanvas.offsetBy(dx: -tile.rect.minX, dy: -tile.rect.minY))
-                    context.setBlendMode(settings.hardness >= 1 ? .lighten : .screen)
+                    context.setBlendMode(blend)
                     context.interpolationQuality = .none
                     context.draw(gridTip, in: blit.offsetBy(dx: -tile.rect.minX, dy: -tile.rect.minY))
                     context.restoreGState()
@@ -882,20 +931,18 @@ final class BrushStroke {
                 context.concatenate(inverse)
                 context.clip(to: canvas)
                 context.setShouldAntialias(settings.antialiased)
-                // Flow < 1 or Airbrush always accumulates via Screen so overlapping dabs build up smoothly.
-                let accumulates = settings.hardness < 1 || flow < 0.999 || settings.airbrush
-                context.setBlendMode(accumulates ? .screen : .lighten)
-                if elliptical {
-                    context.translateBy(x: point.x, y: point.y)
-                    if abs(angleRadians) > 0.0001 { context.rotate(by: angleRadians) }
-                    context.scaleBy(x: 1, y: roundness)
-                    context.translateBy(x: -point.x, y: -point.y)
-                }
-                if settings.hardness >= 1, strength < 1 {
+                context.setBlendMode(blend)
+                if shaped {
+                    context.concatenate(tipToCanvas)
+                    drawTransformedTip(in: context, rect: tipRect, radius: radius, strength: strength)
+                } else if settings.hardness >= 1, strength < 1 {
+                    // For a full-flow round tip, Lighten uses the firmest press as the coverage.
                     context.setFillColor(gray: strength, alpha: 1)
                     context.fillEllipse(in: circle)
                 } else if let stamp {
                     context.setAlpha(strength)
+                    // Stamp the pre-rendered tip: drawing the falloff procedurally for every
+                    // dab (a 60 px brush lays ~14 per mouse move) is what made strokes stutter.
                     context.interpolationQuality = .low
                     context.draw(stamp, in: circle)
                 } else if settings.hardness >= 1 {
@@ -909,6 +956,33 @@ final class BrushStroke {
                 context.restoreGState()
                 changed.insert(key)
             }
+        }
+    }
+
+    /// Long edge at the brush diameter, preserving the sampled image's proportions before applying roundness.
+    private func localTipRect(radius: CGFloat) -> CGRect {
+        let width = CGFloat(sampledTip?.width ?? 1)
+        let height = CGFloat(sampledTip?.height ?? 1)
+        let scale = 2 * radius / max(width, height)
+        let size = CGSize(width: width * scale, height: height * scale * settings.roundness)
+        return CGRect(x: -size.width / 2, y: -size.height / 2, width: size.width, height: size.height)
+    }
+
+    private func drawTransformedTip(in context: CGContext, rect: CGRect, radius: CGFloat, strength: CGFloat) {
+        if let sampledTip {
+            context.setAlpha(strength)
+            context.interpolationQuality = settings.antialiased ? .low : .none
+            // Core Graphics draws the tip bottom-up, while the document's y axis points down.
+            context.scaleBy(x: 1, y: -1)
+            context.draw(sampledTip, in: rect)
+        } else if settings.hardness >= 1 {
+            context.setFillColor(gray: strength, alpha: 1)
+            context.fillEllipse(in: rect)
+        } else if let falloff {
+            context.setAlpha(strength)
+            context.scaleBy(x: 1, y: settings.roundness)
+            context.drawRadialGradient(falloff, startCenter: .zero, startRadius: radius * settings.hardness,
+                                       endCenter: .zero, endRadius: radius, options: [.drawsBeforeStartLocation])
         }
     }
 

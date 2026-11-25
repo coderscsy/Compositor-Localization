@@ -1978,15 +1978,17 @@ final class CanvasView: NSView {
             super.rightMouseDown(with: event); return
         }
         let point = convert(event.locationInWindow, from: nil)
-        brushTipDrag = (point, session.brushSettings.diameter, session.brushSettings.hardness, event.modifierFlags.contains(.shift))
+        let adjustingHardness = event.modifierFlags.contains(.shift) && !session.usesSampledBrushTip
+        brushTipDrag = (point, session.brushSettings.diameter, session.brushSettings.hardness, adjustingHardness)
         brushPointer = point
         updateBrushCursor()
     }
     override func rightMouseDragged(with event: NSEvent) {
         guard let drag = brushTipDrag else { super.rightMouseDragged(with: event); return }
-        brushTipDrag?.hardnessShown = event.modifierFlags.contains(.shift)
+        let adjustingHardness = event.modifierFlags.contains(.shift) && !session.usesSampledBrushTip
+        brushTipDrag?.hardnessShown = adjustingHardness
         let dx = convert(event.locationInWindow, from: nil).x - drag.start.x
-        if event.modifierFlags.contains(.shift) {
+        if adjustingHardness {
             // The full range across 200 points.
             session.brushSettings.hardness = min(1, max(0, drag.hardness + dx / 200))
             session.brushSettings.diameter = drag.diameter
