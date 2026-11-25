@@ -253,6 +253,7 @@ struct SelectionAmountSheet: View {
                 AppSlider(value: Binding(get: { Double(amount ?? 1) },
                                       set: { input = String(Int($0.rounded())) }),
                        in: 1...Double(maximum))
+                    .accessibilityLabel("Amount")
                 TextField("Amount", text: $input)
                     .frame(width: 56).textFieldStyle(.roundedBorder)
                     .multilineTextAlignment(.trailing).focused($focused)

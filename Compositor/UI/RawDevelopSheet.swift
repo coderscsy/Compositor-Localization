@@ -98,6 +98,7 @@ struct RawDevelopSheet: View {
         HStack(spacing: 10) {
             Text(L10n.text(title)).frame(width: 110, alignment: .leading)
             AppSlider(value: value, in: range).frame(width: 300)
+                .accessibilityLabel(L10n.text(title))
             Text(String(format: "%.\(precision)f%@", value.wrappedValue, unit))
                 .monospacedDigit().foregroundStyle(.secondary)
                 .frame(width: 80, alignment: .trailing)

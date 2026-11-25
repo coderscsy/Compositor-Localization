@@ -163,6 +163,7 @@ struct FilterSheet: View {
                     }
                     .buttonStyle(.plain)
                     .help("Choose the vignette color")
+                    .accessibilityLabel("Choose the vignette color")
                 }
                 control("Amount", \.vignetteAmount, range: 0...100, unit: "%", decimals: 0, logarithmic: false)
                     .help("Blend the chosen color into the edges while keeping the center unchanged")
@@ -382,6 +383,7 @@ struct FilterSheet: View {
         }
         .buttonStyle(.plain)
         .help(L10n.text(help))
+        .accessibilityLabel(L10n.text(help))
     }
 
     /// Lens Effects: which effect, then its own settings.
@@ -404,6 +406,7 @@ struct FilterSheet: View {
             }
             .buttonStyle(.plain)
             .help("Choose the light's color")
+            .accessibilityLabel("Choose the light's color")
         }
         control("Haze", \.volumetric.haze, range: 0...100, unit: "%", decimals: 0, logarithmic: false)
             .help("How thick the air is: haze lit by the light, thinner in front of the subject")
@@ -438,6 +441,7 @@ struct FilterSheet: View {
                 }
                 .buttonStyle(.plain)
                 .help("Choose this light's color")
+                .accessibilityLabel("Choose this light's color")
                 if rim.lights.count > 1 {
                     Button {
                         // A color still being picked belongs to the lights as they were numbered.
@@ -446,6 +450,7 @@ struct FilterSheet: View {
                     } label: { Image(systemName: "minus.circle") }
                     .buttonStyle(.borderless)
                     .help("Remove this light")
+                    .accessibilityLabel("Remove this light")
                 }
             }
             control("Angle", \.rimLight[light: light.id].angle, range: -180...180, unit: "°", decimals: 0, logarithmic: false)
@@ -582,6 +587,7 @@ struct FilterSheet: View {
                 AppSlider(value: Binding(get: { logarithmic ? log(settings[keyPath: key]) : settings[keyPath: key] },
                                       set: { value in update { $0[keyPath: key] = ((logarithmic ? exp(value) : value) * step).rounded() / step } }),
                        in: logarithmic ? log(range.lowerBound)...log(range.upperBound) : range)
+                    .accessibilityLabel(L10n.text(title))
             }
             TextField(L10n.text(title), value: Binding(get: { settings[keyPath: key] }, set: { value in update { $0[keyPath: key] = value } }),
                       format: .number.precision(.fractionLength(0...decimals)))

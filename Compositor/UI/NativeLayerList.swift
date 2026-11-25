@@ -698,7 +698,7 @@ final class LayerTableView: NSTableView {
             drawOutlined(box, in: NSRect(x: 10, y: 1, width: 19, height: 17))
             return true
         }
-        image.accessibilityDescription = releasing ? "Release clipping mask" : "Create clipping mask"
+        image.accessibilityDescription = L10n.text(releasing ? "Release Clipping Mask" : "Create Clipping Mask")
         return NSCursor(image: image, hotSpot: NSPoint(x: 3, y: 3))
     }
     private static let createClippingCursor = clippingCursor(releasing: false)
@@ -723,7 +723,7 @@ final class LayerTableView: NSTableView {
                             fraction: 1, respectFlipped: true, hints: nil)
             return true
         }
-        image.accessibilityDescription = "Show mask alone"
+        image.accessibilityDescription = L10n.text("Show mask alone")
         return NSCursor(image: image, hotSpot: base.hotSpot)
     }()
     override func updateTrackingAreas() {
@@ -1487,7 +1487,7 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
         if renaming, layerID != layer.id { restoreLabel() }
         if !renaming { nameLabel.stringValue = (layer.maskSourceID == nil ? "" : "↳ ") + layer.name }
         dimensions.stringValue = layer.liveText != nil ? L10n.text("Text · Double-click to edit") : layer.adjustment != nil ? L10n.text("Adjustment · Double-click to edit") : layer.isGroup ? L10n.text("Folder") : layer.sizeLabel
-        depthTag.text = layer.depthLabel ?? ""
+        depthTag.text = layer.depthLabel.map(L10n.text) ?? ""
         depthTag.toolTip = L10n.text(layer.gifAnimation != nil ? "Animated GIF: select it to show its frames under the canvas"
             : layer.asset?.isHDR == true ? "HDR layer: keeps light brighter than white, shown as white"
             : "16-bit layer: keeps 16 bits a channel")

@@ -332,17 +332,17 @@ enum ColorPickerTarget: Equatable {
     case dialog(title: String)
     var title: String {
         switch self {
-        case .text: return "Color Picker (Text Color)"
-        case .shapeFill: return "Color Picker (Fill Color)"
-        case .shapeStroke: return "Color Picker (Stroke Color)"
-        case .effect(let kind): return "Color Picker (\(kind.rawValue) Color)"
-        case .palette(let background): return background ? "Color Picker (Background Color)" : "Color Picker (Foreground Color)"
-        case .gradientMap(let highlights): return highlights ? "Color Picker (Gradient Map Highlights)" : "Color Picker (Gradient Map Shadows)"
-        case .vignette: return "Color Picker (Vignette Color)"
-        case .rimLight(let index): return "Color Picker (Light \(index + 1))"
-        case .volumetricLight: return "Color Picker (Light Color)"
-        case .dither(let light): return light ? "Color Picker (Light Color)" : "Color Picker (Dark Color)"
-        case .dialog(let title): return "Color Picker (\(title))"
+        case .text: return L10n.text("Color Picker (Text Color)")
+        case .shapeFill: return L10n.text("Color Picker (Fill Color)")
+        case .shapeStroke: return L10n.text("Color Picker (Stroke Color)")
+        case .effect(let kind): return L10n.format("Color Picker (%@ Color)", L10n.text(kind.rawValue))
+        case .palette(let background): return L10n.text(background ? "Color Picker (Background Color)" : "Color Picker (Foreground Color)")
+        case .gradientMap(let highlights): return L10n.text(highlights ? "Color Picker (Gradient Map Highlights)" : "Color Picker (Gradient Map Shadows)")
+        case .vignette: return L10n.text("Color Picker (Vignette Color)")
+        case .rimLight(let index): return L10n.format("Color Picker (Light %lld)", index + 1)
+        case .volumetricLight: return L10n.text("Color Picker (Light Color)")
+        case .dither(let light): return L10n.text(light ? "Color Picker (Light Color)" : "Color Picker (Dark Color)")
+        case .dialog(let title): return L10n.format("Color Picker (%@)", title)
         }
     }
 }

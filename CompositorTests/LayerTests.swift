@@ -69,6 +69,44 @@ struct LayerTests {
         #expect(session.document?.layers.map(\.isVisible) == [true, true, false], "one undo step")
     }
 
+    @Test func brushExplainsAHiddenLayerOrHiddenParentWithoutRenamingIt() throws {
+        let session = EditorSession()
+        session.createDocument(width: 64, height: 64, emptyLayer: true)
+        let layer = try #require(session.activeLayerID)
+        let name = "User layer 50% 夏天"
+        session.renameLayer(layer, to: name)
+        let expected = L10n.format("“%@” is hidden, or inside a hidden folder. Show it to paint on it.", name)
+        session.selectTool(.brush)
+
+        session.toggleLayerVisibility(layer)
+        session.beginBrush(at: CGPoint(x: 16, y: 16))
+        #expect(session.brushError == expected)
+        #expect(session.brushStroke == nil)
+
+        session.brushError = nil
+        session.toggleLayerVisibility(layer)
+        session.groupSelectedLayers()
+        let folder = try #require(session.activeLayerID)
+        #expect(folder != layer)
+        session.toggleLayerVisibility(folder)
+        session.selectLayer(layer)
+        #expect(session.activeLayer?.isVisible == true)
+        session.beginBrush(at: CGPoint(x: 16, y: 16))
+        #expect(session.brushError == expected)
+        #expect(session.brushStroke == nil)
+        #expect(session.activeLayer?.name == name)
+    }
+
+    @Test func generatedLayerNamesAvoidNumbersAlreadyUsedInAnotherLanguage() throws {
+        let session = EditorSession()
+        session.createDocument(width: 64, height: 64, emptyLayer: true)
+        let first = try #require(session.activeLayerID)
+        session.renameLayer(first, to: "Layer 1")
+        session.addBlankLayer()
+
+        #expect(session.document?.layers.map(\.name) == ["Layer 1", String(format: L10n.text("Layer %lld"), 2)])
+    }
+
     @Test func reorderTranslatesVisibleOrderAndKeepsSelection() throws {
         let session = sessionWithThreeLayers()
         let active = session.activeLayerID

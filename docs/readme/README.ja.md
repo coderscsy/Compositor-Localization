@@ -8,6 +8,12 @@ Compositor Localization は、Robbie Tilton が開発するオープンソース
 
 このプロジェクトは macOS 専用です。Appleシリコン搭載の Mac と macOS 26 以降が必要です。ソースからビルドするには Xcode が必要です。本家の CI では Xcode 26.6 を使用しています。
 
+## macOS 版のダウンロード
+
+**Appleシリコン搭載の Mac（macOS 26 以降）** 用の [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg) をダウンロードしてください。同じページの `SHA256SUMS.txt` でダウンロードしたファイルを検証できます。ディスクイメージを開き、アプリを「アプリケーション」フォルダにコピーします。[GitHub のプレリリース](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+
+このアプリはアドホック署名を使用しており、Apple の公証は受けていません。初回起動時に Gatekeeper によってブロックされることがあります。下記の手順でソースからビルドすることもできます。[Apple の Mac アプリ起動ガイド](https://support.apple.com/ja-jp/102445)
+
 ## 主な機能
 
 - レイヤー、フォルダ、描画モード、レイヤーマスク、クリッピングマスク、調整レイヤー。
@@ -36,7 +42,7 @@ Compositor Localization は、Robbie Tilton が開発するオープンソース
 
 ## ソースからビルド
 
-バージョンごとのソースコードは、このフォークの [GitHub Releases](https://github.com/coderscsy/Compositor-Localization/releases) にタグ付きで公開しています。以下のコマンドでは既定ブランチを取得します。特定のリリースをビルドする場合は、ビルド前に対応するタグに切り替えてください。
+バージョンごとのソースコードは、対応する Git タグから取得できます。以下のコマンドでは既定ブランチを取得します。特定のリリースをビルドする場合は、ビルド前に対応するタグに切り替えてください。
 
 ```sh
 git clone https://github.com/coderscsy/Compositor-Localization.git
@@ -49,7 +55,7 @@ open build/Build/Products/Release/Compositor.app
 
 Xcode で `Compositor.xcodeproj` を開き、**Compositor** スキームを実行することもできます。Debug と Release のローカルビルドにはアドホック署名、App Sandbox、専用のバンドル識別子が使われます。本家のアプリと両方を「アプリケーション」フォルダに置く場合は、ビルドしたアプリを `Compositor Localization.app` という名前でコピーしてください。
 
-更新するには、このフォークの新しいリリースからビルドし直してください。本家の署名済み・公証済みアプリは [本家のリリースページ](https://github.com/robbietilton/Compositor/releases/latest) で入手できます。
+ローカルビルドを更新するには、このフォークの新しいリリースからビルドし直してください。本家の署名済み・公証済みアプリは [本家のリリースページ](https://github.com/robbietilton/Compositor/releases/latest) で入手できます。
 
 ## 問題の報告と翻訳への協力
 

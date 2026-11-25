@@ -205,6 +205,7 @@ private struct PlainSearchText: NSViewRepresentable {
         field.focusRingType = .none
         field.font = .systemFont(ofSize: NSFont.systemFontSize)
         field.placeholderString = L10n.text("Search Layers")
+        field.setAccessibilityLabel(L10n.text("Search Layers"))
         field.cell?.usesSingleLineMode = true
         field.cell?.isScrollable = true
         field.delegate = context.coordinator

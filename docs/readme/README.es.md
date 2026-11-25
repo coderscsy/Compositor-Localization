@@ -11,6 +11,12 @@ El desarrollo, las pruebas y las publicaciones de este fork se centran exclusiva
 - Un Mac con chip de Apple y macOS 26 o posterior.
 - Xcode para compilar la aplicación. La integración continua del proyecto original utiliza Xcode 26.6.
 
+## Descargar para macOS
+
+Descarga [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg) para un **Mac con chip de Apple y macOS 26 o posterior**. Puedes verificar el archivo descargado con `SHA256SUMS.txt`, disponible en la misma página. Abre la imagen de disco y copia la aplicación a la carpeta Aplicaciones. [Versión preliminar en GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+
+La aplicación utiliza una firma ad hoc y no está notarizada por Apple. Gatekeeper puede bloquearla la primera vez que la abras. También puedes compilarla desde el código fuente siguiendo los pasos de abajo. [Guía de Apple para abrir aplicaciones en el Mac](https://support.apple.com/es-es/102445)
+
 ## Funciones
 
 - Capas, grupos, máscaras de capa, máscaras de recorte y modos de fusión.
@@ -32,7 +38,7 @@ El inglés es el idioma original y se muestra cuando falta una traducción. Hay 
 
 ## Compilar desde el código fuente
 
-Las [publicaciones de GitHub](https://github.com/coderscsy/Compositor-Localization/releases) ofrecen el código fuente de cada versión mediante etiquetas. Para compilar una versión concreta, selecciona su etiqueta en el repositorio clonado antes de ejecutar `xcodebuild`. El comando `git switch --detach v1.7.2-l10n.1` selecciona la primera versión multilingüe.
+El código fuente de cada versión está disponible en su etiqueta de Git. Para compilar una versión concreta, selecciona su etiqueta en el repositorio clonado antes de ejecutar `xcodebuild`.
 
 ```sh
 git clone https://github.com/coderscsy/Compositor-Localization.git
@@ -45,7 +51,7 @@ open build/Build/Products/Release/Compositor.app
 
 También puedes abrir `Compositor.xcodeproj` en Xcode y ejecutar el esquema **Compositor**.
 
-Las compilaciones locales de Debug y Release usan una firma ad hoc. La aplicación se ejecuta en un entorno aislado y tiene un identificador de paquete propio. Para conservar ambas ediciones en la carpeta Aplicaciones, copia el resultado con el nombre `Compositor Localization.app`. Para actualizarla, compila una versión más reciente de este fork.
+Las compilaciones locales de Debug y Release usan una firma ad hoc. La aplicación se ejecuta en un entorno aislado y tiene un identificador de paquete propio. Para conservar ambas ediciones en la carpeta Aplicaciones, copia el resultado con el nombre `Compositor Localization.app`. Para actualizar tu compilación local, compila una versión más reciente de este fork.
 
 La aplicación oficial está firmada por su desarrollador y notarizada por Apple. Puedes descargarla en la [página de publicaciones del proyecto original](https://github.com/robbietilton/Compositor/releases/latest).
 

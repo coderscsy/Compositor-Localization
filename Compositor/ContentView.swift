@@ -409,7 +409,9 @@ struct ContentView: View {
             L10n.text("Drag to pan · Pinch to zoom")
         case .idle:
             L10n.text("No tool selected · Press a tool's key to pick one · Space to pan")
-        case .zoom, .eyedropper:
+        case .eyedropper:
+            L10n.text("Click the canvas to sample")
+        case .zoom:
             L10n.text("Click to zoom in · Option-click to zoom out · Drag right or left to zoom smoothly · Space to pan")
         }
     }

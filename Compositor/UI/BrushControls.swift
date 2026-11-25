@@ -62,6 +62,7 @@ struct BrushControls: View {
                     Group {
                         Text("Hardness").scrubbable(sensitivity: 0.01, value: $session.brushSettings.hardness, range: 0...1)
                         AppSlider(value: $session.brushSettings.hardness, in: 0...1).frame(width: 100)
+                            .accessibilityLabel("Hardness")
                         TextField("Hardness", value: Binding<Double>(get: { Double(session.brushSettings.hardness * 100) },
                                                                      set: { session.brushSettings.hardness = $0.isFinite ? CGFloat(min(1, max(0, $0 / 100))) : 1 }),
                                   format: .number.precision(.fractionLength(0)))
@@ -74,6 +75,7 @@ struct BrushControls: View {
                     Text(L10n.text(session.tool == .blur ? "Strength" : "Opacity"))
                         .scrubbable(sensitivity: 0.01, value: $session.brushSettings.opacity, range: 0.01...1)
                     AppSlider(value: $session.brushSettings.opacity, in: 0.01...1).frame(width: 100)
+                        .accessibilityLabel(session.tool == .blur ? "Strength" : "Opacity")
                     TextField("Opacity", value: Binding<Double>(get: { Double(session.brushSettings.opacity * 100) },
                                                                 set: { session.brushSettings.opacity = $0.isFinite ? CGFloat(min(100, max(1, $0)) / 100) : 1 }),
                               format: .number.precision(.fractionLength(0)))
@@ -94,6 +96,7 @@ struct BrushControls: View {
                         // The slider covers everyday radii; typing or scrubbing reaches up to 50.
                         AppSlider(value: Binding(get: { min(20, session.brushSettings.blurRadius) },
                                               set: { session.brushSettings.blurRadius = $0 }), in: 0.5...20).frame(width: 100)
+                            .accessibilityLabel("Radius")
                         TextField("Radius", value: Binding<Double>(get: { Double(session.brushSettings.blurRadius) },
                                                                    set: { session.brushSettings.blurRadius = $0.isFinite ? CGFloat(min(50, max(0.5, $0))) : 5 }),
                                   format: .number.precision(.fractionLength(0...1)))
@@ -107,6 +110,7 @@ struct BrushControls: View {
                         Text("Smoothing")
                             .scrubbable(sensitivity: 1, value: $session.brushSettings.smoothing, range: 0...100)
                         AppSlider(value: $session.brushSettings.smoothing, in: 0...100).frame(width: 100)
+                            .accessibilityLabel("Smoothing")
                         TextField("Smoothing", value: Binding<Double>(get: { Double(session.brushSettings.smoothing) },
                                                                       set: { session.brushSettings.smoothing = $0.isFinite ? CGFloat(min(100, max(0, $0))) : 0 }),
                                   format: .number.precision(.fractionLength(0)))
