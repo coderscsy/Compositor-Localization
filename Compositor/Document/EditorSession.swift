@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 struct ImageLayer: Identifiable, Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id && lhs.name == rhs.name && lhs.isVisible == rhs.isVisible && lhs.transform == rhs.transform
-            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.blendMode == rhs.blendMode && lhs.lock == rhs.lock && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects
+            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.fillOpacity == rhs.fillOpacity && lhs.blendMode == rhs.blendMode && lhs.lock == rhs.lock && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects
             && lhs.gifAnimation == rhs.gifAnimation
     }
     let id: UUID
@@ -16,6 +16,7 @@ struct ImageLayer: Identifiable, Equatable {
     var parentID: UUID?
     var isGroup = false
     var opacity: Double = 1
+    var fillOpacity: Double = 1
     var blendMode: LayerBlendMode = .normal
     var lock = LayerLock()
     var maskSourceID: UUID?
@@ -44,7 +45,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.name = name
     }
 
-    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, blendMode: LayerBlendMode = .normal, lock: LayerLock = LayerLock(), mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil, gifAnimation: GIFAnimation? = nil) {
+    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, fillOpacity: Double = 1, blendMode: LayerBlendMode = .normal, lock: LayerLock = LayerLock(), mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil, gifAnimation: GIFAnimation? = nil) {
         self.id = id
         self.asset = asset
         self.name = name
@@ -53,6 +54,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.parentID = parentID
         self.isGroup = isGroup
         self.opacity = opacity
+        self.fillOpacity = fillOpacity
         self.blendMode = blendMode
         self.lock = lock
         self.mask = mask
@@ -803,6 +805,7 @@ final class EditorSession {
     /// Cancel pressed while a Photoshop file was still being read.
     @ObservationIgnored private var conversionCancelled = false
     var opacityEditLayerID: UUID?
+    var fillOpacityEditLayerID: UUID?
     var blendPreview: (layerID: UUID, mode: LayerBlendMode)?
     @ObservationIgnored var refreshCanvasPreview: (() -> Void)?
     var isMaskSelected = false {

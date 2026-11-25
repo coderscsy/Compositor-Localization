@@ -179,9 +179,10 @@ extension EditorSession {
             let displayed = self.displayedLayer(for: layer)
             guard let image = displayed.asset?.image else { return }
             let opacity = layer.effectiveOpacity(in: records)
+            let fill = layer.fillOpacity
             let transform = self.displayedTransform(for: layer)
             let mask = displayed.mask?.clipImage(placement: self.displayedMaskPlacement(for: layer), over: transform, width: image.width, height: image.height)
-            let effects = LayerEffectsRenderer.cached(image, mask: mask, effects: layer.effects)
+            let effects = LayerEffectsRenderer.cached(image, mask: mask, effects: layer.effects, fillOpacity: fill)
             func drawLayer(_ mode: LayerBlendMode, _ target: CGContext) {
                 if let effects {
                     let grown = LayerEffectsRenderer.placed(transform, image: effects.image, inset: effects.inset)
@@ -189,7 +190,7 @@ extension EditorSession {
                         blendMode: mode, mask: nil, in: target)
                     return
                 }
-                LayerRenderer.draw(image, transform: transform, center: transform.center, opacity: opacity,
+                LayerRenderer.draw(image, transform: transform, center: transform.center, opacity: opacity * fill,
                     blendMode: mode, mask: mask, in: target)
             }
             let mode = self.displayedBlendMode(for: layer)
@@ -200,7 +201,10 @@ extension EditorSession {
         live.sixteenBit = sixteenBit
         live.hdr = hdr
         live.adjustment = { records[$0]?.adjustment }
-        live.adjustmentOpacity = { records[$0]?.effectiveOpacity(in: records) ?? 1 }
+        live.adjustmentOpacity = {
+            guard let layer = records[$0] else { return 1 }
+            return layer.effectiveOpacity(in: records) * layer.fillOpacity
+        }
         live.adjustmentClip = { id, ctx in
             if let layer = records[id], let image = layer.mask?.enabledImage {
                 FolderMaskClip(image: image, transform: layer.transform).apply(center: layer.transform.center, in: ctx)

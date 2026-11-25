@@ -32,6 +32,7 @@ nonisolated final class MetalLayerEffects: Sendable {
         var innerGlowColor: SIMD4<Float>
         var flags: SIMD4<UInt32>        // has stroke, stroke inside, has shadow, has inner shadow
         var more: SIMD4<UInt32>         // has color overlay, has outer glow, has inner glow, unused…
+        var params: SIMD4<Float>        // fillOpacity, unused…
     }
 
     private init() throws {
@@ -56,7 +57,7 @@ nonisolated final class MetalLayerEffects: Sendable {
 
     /// `pixels` — a layer's pixels as they are shown, with room around them for the effects — with its stroke and
     /// drop shadow composited around them. The result is the same size.
-    func render(_ pixels: CGImage, effects: LayerEffects) throws -> CGImage {
+    func render(_ pixels: CGImage, effects: LayerEffects, fillOpacity: Double = 1) throws -> CGImage {
         let width = pixels.width, height = pixels.height
         let count = width * height
         guard count > 0, count <= 80_000_000 else { throw ExportError.tooLarge }
@@ -191,7 +192,8 @@ nonisolated final class MetalLayerEffects: Sendable {
                                   Float(innerGlow?.color.blue ?? 0), Float(innerGlow?.opacity ?? 0)),
             flags: SIMD4(stroke != nil ? 1 : 0, stroke?.inside == true ? 1 : 0, shadow != nil ? 1 : 0,
                          innerShadow != nil ? 1 : 0),
-            more: SIMD4(overlay != nil ? 1 : 0, glow != nil ? 1 : 0, innerGlow != nil ? 1 : 0, 0))
+            more: SIMD4(overlay != nil ? 1 : 0, glow != nil ? 1 : 0, innerGlow != nil ? 1 : 0, 0),
+            params: SIMD4(Float(min(1, max(0, fillOpacity))), 0, 0, 0))
         run(compose, [(input, 0), (third, 1), (second, 2), (output, 3), (inner, 4), (first, 5), (glowOutput, 6), (innerGlowOutput, 7)], &settings, MemoryLayout<Compose>.stride)
         encoder.endEncoding()
         command.commit()
@@ -217,7 +219,7 @@ nonisolated final class MetalLayerEffects: Sendable {
     struct Shift { uint width; uint height; float dx; float dy; };
     struct Blur { uint width; uint height; float sigma; uint radius; };
     struct Compose { uint width; uint height; float4 strokeColor; float4 shadowColor; float4 overlayColor;
-                     float4 innerColor; float4 glowColor; float4 innerGlowColor; uint4 flags; uint4 more; };
+                     float4 innerColor; float4 glowColor; float4 innerGlowColor; uint4 flags; uint4 more; float4 params; };
 
     kernel void effects_alpha(device const uchar4* pixels [[buffer(0)]],
                               device float* coverage [[buffer(1)]],
@@ -386,24 +388,27 @@ nonisolated final class MetalLayerEffects: Sendable {
             alpha = strokeCoverage + alpha * (1.0 - strokeCoverage);
         }
         float4 source = float4(pixels[index]) / 255.0;
-        // A color overlay recolors the layer's own pixels and keeps their alpha, so a half-transparent black pixel
-        // under a white overlay turns half-transparent white. Laid over the composite instead, it only covered
-        // as much as the pixel did and let the old color show through.
+        float baseAlpha = source.w;
+        float4 interior = source * clamp(settings.params.x, 0.0, 1.0);
+        // A color overlay, inner glow and inner shadow apply inside the layer's original silhouette even when
+        // Fill Opacity lowers the interior pixels toward 0%, matching Photoshop's Fill behavior.
         if (settings.more.x == 1) {
-            source.xyz = mix(source.xyz, settings.overlayColor.xyz * source.w, settings.overlayColor.w);
+            float w = settings.overlayColor.w;
+            interior.xyz = settings.overlayColor.xyz * baseAlpha * w + interior.xyz * (1.0 - w);
+            interior.w = baseAlpha * w + interior.w * (1.0 - w);
         }
-        // An inner glow and an inner shadow recolor the pixels the same way, as Photoshop's do. Laid over the
-        // composite, they took only part of a translucent pixel, made it more opaque, and tinted the effects beneath.
         if (settings.more.z == 1) {
             float amount = clamp(innerGlow[index] * settings.innerGlowColor.w, 0.0, 1.0);
-            source.xyz = mix(source.xyz, settings.innerGlowColor.xyz * source.w, amount);
+            interior.xyz = settings.innerGlowColor.xyz * baseAlpha * amount + interior.xyz * (1.0 - amount);
+            interior.w = baseAlpha * amount + interior.w * (1.0 - amount);
         }
         if (settings.flags.w == 1) {
             float amount = clamp(inner[index] * settings.innerColor.w, 0.0, 1.0);
-            source.xyz = mix(source.xyz, settings.innerColor.xyz * source.w, amount);
+            interior.xyz = settings.innerColor.xyz * baseAlpha * amount + interior.xyz * (1.0 - amount);
+            interior.w = baseAlpha * amount + interior.w * (1.0 - amount);
         }
-        color = source.xyz + color * (1.0 - source.w);
-        alpha = source.w + alpha * (1.0 - source.w);
+        color = interior.xyz + color * (1.0 - interior.w);
+        alpha = interior.w + alpha * (1.0 - interior.w);
         if (settings.flags.x == 1 && settings.flags.y == 1) {
             color = settings.strokeColor.xyz * strokeCoverage + color * (1.0 - strokeCoverage);
             alpha = strokeCoverage + alpha * (1.0 - strokeCoverage);

@@ -120,7 +120,7 @@ extension EditorSession {
                               mask: LayerMask?) throws -> ImageLayer {
         guard var animation = layer.gifAnimation, let index = selectedGIFFrameIndex(for: layer.id) else {
             return ImageLayer(id: layer.id, asset: asset, name: layer.name, isVisible: layer.isVisible,
-                transform: transform, parentID: layer.parentID, isGroup: false, opacity: layer.opacity,
+                transform: transform, parentID: layer.parentID, isGroup: false, opacity: layer.opacity, fillOpacity: layer.fillOpacity,
                 blendMode: layer.blendMode, lock: layer.lock, mask: mask, maskSourceID: layer.maskSourceID, effects: layer.effects)
         }
         let width = animation.geometry?.width ?? animation.source.width

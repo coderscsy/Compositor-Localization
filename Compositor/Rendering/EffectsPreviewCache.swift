@@ -12,12 +12,13 @@ final class EffectsPreviewCache {
         let placement: LayerTransform?
         let transform: LayerTransform
         let effects: LayerEffects
+        let fillOpacity: Double
         let sideLimit: Int
         private let lock = NSLock()
         private var cancelled = false
-        init(image: CGImage, mask: CGImage?, maskSource: CGImage?, placement: LayerTransform?, transform: LayerTransform, effects: LayerEffects, sideLimit: Int) {
+        init(image: CGImage, mask: CGImage?, maskSource: CGImage?, placement: LayerTransform?, transform: LayerTransform, effects: LayerEffects, fillOpacity: Double, sideLimit: Int) {
             self.image = image; self.mask = mask; self.maskSource = maskSource
-            self.placement = placement; self.transform = transform; self.effects = effects; self.sideLimit = sideLimit
+            self.placement = placement; self.transform = transform; self.effects = effects; self.fillOpacity = fillOpacity; self.sideLimit = sideLimit
         }
         func cancel() { lock.lock(); cancelled = true; lock.unlock() }
         var isCancelled: Bool { lock.lock(); defer { lock.unlock() }; return cancelled }
@@ -29,7 +30,7 @@ final class EffectsPreviewCache {
                 || (placement == nil && other.placement == nil)
                 || (placement == other.placement && transform == other.transform)
             return image === other.image && maskSource === other.maskSource && sameMaskGeometry
-                && effects == other.effects && sideLimit == other.sideLimit
+                && effects == other.effects && fillOpacity == other.fillOpacity && sideLimit == other.sideLimit
         }
     }
     nonisolated private struct Result: @unchecked Sendable {
@@ -85,7 +86,7 @@ final class EffectsPreviewCache {
             return nil
         }
         let request = Request(image: image, mask: mask, maskSource: layer.mask?.enabledImage,
-                              placement: maskPlacement, transform: transform, effects: effects, sideLimit: sideLimit)
+                              placement: maskPlacement, transform: transform, effects: effects, fillOpacity: layer.fillOpacity, sideLimit: sideLimit)
         if let entry = entries[layer.id], entry.request.matches(request) {
             return entry.result.map { ($0.image, $0.inset, $0.placement) }
         }
@@ -129,9 +130,9 @@ final class EffectsPreviewCache {
 
     /// Renders effects straight away, at the preview size: text being typed is small, and its effects shouldn't lag
     /// a keystroke behind it.
-    func renderNow(image: CGImage, mask: CGImage?, effects: LayerEffects) -> (image: CGImage, inset: CGFloat)? {
+    func renderNow(image: CGImage, mask: CGImage?, effects: LayerEffects, fillOpacity: Double = 1) -> (image: CGImage, inset: CGFloat)? {
         let request = Request(image: image, mask: mask, maskSource: nil, placement: nil, transform: LayerTransform(origin: .zero, size: .zero),
-                              effects: effects, sideLimit: sideLimit)
+                              effects: effects, fillOpacity: fillOpacity, sideLimit: sideLimit)
         return (try? Self.render(request)).map { ($0.image, $0.inset) }
     }
 
@@ -158,7 +159,7 @@ final class EffectsPreviewCache {
         effects.stroke?.size *= factor
         effects.shadow?.distance *= factor
         effects.shadow?.blur *= factor
-        let rendered = try LayerEffectsRenderer.render(pixels, mask: mask, effects: effects)
+        let rendered = try LayerEffectsRenderer.render(pixels, mask: mask, effects: effects, fillOpacity: request.fillOpacity)
         return Result(image: rendered.image, inset: rendered.inset)
     }
 }

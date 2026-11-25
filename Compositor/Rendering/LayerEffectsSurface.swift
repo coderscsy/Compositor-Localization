@@ -12,6 +12,7 @@ import CoreImage
     /// The room the effects need around the pixels.
     let margin: CGFloat
     private let effects: LayerEffects
+    private let fillOpacity: Double
     private let context: CGContext
     private var shown: CGImage?
     /// Which tile images have already been taken in, so only new paint is redone.
@@ -39,13 +40,14 @@ import CoreImage
         return ceil(reach)
     }
 
-    init?(layerID: UUID, effects: LayerEffects, grid: CGSize, sourceRect: CGRect) {
+    init?(layerID: UUID, effects: LayerEffects, fillOpacity: Double = 1, grid: CGSize, sourceRect: CGRect) {
         let margin = LayerEffectsRenderer.margin(for: effects)
         let width = Int(grid.width + margin * 2), height = Int(grid.height + margin * 2)
         guard width > 0, height > 0, width * height <= 80_000_000,
               let context = try? BrushRaster.context(width: width, height: height, mask: false) else { return nil }
         self.layerID = layerID
         self.effects = effects
+        self.fillOpacity = fillOpacity
         self.grid = grid
         self.sourceRect = sourceRect
         self.margin = margin
@@ -53,8 +55,8 @@ import CoreImage
     }
 
     /// Whether this surface still fits the stroke and settings it was made for.
-    func matches(layerID: UUID, effects: LayerEffects, grid: CGSize, sourceRect: CGRect) -> Bool {
-        self.layerID == layerID && self.effects == effects && self.grid == grid && self.sourceRect == sourceRect
+    func matches(layerID: UUID, effects: LayerEffects, fillOpacity: Double = 1, grid: CGSize, sourceRect: CGRect) -> Bool {
+        self.layerID == layerID && self.effects == effects && self.fillOpacity == fillOpacity && self.grid == grid && self.sourceRect == sourceRect
     }
 
     /// Brings the surface up to date: everything on the first pass, and after that only where the paint changed.
@@ -89,7 +91,7 @@ import CoreImage
         let outer = inner.insetBy(dx: -reach, dy: -reach).integral
         guard let pixels = window(outer, base: base, patches: patches, mask: mask) else { return }
         // In one pass on the GPU when it is available: the outline's reach and the shadow's blur are what cost.
-        if let metal = MetalLayerEffects.shared, let built = try? metal.render(pixels, effects: effects) {
+        if let metal = MetalLayerEffects.shared, let built = try? metal.render(pixels, effects: effects, fillOpacity: fillOpacity) {
             context.saveGState()
             context.clip(to: inner.offsetBy(dx: margin, dy: margin))
             context.clear(inner.offsetBy(dx: margin, dy: margin))

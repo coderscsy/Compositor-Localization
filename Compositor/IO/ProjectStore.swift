@@ -17,7 +17,7 @@ extension UTType {
 
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
-    static let current = 23
+    static let current = 24
     /// Every version `load` accepts: each one a release has written (1 through `current`), and 27 from the
     /// GIF branch's own builds. Leaving out 15 and 16 once locked out projects saved by 1.5.4 and 1.5.5.
     /// The package-header and manifest checks both read this, so they can't drift apart when `current` is bumped.
@@ -45,6 +45,8 @@ nonisolated struct ProjectLayerRecord: Codable, Sendable {
     var parentID: UUID? = nil
     var isGroup: Bool? = nil
     var opacity: Double? = nil
+    /// Interior pixel opacity separate from layer effects (format version 24). Omitted when 1.
+    var fillOpacity: Double? = nil
     var blendMode: LayerBlendMode? = nil
     /// Per-layer edit locks (format version 23). Omitted when unlocked.
     var lock: LayerLock? = nil
@@ -401,6 +403,11 @@ actor ProjectStore {
                 if lock.transparent {
                     guard layer.isGroup != true, layer.adjustment == nil else { throw ProjectError.invalid }
                 }
+            }
+            // Fill opacity arrived in version 24, for non-group layers.
+            if let fillOpacity = layer.fillOpacity {
+                guard manifest.version >= 24, layer.isGroup != true,
+                      fillOpacity.isFinite, (0...1).contains(fillOpacity) else { throw ProjectError.invalid }
             }
             if let text = layer.text {
                 // Per-letter colors arrived in version 10, per-letter faces in version 11.

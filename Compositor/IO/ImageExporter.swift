@@ -49,8 +49,9 @@ actor ImageExporter {
                 guard let layer = records[id], let asset = snapshot.images[id] else { return }
                 let image = sixteenBit ? (try? DeepLayer.flattened(asset)) ?? asset.image : asset.image
                 let opacity = layer.effectiveOpacity(in: records)
+                let fill = layer.fillOpacity ?? 1
                 let mask = snapshot.mask(for: layer).flatMap { $0.clipImage(placement: $0.placement, over: layer.transform, width: image.width, height: image.height) }
-                let effects = LayerEffectsRenderer.cached(image, mask: mask, effects: layer.effects)
+                let effects = LayerEffectsRenderer.cached(image, mask: mask, effects: layer.effects, fillOpacity: fill)
                 func drawLayer(_ mode: LayerBlendMode, _ into: CGContext) {
                     if let effects {
                         let grown = LayerEffectsRenderer.placed(layer.transform, image: effects.image, inset: effects.inset)
@@ -59,7 +60,7 @@ actor ImageExporter {
                         return
                     }
                     LayerRenderer.draw(image, transform: layer.transform, center: layer.transform.center,
-                        opacity: opacity, blendMode: mode, mask: mask, in: into)
+                        opacity: opacity * fill, blendMode: mode, mask: mask, in: into)
                 }
                 let mode = layer.blendMode ?? .normal
                 // Core Graphics blends these two wrong; see SeparableBlend.
@@ -69,7 +70,10 @@ actor ImageExporter {
             live.sixteenBit = sixteenBit
             live.hdr = hdr
             live.adjustment = { records[$0]?.adjustment }
-            live.adjustmentOpacity = { records[$0]?.effectiveOpacity(in: records) ?? 1 }
+            live.adjustmentOpacity = {
+                guard let record = records[$0] else { return 1 }
+                return record.effectiveOpacity(in: records) * (record.fillOpacity ?? 1)
+            }
             live.adjustmentClip = { id, ctx in
                 if let layer = records[id], let image = snapshot.mask(for: layer)?.enabledImage {
                     FolderMaskClip(image: image, transform: layer.transform).apply(center: layer.transform.center, in: ctx)

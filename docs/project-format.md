@@ -1,8 +1,8 @@
-# Compositor project format, versions 1–23
+# Compositor project format, versions 1–24
 
 A `.comp` file is a macOS document package containing `manifest.json` and an `images/` directory of `<layer UUID>.png` assets.
 
-The manifest identifies `com.compositor.project`, version `23` for new saves (versions `1`–`22` remain readable), and the sRGB working space. It stores document UUID, pixel dimensions, active layer UUID, and layers in bottom-to-top order. Each layer stores its UUID, name, visibility, transform (origin, size, clockwise rotation, flips, sampling), and optional image filename. Blank layers have no image asset.
+The manifest identifies `com.compositor.project`, version `24` for new saves (versions `1`–`23` remain readable), and the sRGB working space. It stores document UUID, pixel dimensions, active layer UUID, and layers in bottom-to-top order. Each layer stores its UUID, name, visibility, transform (origin, size, clockwise rotation, flips, sampling), and optional image filename. Blank layers have no image asset.
 
 Embedded PNGs preserve source pixels and transparency; transforms remain separate. Projects survive moving or deleting imported source photos. Saving uses a coordinated atomic package replacement. Unsupported versions, invalid metadata, missing assets, unsafe paths, and oversized data are rejected before replacing the live document.
 
@@ -74,3 +74,5 @@ Version 21 adds the `Reduce Noise` adjustment kind, its settings in a `reduceNoi
 Version 22 lets a rectangle or ellipse carry an inside stroke on its `shape` style: `strokeWidth` in document pixels (above 0, at most 5000) and `strokeRed`, `strokeGreen`, `strokeBlue` (0–1). The stroke is drawn inside the shape's box, so the layer keeps the size it was dragged out to, and the width stays in document pixels when the shape is scaled, as the corner radius does. Missing means no stroke. Lines cannot carry these fields. Files declaring 1–21 cannot contain them, and older app builds reject v22.
 
 Version 23 adds optional per-layer `lock` metadata: an object with optional boolean flags `transparent` (lock transparent pixels), `pixels` (lock image pixels), `position` (lock position) and `all` (lock all). Omitted when all flags are false. Folders and adjustment layers cannot set `transparent`. Folder locks propagate `pixels`, `position` and `all` to their descendants. Files declaring versions 1–22 cannot contain a non-empty `lock`, and older app builds reject v23.
+
+Version 24 adds optional per-layer `fillOpacity` (finite `0`–`1`, omitted when `1`) on non-group layers: like Photoshop's Fill slider, it scales the layer's own interior pixels independently of its layer effects (stroke, drop shadow, glow, color overlay and inner shadow stay at their own opacities, scaled only by `opacity`). Files declaring versions 1–23 cannot contain `fillOpacity`, and older app builds reject v24.

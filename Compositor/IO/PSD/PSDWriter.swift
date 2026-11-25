@@ -202,7 +202,8 @@ nonisolated enum PSDWriter {
         let fullMask = snapshot.mask(for: layer).map { LayerMask(asset: $0.asset, isEnabled: true, placement: $0.placement, isLinked: $0.isLinked) }
         let maskGrid = fullMask?.clipImage(placement: fullMask?.placement, over: layer.transform, width: image.width, height: image.height)
         let effects = LayerEffectsRenderer.cached(image, mask: snapshot.mask(for: layer)?.enabledImage == nil ? nil : maskGrid,
-                                                  effects: layer.effects)
+                                                  effects: layer.effects, fillOpacity: layer.fillOpacity ?? 1)
+        if effects == nil { record.opacity *= (layer.fillOpacity ?? 1) }
         let placement = effects.map { LayerEffectsRenderer.placed(layer.transform, image: $0.image, inset: $0.inset) } ?? layer.transform
         let area = bounds(of: placement).intersection(canvas).integral
         guard !area.isEmpty else {

@@ -392,11 +392,11 @@ nonisolated enum LayerEffectsRenderer {
     /// The last few layers drawn with effects, so the canvas doesn't rebuild them on every redraw.
     private final class Cache: @unchecked Sendable {
         private let lock = NSLock()
-        private var entries: [(image: CGImage, mask: CGImage?, effects: LayerEffects, result: CGImage, inset: CGFloat)] = []
-        func result(image: CGImage, mask: CGImage?, effects: LayerEffects,
+        private var entries: [(image: CGImage, mask: CGImage?, effects: LayerEffects, fillOpacity: Double, result: CGImage, inset: CGFloat)] = []
+        func result(image: CGImage, mask: CGImage?, effects: LayerEffects, fillOpacity: Double,
                     make: () throws -> (image: CGImage, inset: CGFloat)) throws -> (image: CGImage, inset: CGFloat) {
             lock.lock()
-            let hit = entries.first { $0.image === image && $0.mask === mask && $0.effects == effects }
+            let hit = entries.first { $0.image === image && $0.mask === mask && $0.effects == effects && $0.fillOpacity == fillOpacity }
             lock.unlock()
             if let hit { return (hit.result, hit.inset) }
             let made = try make()
@@ -404,7 +404,7 @@ nonisolated enum LayerEffectsRenderer {
             let budget = 64 * 1024 * 1024
             let cost = made.image.bytesPerRow * made.image.height + image.bytesPerRow * image.height + (mask.map { $0.bytesPerRow * $0.height } ?? 0)
             if cost <= budget {
-                entries.append((image, mask, effects, made.image, made.inset))
+                entries.append((image, mask, effects, fillOpacity, made.image, made.inset))
                 while entries.count > 8 || entries.reduce(0, { $0 + $1.result.bytesPerRow * $1.result.height + $1.image.bytesPerRow * $1.image.height + ($1.mask.map { $0.bytesPerRow * $0.height } ?? 0) }) > budget {
                     entries.removeFirst()
                 }
@@ -417,10 +417,11 @@ nonisolated enum LayerEffectsRenderer {
 
     /// `image` with `effects` around it, reusing the last result for the same pixels, mask and settings. Nil when
     /// there is nothing to draw or the effects can't be made, so the caller draws the layer as it is.
-    static func cached(_ image: CGImage, mask: CGImage?, effects: LayerEffects?) -> (image: CGImage, inset: CGFloat)? {
+    static func cached(_ image: CGImage, mask: CGImage?, effects: LayerEffects?, fillOpacity: Double = 1) -> (image: CGImage, inset: CGFloat)? {
         guard let effects = effects?.visible, !effects.isEmpty, effects.isValid else { return nil }
-        return try? cache.result(image: image, mask: mask, effects: effects) {
-            try render(image, mask: mask, effects: effects)
+        let fill = min(1, max(0, fillOpacity.isFinite ? fillOpacity : 1))
+        return try? cache.result(image: image, mask: mask, effects: effects, fillOpacity: fill) {
+            try render(image, mask: mask, effects: effects, fillOpacity: fill)
         }
     }
 
@@ -450,9 +451,10 @@ nonisolated enum LayerEffectsRenderer {
 
     /// `image` with `effects` around it. `mask` (the layer's own mask, in its pixel grid) hides part of the layer
     /// before the effects are made, so they follow the shape that is actually shown, as in Photoshop.
-    static func render(_ image: CGImage, mask: CGImage?, effects: LayerEffects) throws -> (image: CGImage, inset: CGFloat) {
+    static func render(_ image: CGImage, mask: CGImage?, effects: LayerEffects, fillOpacity: Double = 1) throws -> (image: CGImage, inset: CGFloat) {
         let effects = effects.visible
         guard effects.isValid else { throw ProjectError.invalid }
+        let fillOpacity = min(1, max(0, fillOpacity.isFinite ? fillOpacity : 1))
         let inset = margin(for: effects)
         let width = image.width + Int(inset) * 2, height = image.height + Int(inset) * 2
         guard width > 0, height > 0, width * height <= DocumentLimits.maxSurfacePixels else { throw ProjectError.tooLarge }
@@ -464,7 +466,7 @@ nonisolated enum LayerEffectsRenderer {
             // The pixels with room around them, then the stroke and shadow drawn on the GPU.
             let padded = try BrushRaster.context(width: width, height: height, mask: false)
             BrushRaster.draw(shown, in: placed, mask: false, context: padded)
-            if let room = padded.makeImage(), let built = try? metal.render(room, effects: effects) {
+            if let room = padded.makeImage(), let built = try? metal.render(room, effects: effects, fillOpacity: fillOpacity) {
                 return (built, inset)
             }
         }
@@ -492,17 +494,45 @@ nonisolated enum LayerEffectsRenderer {
         // the pixels' alpha as Photoshop's do, so a translucent pixel takes them fully and the effects beneath stay
         // untinted.
         let layer = try BrushRaster.context(width: width, height: height, mask: false)
-        BrushRaster.draw(shown, in: placed, mask: false, context: layer)
+        if fillOpacity > 0 {
+            layer.saveGState()
+            layer.translateBy(x: placed.minX, y: placed.maxY)
+            layer.scaleBy(x: 1, y: -1)
+            layer.setAlpha(fillOpacity)
+            layer.draw(shown, in: CGRect(origin: .zero, size: placed.size))
+            layer.restoreGState()
+        }
         if let overlay = effects.colorOverlay, overlay.isEnabled, overlay.opacity > 0 {
-            recolor(layer, overlay.color, alpha: overlay.opacity, amount: nil, in: full)
+            let maskAlpha = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: 0)
+            fill(overlay.color, alpha: overlay.opacity, coverage: maskAlpha, in: full, context: layer)
         }
         if let innerGlow = effects.innerGlow, innerGlow.isEnabled, innerGlow.opacity > 0,
            let insideGlow = try? innerGlowCoverage(shown, placed: placed, size: CGSize(width: width, height: height), glow: innerGlow) {
-            recolor(layer, innerGlow.color, alpha: innerGlow.opacity, amount: insideGlow, in: full)
+            if fillOpacity < 1 {
+                let maskAlpha = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: 0)
+                layer.saveGState()
+                layer.translateBy(x: 0, y: full.height); layer.scaleBy(x: 1, y: -1)
+                layer.clip(to: full, mask: maskAlpha)
+                layer.scaleBy(x: 1, y: -1); layer.translateBy(x: 0, y: -full.height)
+                fill(innerGlow.color, alpha: innerGlow.opacity, coverage: insideGlow, in: full, context: layer)
+                layer.restoreGState()
+            } else {
+                recolor(layer, innerGlow.color, alpha: innerGlow.opacity, amount: insideGlow, in: full)
+            }
         }
         if let inner = effects.innerShadow, inner.isEnabled, inner.opacity > 0,
            let inside = try? innerCoverage(shown, placed: placed, size: CGSize(width: width, height: height), shadow: inner) {
-            recolor(layer, inner.color, alpha: inner.opacity, amount: inside, in: full)
+            if fillOpacity < 1 {
+                let maskAlpha = try coverage(shown, in: placed, size: CGSize(width: width, height: height), blur: 0)
+                layer.saveGState()
+                layer.translateBy(x: 0, y: full.height); layer.scaleBy(x: 1, y: -1)
+                layer.clip(to: full, mask: maskAlpha)
+                layer.scaleBy(x: 1, y: -1); layer.translateBy(x: 0, y: -full.height)
+                fill(inner.color, alpha: inner.opacity, coverage: inside, in: full, context: layer)
+                layer.restoreGState()
+            } else {
+                recolor(layer, inner.color, alpha: inner.opacity, amount: inside, in: full)
+            }
         }
         guard let styled = layer.makeImage() else { throw ExportError.render }
         context.saveGState()

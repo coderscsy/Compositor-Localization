@@ -92,12 +92,15 @@ extension EditorSession {
         guard canEditLayers, selectedLayerIDs.count == 1, let layer = activeLayer else { return false }
         return !effectiveLock(for: layer.id).blocksAppearance
     }
+    var canEditFillOpacity: Bool { canEditAppearance }
     func beginOpacityEdit() {
         guard canEditOpacity, opacityEditLayerID == nil, let id = activeLayerID else { return }
+        finishFillOpacityEdit()
         beginEdit("Layer Opacity")
         opacityEditLayerID = id
     }
     func finishOpacityEdit() {
+        finishFillOpacityEdit()
         guard opacityEditLayerID != nil else { return }
         opacityEditLayerID = nil
         endEdit()
@@ -109,6 +112,26 @@ extension EditorSession {
         let standalone = opacityEditLayerID == nil
         if standalone { beginEdit("Layer Opacity") }
         document?.layers[index].opacity = min(1, max(0, opacity))
+        if standalone { endEdit() }
+    }
+    func beginFillOpacityEdit() {
+        guard canEditFillOpacity, fillOpacityEditLayerID == nil, let id = activeLayerID else { return }
+        if opacityEditLayerID != nil { opacityEditLayerID = nil; endEdit() }
+        beginEdit("Layer Fill")
+        fillOpacityEditLayerID = id
+    }
+    func finishFillOpacityEdit() {
+        guard fillOpacityEditLayerID != nil else { return }
+        fillOpacityEditLayerID = nil
+        endEdit()
+    }
+    func setLayerFillOpacity(_ fillOpacity: Double) {
+        guard fillOpacity.isFinite, canEditFillOpacity,
+              let id = fillOpacityEditLayerID ?? activeLayerID,
+              let index = document?.layers.firstIndex(where: { $0.id == id }) else { return }
+        let standalone = fillOpacityEditLayerID == nil
+        if standalone { beginEdit("Layer Fill") }
+        document?.layers[index].fillOpacity = min(1, max(0, fillOpacity))
         if standalone { endEdit() }
     }
     /// Sets every selected layer's opacity as one undo step. A selected folder takes the value too,
