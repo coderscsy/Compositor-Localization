@@ -4,6 +4,7 @@ import AppKit
 struct TypeControls: View {
     @Bindable var session: EditorSession
     @FocusState private var editingSize: Bool
+    @State private var showingWarpPopover = false
     private func value<T>(_ key: WritableKeyPath<LayerTextStyle, T>) -> Binding<T> {
         Binding(get: { session.currentTextStyle[keyPath: key] }, set: { value in
             session.changeTextStyle { $0[keyPath: key] = value }
@@ -62,8 +63,8 @@ struct TypeControls: View {
                             Button {
                                 session.changeTextStyle { $0.alignment = alignment }
                             } label: {
-                                Image(systemName: alignment == .left ? "text.alignleft" : alignment == .center ? "text.aligncenter" : "text.alignright")
-                                    .frame(width: 30, height: 26)
+                                Image(systemName: alignment == .left ? "text.alignleft" : alignment == .center ? "text.aligncenter" : alignment == .right ? "text.alignright" : "text.justify")
+                                    .frame(width: 28, height: 26)
                                     .background(selected ? Color.white.opacity(0.14) : .clear,
                                                 in: RoundedRectangle(cornerRadius: 4))
                                     // Without this the glyph's own strokes are the only thing a click lands on.
@@ -92,6 +93,49 @@ struct TypeControls: View {
                         .arrowSteps(value: { Double(session.currentTextStyle.lineHeight) },
                                     change: { stepped in session.changeTextStyle { $0.leading = CGFloat(max(0, stepped)) } })
                         .help("Line height, baseline to baseline. Empty or 0 is Auto: 120% of the font size.")
+                    Divider().frame(height: 18)
+                    HStack(spacing: 2) {
+                        styleToggle(symbol: "underline", active: session.currentTextStyle.underline == true, help: "Underline") {
+                            session.changeTextStyle { $0.underline = ($0.underline == true) ? nil : true }
+                        }
+                        styleToggle(symbol: "strikethrough", active: session.currentTextStyle.strikethrough == true, help: "Strikethrough") {
+                            session.changeTextStyle { $0.strikethrough = ($0.strikethrough == true) ? nil : true }
+                        }
+                        styleToggle(label: "TT", active: session.currentTextStyle.allCaps == true, help: "All Caps") {
+                            session.changeTextStyle { $0.allCaps = ($0.allCaps == true) ? nil : true }
+                        }
+                        styleToggle(symbol: "arrow.up.and.down.text.horizontal", active: session.currentTextStyle.vertical == true, help: "Vertical Text") {
+                            session.changeTextStyle {
+                                let next = !($0.vertical == true)
+                                $0.vertical = next ? true : nil
+                                if next { $0.path = nil }
+                            }
+                        }
+                    }
+                    HStack(spacing: 4) {
+                        Text("Baseline")
+                        TextField("0", value: Binding(get: { Double(session.currentTextStyle.baselineShift ?? 0) },
+                                                      set: { val in session.changeTextStyle { $0.baselineShift = val == 0 ? nil : CGFloat(min(500, max(-500, val))) } }),
+                                  format: .number.precision(.fractionLength(0)))
+                            .frame(width: 42)
+                    }
+                    .help("Baseline shift in pixels")
+                    Button {
+                        showingWarpPopover.toggle()
+                    } label: {
+                        Label("Warp", systemImage: "textformat.alt")
+                    }
+                    .popover(isPresented: $showingWarpPopover, arrowEdge: .bottom) {
+                        TextWarpPopover(session: session)
+                    }
+                    .help("Warp Text (Arc, Arch, Bulge, Flag, Wave, Fish, Rise)")
+                    Button {
+                        session.toggleTextOnActivePath()
+                    } label: {
+                        Text(L10n.text(session.currentTextStyle.path != nil ? "Detach Path" : "On Path"))
+                    }
+                    .disabled(session.currentTextStyle.path == nil && session.activePath?.isEmpty != false)
+                    .help("Attach text to the active vector path, or detach it")
                 }
             }.scrollIndicators(.never)
             if session.textDraft != nil {
@@ -104,6 +148,82 @@ struct TypeControls: View {
         .textFieldStyle(.roundedBorder).padding(.horizontal, 18).toolHeaderBar()
         .disabled(session.document == nil || session.showsBusy)
         .onChange(of: session.colorPicker?.color) { _, _ in session.previewTextColor() }
+    }
+
+    @ViewBuilder
+    private func styleToggle(symbol: String? = nil, label: String? = nil, active: Bool, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Group {
+                if let symbol {
+                    Image(systemName: symbol)
+                } else if let label {
+                    Text(label).font(.system(size: 11, weight: .semibold))
+                }
+            }
+            .frame(width: 28, height: 26)
+            .background(active ? Color.white.opacity(0.16) : .clear, in: RoundedRectangle(cornerRadius: 4))
+            .contentShape(RoundedRectangle(cornerRadius: 4))
+        }
+        .buttonStyle(.plain)
+        .help(L10n.text(help))
+        .accessibilityLabel(L10n.text(help))
+    }
+}
+
+private struct TextWarpPopover: View {
+    @Bindable var session: EditorSession
+
+    private var currentWarp: TextWarpSettings {
+        session.currentTextStyle.warp ?? TextWarpSettings()
+    }
+
+    private func updateWarp(_ mutate: (inout TextWarpSettings) -> Void) {
+        session.changeTextStyle { style in
+            var warp = style.warp ?? TextWarpSettings()
+            mutate(&warp)
+            style.warp = warp.isActive ? warp : nil
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Warp Text").font(.headline)
+            Picker("Style", selection: Binding(get: { currentWarp.style }, set: { newStyle in
+                updateWarp { $0.style = newStyle }
+            })) {
+                ForEach(TextWarpStyle.allCases, id: \.self) { s in
+                    Text(L10n.text(s.rawValue)).tag(s)
+                }
+            }
+            if currentWarp.isActive {
+                warpSlider("Bend", value: Binding(get: { Double(currentWarp.bend * 100) },
+                                                  set: { v in updateWarp { $0.bend = CGFloat(v / 100) } }))
+                warpSlider("Horizontal Distortion", value: Binding(get: { Double(currentWarp.horizontalDistortion * 100) },
+                                                                   set: { v in updateWarp { $0.horizontalDistortion = CGFloat(v / 100) } }))
+                warpSlider("Vertical Distortion", value: Binding(get: { Double(currentWarp.verticalDistortion * 100) },
+                                                                 set: { v in updateWarp { $0.verticalDistortion = CGFloat(v / 100) } }))
+                HStack {
+                    Spacer()
+                    Button("Reset") {
+                        session.changeTextStyle { $0.warp = nil }
+                    }
+                    .controlSize(.small)
+                }
+            }
+        }
+        .padding(14)
+        .frame(width: 260)
+    }
+
+    private func warpSlider(_ title: String, value: Binding<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(L10n.text(title)).font(.caption)
+                Spacer()
+                Text("\(Int(value.wrappedValue.rounded()))%").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            Slider(value: value, in: -100...100)
+        }
     }
 }
 

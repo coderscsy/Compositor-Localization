@@ -90,3 +90,5 @@ Version 30 extends `LayerShapeStyle` with `Triangle`, `Polygon`, and `Star` shap
 Version 31 adds document-level Bézier vector paths (`paths` on `ProjectManifest`, containing named `VectorPath` records with cubic Bézier subpaths and anchor handles). Files declaring versions 1–30 cannot contain `paths`, and older app builds reject v31.
 
 Version 32 adds non-destructive per-layer vector masks (`vectorMask` on `ProjectLayerRecord`, storing a document-space `VectorPath`, `isEnabled`, and `inverted`). Files declaring versions 1–31 cannot contain `vectorMask`, and older app builds reject v32.
+
+Version 33 extends `LayerTextStyle` with `Justified` alignment, `underline`, `strikethrough`, `allCaps`, `baselineShift`, `vertical` column layout, non-destructive `warp` (`TextWarpSettings`: Arc/Arch/Bulge/Flag/Wave/Fish/Rise + bend & H/V distortion), and Text on Path (`path` + `pathOffset`). Files declaring versions 1–32 cannot contain these typography features, and older app builds reject v33.

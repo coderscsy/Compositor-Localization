@@ -1,7 +1,7 @@
 import AppKit
 
 nonisolated enum TextAlignment: String, Codable, CaseIterable, Sendable {
-    case left = "Left", center = "Center", right = "Right"
+    case left = "Left", center = "Center", right = "Right", justified = "Justified"
 }
 
 nonisolated struct LayerTextStyle: Codable, Equatable, Sendable {
@@ -32,12 +32,32 @@ nonisolated struct LayerTextStyle: Codable, Equatable, Sendable {
     var colorRuns: [LayerTextColorRun]? = nil
     /// Letters set in a face other than `fontName`, in the same offsets. Nil when the whole text is one face.
     var fontRuns: [LayerTextFontRun]? = nil
+    /// Extended typography options (format version 33). All nil by default for backward compatibility.
+    var underline: Bool? = nil
+    var strikethrough: Bool? = nil
+    var allCaps: Bool? = nil
+    var baselineShift: CGFloat? = nil
+    var vertical: Bool? = nil
+    var warp: TextWarpSettings? = nil
+    var path: VectorPath? = nil
+    var pathOffset: CGFloat? = nil
+
+    var hasVersion33Features: Bool {
+        alignment == .justified || underline == true || strikethrough == true || allCaps == true
+            || (baselineShift != nil && baselineShift != 0) || vertical == true
+            || warp?.isActive == true || path != nil || (pathOffset != nil && pathOffset != 0)
+    }
+
     var isValid: Bool {
         content.utf16.count <= 100_000 && boxIsValid
         && fontSize.isFinite && (1...2000).contains(fontSize)
         && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
         && tracking.isFinite && (-100...1000).contains(tracking)
         && leading.isFinite && (0...5000).contains(leading)
+        && (baselineShift.map { $0.isFinite && (-500...500).contains($0) } ?? true)
+        && (pathOffset.map { $0.isFinite && (-50_000...50_000).contains($0) } ?? true)
+        && (warp?.isValid ?? true)
+        && (path?.isValid ?? true)
         && colorRunsAreValid && fontRunsAreValid
     }
     private var colorRunsAreValid: Bool {
@@ -406,17 +426,28 @@ extension EditorSession {
 
     nonisolated static func textAttributes(_ style: LayerTextStyle) -> [NSAttributedString.Key: Any] {
         let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = style.alignment == .left ? .left : style.alignment == .center ? .center : .right
+        switch style.alignment {
+        case .left: paragraph.alignment = .left
+        case .center: paragraph.alignment = .center
+        case .right: paragraph.alignment = .right
+        case .justified: paragraph.alignment = .justified
+        }
         let font = NSFont(name: style.fontName, size: style.fontSize) ?? NSFont.systemFont(ofSize: style.fontSize)
         // Leading is the line's whole height, so the lines close up (and eventually overlap) as it comes down,
         // exactly as Photoshop's does. Auto is 120% of the size.
-        _ = font
         paragraph.minimumLineHeight = style.lineHeight
         paragraph.maximumLineHeight = style.lineHeight
         paragraph.lineBreakMode = .byWordWrapping
-        return [.font: NSFont(name: style.fontName, size: style.fontSize) ?? NSFont.systemFont(ofSize: style.fontSize),
-                .foregroundColor: NSColor(srgbRed: style.red, green: style.green, blue: style.blue, alpha: 1),
-                .paragraphStyle: paragraph, .kern: style.tracking]
+        var attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor(srgbRed: style.red, green: style.green, blue: style.blue, alpha: 1),
+            .paragraphStyle: paragraph,
+            .kern: style.tracking,
+        ]
+        if style.underline == true { attrs[.underlineStyle] = NSUnderlineStyle.single.rawValue }
+        if style.strikethrough == true { attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
+        if let shift = style.baselineShift, shift != 0 { attrs[.baselineOffset] = shift }
+        return attrs
     }
 
     /// How big point text is: what it measures, plus its padding. A caret's worth of width so an empty line still
@@ -433,8 +464,9 @@ extension EditorSession {
     }
 
     /// The text as it is drawn and measured, with each letter's own face and color.
-    static func attributedText(_ style: LayerTextStyle) -> NSMutableAttributedString {
-        let string = NSMutableAttributedString(string: style.content, attributes: textAttributes(style))
+    nonisolated static func attributedText(_ style: LayerTextStyle) -> NSMutableAttributedString {
+        let displayContent = style.allCaps == true ? style.content.localizedUppercase : style.content
+        let string = NSMutableAttributedString(string: displayContent, attributes: textAttributes(style))
         for run in style.fontRuns ?? [] where Self.containsTextRun(run.location, run.length, in: string.length) {
             let font = NSFont(name: run.fontName, size: style.fontSize) ?? NSFont.systemFont(ofSize: style.fontSize)
             string.addAttribute(.font, value: font, range: NSRange(location: run.location, length: run.length))
@@ -446,31 +478,51 @@ extension EditorSession {
         return string
     }
 
-    static func containsTextRun(_ location: Int, _ length: Int, in total: Int) -> Bool {
+    nonisolated static func containsTextRun(_ location: Int, _ length: Int, in total: Int) -> Bool {
         length > 0 && location >= 0 && location <= total - length
     }
 
     static func textImage(_ style: LayerTextStyle) throws -> CGImage {
         guard style.isValid else { throw ProjectError.invalid }
-        let string = attributedText(style)
-        let padding = LayerTextStyle.padding
-        let size = textBoxSize(style)
-        let width = ceil(size.width), height = ceil(size.height)
-        guard width.isFinite, height.isFinite, width >= 1, height >= 1,
-              width <= DocumentLimits.maxSideExtent, height <= DocumentLimits.maxSideExtent, width * height <= DocumentLimits.maxSurfaceExtent else { throw ProjectError.tooLarge }
-        let context = try BrushRaster.context(width: Int(width), height: Int(height), mask: false)
-        NSGraphicsContext.saveGraphicsState()
-        defer { NSGraphicsContext.restoreGraphicsState() }
-        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
-        let storage = NSTextStorage(attributedString: string)
-        let layout = NSLayoutManager()
-        let container = NSTextContainer(size: CGSize(width: max(1, width - 2 * padding), height: max(1, height - 2 * padding)))
-        container.lineFragmentPadding = 0
-        storage.addLayoutManager(layout)
-        layout.addTextContainer(container)
-        let glyphs = layout.glyphRange(for: container)
-        layout.drawGlyphs(forGlyphRange: glyphs, at: CGPoint(x: padding, y: padding))
-        guard let image = context.makeImage() else { throw ExportError.render }
-        return image
+        let baseImage: CGImage
+        if let path = style.path, !path.isEmpty {
+            baseImage = try TypographyRenderer.renderOnPath(style, path: path)
+        } else if style.vertical == true {
+            baseImage = try TypographyRenderer.renderVertical(style)
+        } else {
+            let string = attributedText(style)
+            let padding = LayerTextStyle.padding
+            let size = textBoxSize(style)
+            let width = ceil(size.width), height = ceil(size.height)
+            guard width.isFinite, height.isFinite, width >= 1, height >= 1,
+                  width <= DocumentLimits.maxSideExtent, height <= DocumentLimits.maxSideExtent, width * height <= DocumentLimits.maxSurfaceExtent else { throw ProjectError.tooLarge }
+            let context = try BrushRaster.context(width: Int(width), height: Int(height), mask: false)
+            NSGraphicsContext.saveGraphicsState()
+            defer { NSGraphicsContext.restoreGraphicsState() }
+            NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
+            let storage = NSTextStorage(attributedString: string)
+            let layout = NSLayoutManager()
+            let container = NSTextContainer(size: CGSize(width: max(1, width - 2 * padding), height: max(1, height - 2 * padding)))
+            container.lineFragmentPadding = 0
+            storage.addLayoutManager(layout)
+            layout.addTextContainer(container)
+            let glyphs = layout.glyphRange(for: container)
+            layout.drawGlyphs(forGlyphRange: glyphs, at: CGPoint(x: padding, y: padding))
+            guard let image = context.makeImage() else { throw ExportError.render }
+            baseImage = image
+        }
+        if let warp = style.warp, warp.isActive {
+            return try TypographyRenderer.applyWarp(baseImage, warp: warp)
+        }
+        return baseImage
+    }
+
+    /// Attaches the current text draft or active live text layer to the active document `VectorPath`, or detaches it.
+    func toggleTextOnActivePath() {
+        if currentTextStyle.path != nil {
+            changeTextStyle { $0.path = nil; $0.pathOffset = nil }
+        } else if let path = activePath, !path.isEmpty {
+            changeTextStyle { $0.path = path; $0.vertical = nil }
+        }
     }
 }

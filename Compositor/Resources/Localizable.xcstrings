@@ -3688,6 +3688,28 @@
         }
       }
     },
+    "Align justified": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Align justified"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "两端对齐"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左右對齊"
+          }
+        }
+      }
+    },
     "Align left": {
       "extractionState": "manual",
       "localizations": {
@@ -3870,6 +3892,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "全選"
+          }
+        }
+      }
+    },
+    "All Caps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Caps"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部大写"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部大寫"
           }
         }
       }
@@ -4826,6 +4870,50 @@
         }
       }
     },
+    "Arc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arc"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扇形"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扇形"
+          }
+        }
+      }
+    },
+    "Arch": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arch"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拱形"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拱形"
+          }
+        }
+      }
+    },
     "Aspect": {
       "extractionState": "manual",
       "localizations": {
@@ -4916,6 +5004,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Atkinson（經典 Mac）"
+          }
+        }
+      }
+    },
+    "Attach text to the active vector path, or detach it": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attach text to the active vector path, or detach it"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将文字排布到当前矢量路径上，或取消路径附着"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將文字排布到目前向量路徑上，或取消路徑附著"
           }
         }
       }
@@ -5325,6 +5435,50 @@
         }
       }
     },
+    "Baseline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baseline"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基线"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基線"
+          }
+        }
+      }
+    },
+    "Baseline shift in pixels": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baseline shift in pixels"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基线偏移（像素）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基線偏移（像素）"
+          }
+        }
+      }
+    },
     "Basic": {
       "extractionState": "manual",
       "localizations": {
@@ -5577,6 +5731,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "背後"
+          }
+        }
+      }
+    },
+    "Bend": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bend"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弯曲"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "彎曲"
           }
         }
       }
@@ -7766,6 +7942,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "畫筆工具"
+          }
+        }
+      }
+    },
+    "Bulge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bulge"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凸起"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凸起"
           }
         }
       }
@@ -18024,6 +18222,28 @@
         }
       }
     },
+    "Detach Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detach Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消路徑"
+          }
+        }
+      }
+    },
     "Detail": {
       "extractionState": "manual",
       "localizations": {
@@ -25460,6 +25680,28 @@
         }
       }
     },
+    "Fish": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fish"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鱼形"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "魚形"
+          }
+        }
+      }
+    },
     "Fit": {
       "localizations": {
         "de": {
@@ -25594,6 +25836,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "將畫布調整為適合視窗大小（⌘0）"
+          }
+        }
+      }
+    },
+    "Flag": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flag"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旗帜"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旗幟"
           }
         }
       }
@@ -30523,6 +30787,28 @@
         }
       }
     },
+    "Horizontal Distortion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horizontal Distortion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水平扭曲"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水平扭曲"
+          }
+        }
+      }
+    },
     "Horizontal Spacing": {
       "extractionState": "manual",
       "localizations": {
@@ -35022,6 +35308,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "反轉向量遮色片"
+          }
+        }
+      }
+    },
+    "Justified": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justified"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "两端对齐"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左右對齊"
           }
         }
       }
@@ -45674,6 +45982,28 @@
         }
       }
     },
+    "On Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径文字"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路徑文字"
+          }
+        }
+      }
+    },
     "Once": {
       "localizations": {
         "de": {
@@ -54515,6 +54845,28 @@
         }
       }
     },
+    "Rise": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rise"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上升"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上升"
+          }
+        }
+      }
+    },
     "Rotate": {
       "extractionState": "manual",
       "localizations": {
@@ -62384,6 +62736,28 @@
         }
       }
     },
+    "Strikethrough": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strikethrough"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除线"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除線"
+          }
+        }
+      }
+    },
     "Stripes": {
       "localizations": {
         "en": {
@@ -67733,6 +68107,28 @@
         }
       }
     },
+    "Underline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underline"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下划线"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "底線"
+          }
+        }
+      }
+    },
     "Underlying Layer": {
       "extractionState": "stale",
       "localizations": {
@@ -69332,6 +69728,28 @@
         }
       }
     },
+    "Vertical Distortion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vertical Distortion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "垂直扭曲"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "垂直扭曲"
+          }
+        }
+      }
+    },
     "Vertical Spacing": {
       "extractionState": "manual",
       "localizations": {
@@ -69375,6 +69793,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "垂直間距"
+          }
+        }
+      }
+    },
+    "Vertical Text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vertical Text"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "竖排文字"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直排文字"
           }
         }
       }
@@ -69872,6 +70312,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "冷暖"
+          }
+        }
+      }
+    },
+    "Warp": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warp"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "变形"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "變形"
+          }
+        }
+      }
+    },
+    "Warp Text": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warp Text"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字变形"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字變形"
+          }
+        }
+      }
+    },
+    "Warp Text (Arc, Arch, Bulge, Flag, Wave, Fish, Rise)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warp Text (Arc, Arch, Bulge, Flag, Wave, Fish, Rise)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字变形（扇形、拱形、凸起、旗帜、波浪、鱼形、上升）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字變形（扇形、拱形、凸起、旗幟、波浪、魚形、上升）"
+          }
+        }
+      }
+    },
+    "Wave": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wave"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "波浪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "波浪"
           }
         }
       }

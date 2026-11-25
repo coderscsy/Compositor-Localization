@@ -18,7 +18,7 @@ extension UTType {
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
     /// Note: version 27 was historically used by the GIF branch, so new features after 26 begin at 28.
-    static let current = 32
+    static let current = 33
     /// Every version `load` accepts (1 through `current`, including historical GIF v27).
     static let supported = Set(1...current)
 
@@ -444,10 +444,11 @@ actor ProjectStore {
                 guard manifest.version >= 32, vectorMask.isValid else { throw ProjectError.invalid }
             }
             if let text = layer.text {
-                // Per-letter colors arrived in version 10, per-letter faces in version 11.
+                // Per-letter colors arrived in version 10, per-letter faces in version 11, extended typography/warp/path in version 33.
                 guard text.isValid,
                       text.colorRuns == nil || manifest.version >= 10,
                       text.fontRuns == nil || manifest.version >= 11,
+                      !text.hasVersion33Features || manifest.version >= 33,
                       layer.imageFile != nil, layer.isGroup != true, layer.adjustment == nil else { throw ProjectError.invalid }
             }
             if let adjustment = layer.adjustment {

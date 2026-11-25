@@ -234,7 +234,7 @@ nonisolated enum PSDText {
 
     private static func horizontalAnchor(_ style: LayerTextStyle, width: CGFloat) -> CGFloat {
         switch style.alignment {
-        case .left: LayerTextStyle.padding
+        case .left, .justified: LayerTextStyle.padding
         case .center: width / 2
         case .right: width - LayerTextStyle.padding
         }
