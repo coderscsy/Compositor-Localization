@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BrushControls: View {
     @Bindable var session: EditorSession
+    @State private var showsTipPopover = false
     var body: some View {
         HStack(spacing: 12) {
             Text(L10n.text(session.tool == .spotHealing ? "Spot Healing"
@@ -17,6 +18,23 @@ struct BrushControls: View {
                         }
                         .pickerStyle(.segmented).labelsHidden().fixedSize()
                         .help("Paint with the foreground color (B), or erase pixels away (E)")
+                        Menu {
+                            ForEach(BrushPreset.builtIn) { preset in
+                                Button(L10n.text(preset.name)) { session.applyBrushPreset(preset) }
+                            }
+                        } label: {
+                            Label(L10n.text("Presets"), systemImage: "paintbrush")
+                        }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+                        .help("Apply a built-in brush preset")
+                        if session.brushMode == .paint && !session.isMaskSelected {
+                            Picker("Blend Mode", selection: $session.brushSettings.blendMode) {
+                                ForEach(BrushBlendMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                            }
+                            .pickerStyle(.menu).labelsHidden().fixedSize()
+                            .help("Brush blend mode")
+                        }
                     }
                     if session.tool == .blur {
                         Picker("Mode", selection: $session.blurMode) {
@@ -134,8 +152,54 @@ struct BrushControls: View {
                                     change: { session.brushSettings.blurRadius = CGFloat(min(50, max(0.5, $0))) })
                         .help("How far the blur softens, in pixels")
                     }
-                    // Paint and Erase only: healing, cloning and smearing have their own feel.
+                    // Paint and Erase only: Flow, Airbrush, Tip Dynamics, Smoothing, Anti-alias.
                     if session.tool == .brush {
+                        Text("Flow")
+                            .scrubbable(sensitivity: 0.01, value: $session.brushSettings.flow, range: 0.01...1)
+                        AppSlider(value: $session.brushSettings.flow, in: 0.01...1).frame(width: 80)
+                            .accessibilityLabel("Flow")
+                        TextField("Flow", value: Binding<Double>(get: { Double(session.brushSettings.flow * 100) },
+                                                                 set: { session.brushSettings.flow = $0.isFinite ? CGFloat(min(100, max(1, $0)) / 100) : 1 }),
+                                  format: .number.precision(.fractionLength(0)))
+                        .frame(width: 42).textFieldStyle(.roundedBorder)
+                        .arrowSteps(value: { Double(session.brushSettings.flow * 100) },
+                                    change: { session.brushSettings.flow = CGFloat(min(100, max(1, $0)) / 100) })
+                        .unitSuffix("%")
+                        Toggle("Airbrush", isOn: $session.brushSettings.airbrush)
+                            .help("Continue depositing paint while holding the mouse button down")
+                        Button {
+                            showsTipPopover.toggle()
+                        } label: {
+                            Label(L10n.text("Tip"), systemImage: "slider.horizontal.3")
+                        }
+                        .buttonStyle(.bordered)
+                        .popover(isPresented: $showsTipPopover) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Brush Tip Shape").font(.headline)
+                                HStack {
+                                    Text("Angle").frame(width: 72, alignment: .leading)
+                                    AppSlider(value: $session.brushSettings.angle, in: -180...180).frame(width: 120)
+                                    Text("\(Int(session.brushSettings.angle.rounded()))°").frame(width: 38, alignment: .trailing).monospacedDigit()
+                                }
+                                HStack {
+                                    Text("Roundness").frame(width: 72, alignment: .leading)
+                                    AppSlider(value: $session.brushSettings.roundness, in: 0.05...1).frame(width: 120)
+                                    Text("\(Int((session.brushSettings.roundness * 100).rounded()))%").frame(width: 38, alignment: .trailing).monospacedDigit()
+                                }
+                                HStack {
+                                    Text("Spacing").frame(width: 72, alignment: .leading)
+                                    AppSlider(value: $session.brushSettings.spacing, in: 0...1.5).frame(width: 120)
+                                    Text(session.brushSettings.spacing <= 0 ? L10n.text("Auto") : "\(Int((session.brushSettings.spacing * 100).rounded()))%")
+                                        .frame(width: 38, alignment: .trailing).monospacedDigit()
+                                }
+                                HStack {
+                                    Text("Scatter").frame(width: 72, alignment: .leading)
+                                    AppSlider(value: $session.brushSettings.scatter, in: 0...1).frame(width: 120)
+                                    Text("\(Int((session.brushSettings.scatter * 100).rounded()))%").frame(width: 38, alignment: .trailing).monospacedDigit()
+                                }
+                            }
+                            .padding(14)
+                        }
                         Text("Smoothing")
                             .scrubbable(sensitivity: 1, value: $session.brushSettings.smoothing, range: 0...100)
                         AppSlider(value: $session.brushSettings.smoothing, in: 0...100).frame(width: 100)

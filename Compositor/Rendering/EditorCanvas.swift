@@ -2767,6 +2767,11 @@ final class CanvasView: NSView {
     /// Grabs an existing endpoint, or starts a new line at the pointer.
     private func beginGradientDrag(at point: CGPoint) {
         guard let document = session.document else { return }
+        if session.fillToolMode == .paintBucket {
+            session.applyPaintBucket(at: session.viewport.documentPoint(from: point, documentSize: document.size))
+            synchronizeDisplay()
+            return
+        }
         if let geometry = transformOverlay.gradientLine {
             if hypot(point.x - geometry.end.x, point.y - geometry.end.y) <= 10 { gradientDrag = .end; return }
             if hypot(point.x - geometry.start.x, point.y - geometry.start.y) <= 10 { gradientDrag = .start; return }

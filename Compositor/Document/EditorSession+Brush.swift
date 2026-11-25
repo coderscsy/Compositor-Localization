@@ -95,8 +95,19 @@ extension EditorSession {
             settings.healing = tool == .spotHealing
             settings.erasing = tool == .brush && brushMode == .erase && !isMaskSelected
             settings.healingMode = spotHealingMode
-            // The pressure buttons belong to the Brush; the other brush tools paint at full pressure.
-            if tool != .brush { settings.pressureSize = false; settings.pressureOpacity = false; settings.antialiased = true }
+            // The pressure buttons and advanced brush engine settings belong to Brush/Eraser; other brush tools use standard round tips.
+            if tool != .brush {
+                settings.pressureSize = false
+                settings.pressureOpacity = false
+                settings.antialiased = true
+                settings.flow = 1
+                settings.airbrush = false
+                settings.blendMode = .normal
+                settings.angle = 0
+                settings.roundness = 1
+                settings.spacing = 0
+                settings.scatter = 0
+            }
             // A pencil is always hard.
             if !settings.antialiased { settings.hardness = 1 }
             if isMaskSelected { settings.red = maskPaintWhite ? 1 : 0; settings.green = settings.red; settings.blue = settings.red }
@@ -160,6 +171,7 @@ extension EditorSession {
             brushPointer = point
             lastBrushPoint = (point, layer.id, isMaskSelected)
             brushRevision += 1
+            startAirbrushTimer(at: point, pressure: brushPressure)
         } catch { cancelBrush(); brushError = error.localizedDescription }
     }
     func continueBrush(at point: CGPoint, pressure: CGFloat? = nil) {
@@ -167,7 +179,10 @@ extension EditorSession {
         guard let brushStroke else { return }
         brushPointer = point
         if let pressure { brushPressure = pressure }
+        airbrushPoint = point
+        airbrushPressure = brushPressure
         guard let painted = smoothed(point) else { return }
+        airbrushPoint = painted
         do { try appendToBrush(painted, pressure: brushPressure); lastBrushPoint?.point = painted; brushRevision += 1 }
         catch { cancelBrush(); brushError = error.localizedDescription }
     }
@@ -266,6 +281,7 @@ extension EditorSession {
     }
 
     func cancelBrush() {
+        stopAirbrushTimer()
         brushInput = []
         warpStroke = nil
         brushStroke = nil

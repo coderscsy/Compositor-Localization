@@ -5,31 +5,57 @@ struct GradientControls: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text("Gradient").font(ToolHeaderStyle.titleFont)
+            Text(L10n.text(session.fillToolMode.rawValue)).font(ToolHeaderStyle.titleFont)
             ScrollView(.horizontal) {
                 HStack(spacing: 12) {
-                    Picker("Shape", selection: $session.gradientSettings.shape) {
-                        ForEach(GradientShape.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                    Picker("Tool", selection: $session.fillToolMode) {
+                        ForEach(FillToolMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
                     }
                     .pickerStyle(.segmented).labelsHidden().fixedSize()
-                    .help("Linear runs along the line; Radial spreads out from the start point")
-                    swatch
-                    Picker("Colors", selection: $session.gradientSettings.style) {
-                        ForEach(GradientStyle.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                    if session.fillToolMode == .paintBucket {
+                        if !session.isMaskSelected {
+                            Picker("Blend Mode", selection: $session.paintBucketSettings.blendMode) {
+                                ForEach(BrushBlendMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                            }
+                            .pickerStyle(.menu).labelsHidden().fixedSize()
+                        }
+                        Text("Tolerance")
+                        AppSlider(value: Binding<Double>(
+                            get: { Double(session.paintBucketSettings.tolerance) },
+                            set: { session.paintBucketSettings.tolerance = Int($0.rounded()) }
+                        ), in: 0...255).frame(width: 90)
+                        TextField("Tolerance", value: $session.paintBucketSettings.tolerance, format: .number)
+                            .frame(width: 42).textFieldStyle(.roundedBorder)
+                        Toggle("Contiguous", isOn: $session.paintBucketSettings.contiguous)
+                        Toggle("All Layers", isOn: $session.paintBucketSettings.sampleAllLayers)
+                            .disabled(session.isMaskSelected)
+                        Text("Opacity").scrubbable(sensitivity: 0.01, value: $session.paintBucketSettings.opacity, range: 0.01...1)
+                        AppSlider(value: $session.paintBucketSettings.opacity, in: 0.01...1).frame(width: 90)
+                        Text("\(Int((session.paintBucketSettings.opacity * 100).rounded()))%").monospacedDigit().frame(width: 36)
+                    } else {
+                        Picker("Shape", selection: $session.gradientSettings.shape) {
+                            ForEach(GradientShape.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                        }
+                        .pickerStyle(.segmented).labelsHidden().fixedSize()
+                        .help("Linear runs along the line; Radial spreads out from the start point")
+                        swatch
+                        Picker("Colors", selection: $session.gradientSettings.style) {
+                            ForEach(GradientStyle.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                        }
+                        .labelsHidden().fixedSize()
+                        Toggle("Reverse", isOn: $session.gradientSettings.reversed)
+                        Text("Opacity").scrubbable(sensitivity: 0.01, value: $session.gradientSettings.opacity, range: 0.01...1)
+                        AppSlider(value: $session.gradientSettings.opacity, in: 0.01...1).frame(width: 100)
+                            .accessibilityLabel("Opacity")
+                        TextField("Opacity", value: Binding<Double>(get: { Double(session.gradientSettings.opacity * 100) },
+                                                                    set: { session.gradientSettings.opacity = $0.isFinite ? CGFloat(min(100, max(1, $0)) / 100) : 1 }),
+                                  format: .number.precision(.fractionLength(0)))
+                        .frame(width: 42).textFieldStyle(.roundedBorder)
+                        .arrowSteps(value: { Double(session.gradientSettings.opacity * 100) },
+                                    change: { session.gradientSettings.opacity = CGFloat(min(100, max(1, $0)) / 100) })
+                        .help("Press 1–9 for 10–90%, 0 for 100%")
+                        .unitSuffix("%")
                     }
-                    .labelsHidden().fixedSize()
-                    Toggle("Reverse", isOn: $session.gradientSettings.reversed)
-                    Text("Opacity").scrubbable(sensitivity: 0.01, value: $session.gradientSettings.opacity, range: 0.01...1)
-                    AppSlider(value: $session.gradientSettings.opacity, in: 0.01...1).frame(width: 100)
-                        .accessibilityLabel("Opacity")
-                    TextField("Opacity", value: Binding<Double>(get: { Double(session.gradientSettings.opacity * 100) },
-                                                                set: { session.gradientSettings.opacity = $0.isFinite ? CGFloat(min(100, max(1, $0)) / 100) : 1 }),
-                              format: .number.precision(.fractionLength(0)))
-                    .frame(width: 42).textFieldStyle(.roundedBorder)
-                    .arrowSteps(value: { Double(session.gradientSettings.opacity * 100) },
-                                change: { session.gradientSettings.opacity = CGFloat(min(100, max(1, $0)) / 100) })
-                    .help("Press 1–9 for 10–90%, 0 for 100%")
-                    .unitSuffix("%")
                 }
             }
             .scrollIndicators(.never)

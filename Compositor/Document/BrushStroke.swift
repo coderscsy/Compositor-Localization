@@ -14,6 +14,19 @@ nonisolated struct BrushSettings: Sendable {
     var blue: CGFloat = 0
     /// Caps the whole stroke, as in Photoshop: overlapping dabs never exceed it.
     var opacity: CGFloat = 1
+    /// Per-dab paint deposition (0.01–1). Overlapping dabs inside one stroke build up toward `opacity`.
+    var flow: CGFloat = 1
+    /// Airbrush mode: holding the tip down keeps depositing paint at `flow` rate.
+    var airbrush = false
+    /// Tool blend mode (Normal, Multiply, Screen, Behind, Clear, etc.).
+    var blendMode: BrushBlendMode = .normal
+    /// Brush tip angle in degrees (-180…180) and elliptical roundness (0.05…1).
+    var angle: CGFloat = 0
+    var roundness: CGFloat = 1
+    /// Explicit dab spacing as a fraction of diameter (0 uses the default automatic spacing).
+    var spacing: CGFloat = 0
+    /// Deterministic dab scatter fraction (0…1) for dry/spatter presets.
+    var scatter: CGFloat = 0
     /// 0–100. The brush trails the pointer on a string of this length, so a shaky hand
     /// draws a smooth line; 0 follows the pointer exactly.
     var smoothing: CGFloat = 0
@@ -36,6 +49,11 @@ nonisolated struct BrushSettings: Sendable {
     var eraseRed: CGFloat = 1
     var eraseGreen: CGFloat = 1
     var eraseBlue: CGFloat = 1
+
+    /// Whether any advanced brush engine feature requires the tiled dab renderer rather than the round GPU fast path.
+    var usesAdvancedTip: Bool {
+        flow < 0.999 || airbrush || blendMode != .normal || roundness < 0.999 || abs(angle) > 0.01 || spacing > 0 || scatter > 0
+    }
 
     /// What a press of `pressure` (0–1) does to the tip: its size as a share of the full diameter, and its strength.
     func dynamics(_ pressure: CGFloat) -> (scale: CGFloat, strength: CGFloat) {
@@ -218,6 +236,7 @@ final class BrushStroke {
     /// Coverage under the provisional tail; nil where the tile had no coverage yet.
     private var tailBackup: [Int: CGImage?] = [:]
     private var distanceToNext: CGFloat = 0
+    private var dabIndex: UInt32 = 0
     private(set) var dirtyDocumentRect: CGRect?
     private struct Tile { let rect: CGRect; let context: CGContext; var image: CGImage?; let base: CGImage? }
     private var tiles: [Int: Tile] = [:]
@@ -238,7 +257,7 @@ final class BrushStroke {
     /// `growsMask`: a brush on a mask can paint anywhere on the canvas, as Photoshop's does, growing the mask past its
     /// layer. Other edits of a mask stay within it.
     init(layer: ImageLayer, mask: Bool, settings: BrushSettings, canvas: CGSize, useGPU: Bool = true, growsMask: Bool = false) throws {
-        gpu = useGPU ? MetalBrushCoverage.shared : nil
+        gpu = (useGPU && !settings.usesAdvancedTip) ? MetalBrushCoverage.shared : nil
         self.layer = layer
         originalLayer = layer
         isMask = mask
@@ -288,7 +307,7 @@ final class BrushStroke {
         let square = abs(pixelToDocument.b) < 1e-9 && abs(pixelToDocument.c) < 1e-9
             && scaleX > 1e-9 && abs(scaleX - scaleY) < 1e-9
         let gridDiameter = settings.diameter / scaleX
-        gridTip = gpu == nil && settings.antialiased && square && gridDiameter >= 1 && gridDiameter <= Self.gridTipLimit
+        gridTip = gpu == nil && !settings.usesAdvancedTip && settings.antialiased && square && gridDiameter >= 1 && gridDiameter <= Self.gridTipLimit
             ? try Self.tip(diameter: gridDiameter, hardness: settings.hardness, falloff: falloff) : nil
         // Drawn through the tile transform, the stamp is rendered as finely as the layer's pixels: magnified onto
         // the finer grid of a scaled-down layer, it left blocky dabs that showed once the layer was scaled back up.
@@ -569,9 +588,25 @@ final class BrushStroke {
     /// The software fallback lays actual dabs at this spacing.
     static func spacingFraction(_ hardness: CGFloat) -> CGFloat { hardness >= 1 ? 0.015 : 0.025 }
 
+    /// Deposits an additional dab at `point` while the mouse is held stationary in Airbrush mode.
+    func airbrushPulse(at point: CGPoint, pressure: CGFloat = 1) throws {
+        guard settings.airbrush, gpu == nil else { return }
+        var changed = Set<Int>()
+        try dab(point, pressure: pressure, changed: &changed)
+        try publish(changed)
+    }
+
     /// Lays evenly spaced dabs along a straight run from the previous dab position.
     private func walk(to point: CGPoint, pressure: CGFloat = 1, changed: inout Set<Int>) throws {
-        let spacing = max(0.25, settings.diameter * Self.spacingFraction(settings.hardness))
+        let fraction: CGFloat
+        if settings.spacing > 0 {
+            fraction = min(2, max(0.01, settings.spacing))
+        } else if settings.flow < 0.999 {
+            fraction = 0.12
+        } else {
+            fraction = Self.spacingFraction(settings.hardness)
+        }
+        let spacing = max(0.25, settings.diameter * fraction)
         if let previous {
             let dx = point.x - previous.x, dy = point.y - previous.y
             let length = hypot(dx, dy)
@@ -638,8 +673,72 @@ final class BrushStroke {
                     tile.context.restoreGState()
                 } else {
                     tile.context.saveGState()
-                    if settings.lockTransparent, !isMask { tile.context.setBlendMode(.sourceAtop) }
-                    BrushRaster.fill(paintColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                    let mode = isMask ? .normal : settings.blendMode
+                    switch mode {
+                    case .normal:
+                        if settings.lockTransparent, !isMask { tile.context.setBlendMode(.sourceAtop) }
+                        BrushRaster.fill(paintColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                    case .behind:
+                        if !settings.lockTransparent {
+                            tile.context.setBlendMode(.destinationOver)
+                            BrushRaster.fill(paintColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                        }
+                    case .clear:
+                        if settings.lockTransparent {
+                            tile.context.setBlendMode(.sourceAtop)
+                            BrushRaster.fill(eraseFillColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                        } else {
+                            tile.context.setBlendMode(.destinationOut)
+                            BrushRaster.fill(Self.eraseColor, coverage: mask, in: local, alpha: settings.opacity, context: tile.context)
+                        }
+                    default:
+                        if let kIndex = mode.styleKernelIndex,
+                           let dstRaw = tile.context.data,
+                           let covRaw = coverage.data {
+                            let tw = Int(tile.rect.width), th = Int(tile.rect.height)
+                            let dstBytes = dstRaw.assumingMemoryBound(to: UInt8.self)
+                            // Build clipped coverage if selection or lockTransparent is active.
+                            let covBytes = covRaw.assumingMemoryBound(to: UInt8.self)
+                            var clipCtx: CGContext?
+                            var clipBytes: UnsafeMutablePointer<UInt8>?
+                            if settings.lockTransparent || selectionClip != nil {
+                                let c = try BrushRaster.context(width: tw, height: th, mask: true)
+                                let cb = c.data!.assumingMemoryBound(to: UInt8.self)
+                                if settings.lockTransparent {
+                                    layer_extract_alpha(dstBytes, tile.context.bytesPerRow, cb, c.bytesPerRow, tw, th)
+                                } else {
+                                    c.setFillColor(gray: 1, alpha: 1)
+                                    c.fill(local)
+                                }
+                                if let selectionClip {
+                                    let sel = try BrushRaster.context(width: tw, height: th, mask: true)
+                                    sel.setFillColor(gray: 0, alpha: 1)
+                                    sel.fill(local)
+                                    sel.saveGState()
+                                    sel.translateBy(x: -tile.rect.minX, y: -tile.rect.minY)
+                                    sel.concatenate(pixelToDocument.inverted())
+                                    selectionClip.apply(to: sel)
+                                    sel.setFillColor(gray: 1, alpha: 1)
+                                    sel.fill(canvas)
+                                    sel.restoreGState()
+                                    if let sb = sel.data?.assumingMemoryBound(to: UInt8.self) {
+                                        for i in 0..<(tw * th) {
+                                            cb[i] = UInt8((Int(cb[i]) * Int(sb[i]) + 127) / 255)
+                                        }
+                                    }
+                                }
+                                clipCtx = c
+                                clipBytes = cb
+                            }
+                            style_blend_solid(dstBytes, Int32(tile.context.bytesPerRow),
+                                              covBytes, Int32(coverage.bytesPerRow),
+                                              clipBytes, Int32(clipCtx?.bytesPerRow ?? 0),
+                                              Int32(tw), Int32(th),
+                                              Float(settings.red), Float(settings.green), Float(settings.blue),
+                                              Float(settings.opacity), kIndex)
+                            _ = clipCtx
+                        }
+                    }
                     tile.context.restoreGState()
                 }
                 tile.context.restoreGState()
@@ -705,20 +804,39 @@ final class BrushStroke {
     private static let eraseColor = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
     private static let healingWash = CGColor(srgbRed: 0.12, green: 0.12, blue: 0.12, alpha: 1)
 
-    private func dab(_ point: CGPoint, pressure: CGFloat = 1, changed: inout Set<Int>) throws {
+    private static func scatterHash(_ n: UInt32) -> CGFloat {
+        var x = n
+        x ^= x >> 16; x &*= 0x7feb352d
+        x ^= x >> 15; x &*= 0x846ca68b
+        x ^= x >> 16
+        return CGFloat(x >> 8) / 16777216.0
+    }
+
+    private func dab(_ rawPoint: CGPoint, pressure: CGFloat = 1, changed: inout Set<Int>) throws {
         let dynamics = settings.dynamics(pressure)
-        guard dynamics.strength > 0 else { return }
-        // A dab smaller or fainter than the full tip is drawn rather than blitted from the full-size one.
-        let full = dynamics.scale == 1 && dynamics.strength == 1
+        let flow = min(1, max(0.01, settings.flow))
+        let strength = dynamics.strength * flow
+        guard strength > 0 else { return }
+        dabIndex &+= 1
+        var point = rawPoint
+        if settings.scatter > 0 {
+            let spread = settings.diameter * min(1, settings.scatter)
+            let ox = (Self.scatterHash(dabIndex &* 2654435761) - 0.5) * 2 * spread
+            let oy = (Self.scatterHash(dabIndex &* 2246822519 ^ 0x9e3779b1) - 0.5) * 2 * spread
+            point = CGPoint(x: rawPoint.x + ox, y: rawPoint.y + oy)
+        }
+        let roundness = min(1, max(0.05, settings.roundness))
+        let angleRadians = settings.angle * .pi / 180
+        let elliptical = roundness < 0.999 || abs(angleRadians) > 0.0001
+        // A dab smaller, fainter, or elliptical is drawn through the tip transform rather than blitted.
+        let full = dynamics.scale == 1 && strength == 1 && !elliptical
         let radius = settings.diameter / 2 * dynamics.scale
         let circle = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
         let clipped = circle.intersection(canvas)
         guard !clipped.isNull, !clipped.isEmpty else { return }
         let inverse = pixelToDocument.inverted()
         let pixelCanvas = canvas.applying(inverse)
-        // Snapped to whole pixels so the tip lands 1:1 with nothing to resample. The tip is
-        // radially symmetric, so the layer's flip is harmless, and half a pixel of placement
-        // sits far below what a dab's soft rim resolves.
+        // Snapped to whole pixels so the tip lands 1:1 with nothing to resample.
         let blit: CGRect? = (full ? gridTip : nil).map { tip in
             let center = point.applying(inverse)
             return CGRect(x: (center.x - CGFloat(tip.width) / 2).rounded(),
@@ -762,22 +880,27 @@ final class BrushStroke {
                 context.concatenate(inverse)
                 context.clip(to: canvas)
                 context.setShouldAntialias(settings.antialiased)
-                context.setBlendMode(settings.hardness >= 1 ? .lighten : .screen)
-                if settings.hardness >= 1, dynamics.strength < 1 {
-                    // Lighten with a gray as strong as the press: the stroke builds to the firmest press, never past it.
-                    context.setFillColor(gray: dynamics.strength, alpha: 1)
+                // Flow < 1 or Airbrush always accumulates via Screen so overlapping dabs build up smoothly.
+                let accumulates = settings.hardness < 1 || flow < 0.999 || settings.airbrush
+                context.setBlendMode(accumulates ? .screen : .lighten)
+                if elliptical {
+                    context.translateBy(x: point.x, y: point.y)
+                    if abs(angleRadians) > 0.0001 { context.rotate(by: angleRadians) }
+                    context.scaleBy(x: 1, y: roundness)
+                    context.translateBy(x: -point.x, y: -point.y)
+                }
+                if settings.hardness >= 1, strength < 1 {
+                    context.setFillColor(gray: strength, alpha: 1)
                     context.fillEllipse(in: circle)
                 } else if let stamp {
-                    context.setAlpha(dynamics.strength)
-                    // Stamp the pre-rendered tip: drawing the falloff procedurally for every
-                    // dab (a 60 px brush lays ~14 per mouse move) is what made strokes stutter.
+                    context.setAlpha(strength)
                     context.interpolationQuality = .low
                     context.draw(stamp, in: circle)
                 } else if settings.hardness >= 1 {
                     context.setFillColor(gray: 1, alpha: 1)
                     context.fillEllipse(in: circle)
                 } else if let falloff {
-                    context.setAlpha(dynamics.strength)
+                    context.setAlpha(strength)
                     context.drawRadialGradient(falloff, startCenter: point, startRadius: radius * settings.hardness,
                         endCenter: point, endRadius: radius, options: [.drawsBeforeStartLocation])
                 }
