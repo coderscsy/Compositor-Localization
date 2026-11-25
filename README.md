@@ -1,12 +1,14 @@
 # Compositor Localization
 
+**[Download for macOS · 下载 DMG](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg)** · [Releases](https://github.com/coderscsy/Compositor-Localization/releases)
+
 **English** · [简体中文](docs/readme/README.zh-Hans.md) · [繁體中文](docs/readme/README.zh-Hant.md) · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
 
 Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s Compositor](https://github.com/robbietilton/Compositor), an open-source image editor for compositing and photo editing. Development, testing, and releases for this fork focus exclusively on **macOS on Apple silicon**. The first release is based on upstream Compositor 1.7.1.
 
 ## Download for macOS
 
-Download [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg) for a Mac with **Apple silicon and macOS 26 or later**. The release also includes `SHA256SUMS.txt` to verify the download. Open the disk image and copy the app to Applications. [GitHub preview release](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+The public preview requires **Apple silicon and macOS 26 or later**. The release also includes `SHA256SUMS.txt` to verify the download. Open the disk image and copy the app to Applications. [GitHub preview release](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
 
 The app uses ad hoc signing and has not been notarized by Apple. Gatekeeper may block it the first time you open it. You can also build the app from source. [Apple’s guide to opening Mac apps](https://support.apple.com/en-us/102445)
 
