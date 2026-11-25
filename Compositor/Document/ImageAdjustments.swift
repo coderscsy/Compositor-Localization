@@ -162,6 +162,15 @@ nonisolated struct ColorBalanceSettings: Codable, Equatable, Sendable {
     }
     var isValid: Bool { all.allSatisfy { $0.isFinite && Self.range.contains($0) } }
     var isIdentity: Bool { all.allSatisfy { $0 == 0 } }
+    var normalized: ColorBalanceSettings {
+        func clamp(_ value: Double) -> Double { value.isFinite ? min(100, max(-100, value)) : 0 }
+        return ColorBalanceSettings(
+            shadowCyanRed: clamp(shadowCyanRed), shadowMagentaGreen: clamp(shadowMagentaGreen), shadowYellowBlue: clamp(shadowYellowBlue),
+            midCyanRed: clamp(midCyanRed), midMagentaGreen: clamp(midMagentaGreen), midYellowBlue: clamp(midYellowBlue),
+            highlightCyanRed: clamp(highlightCyanRed), highlightMagentaGreen: clamp(highlightMagentaGreen), highlightYellowBlue: clamp(highlightYellowBlue),
+            preserveLuminosity: preserveLuminosity
+        )
+    }
     func apply(_ image: CGImage) throws -> CGImage {
         guard isValid else { throw ProjectError.invalid }
         guard !isIdentity else { return image }

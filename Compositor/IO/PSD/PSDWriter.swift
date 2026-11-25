@@ -17,7 +17,9 @@ nonisolated enum PSDWriter {
     /// What `write` will change, in layer order, top first.
     static func notes(for snapshot: ProjectSnapshot) -> [Note] {
         snapshot.manifest.layers.reversed().compactMap { layer -> Note? in
-            if layer.adjustment != nil { return Note(layerName: layer.name, change: .adjustmentLeftOut) }
+            if let adj = layer.adjustment {
+                return adjustmentBlock(for: adj) == nil ? Note(layerName: layer.name, change: .adjustmentLeftOut) : nil
+            }
             guard layer.isGroup != true else { return nil }
             if let effects = layer.effects?.visible, !effects.isEmpty, effects.isValid {
                 return Note(layerName: layer.name, change: .effectsAsPixels)
@@ -98,9 +100,12 @@ nonisolated enum PSDWriter {
         var channels: [(id: Int, data: Data)] = []
         var blendKey = "norm"
         var opacity: Double = 1
+        var fillOpacity: Double? = nil
         var clipping = false
         var hidden = false
         var mask: (rect: PSDRect, defaultValue: UInt8, disabled: Bool, unlinked: Bool)?
+        var blendIf: BlendIfSettings? = nil
+        var extraBlocks: [(key: String, data: Data)] = []
         /// 1 an open group, 3 the divider closing it; nil a layer.
         var section: Int?
     }
@@ -125,10 +130,24 @@ nonisolated enum PSDWriter {
                     group.blendKey = layer.isIsolatedGroup ? (layer.blendMode ?? .normal).psdKey : "pass"
                     group.opacity = layer.opacity ?? 1
                     group.hidden = !layer.isVisible
+                    group.blendIf = layer.blendIf?.nonIdentity
                     group.channels = emptyChannels(sixteenBit: sixteenBit)
                     try addFolderMask(layer, snapshot: snapshot, to: &group, sixteenBit: sixteenBit)
                     records.append(group)
-                } else if layer.adjustment == nil {
+                } else if let adj = layer.adjustment {
+                    if let block = adjustmentBlock(for: adj) {
+                        var rec = Record(name: layer.name)
+                        rec.blendKey = (layer.blendMode ?? .normal).psdKey
+                        rec.opacity = layer.opacity ?? 1
+                        rec.clipping = layer.maskSourceID != nil
+                        rec.hidden = !layer.isVisible
+                        rec.blendIf = layer.blendIf?.nonIdentity
+                        rec.channels = emptyChannels(sixteenBit: sixteenBit)
+                        rec.extraBlocks.append(block)
+                        try addFolderMask(layer, snapshot: snapshot, to: &rec, sixteenBit: sixteenBit)
+                        records.append(rec)
+                    }
+                } else {
                     records.append(try record(for: layer, snapshot: snapshot, sixteenBit: sixteenBit))
                 }
             }
@@ -157,7 +176,11 @@ nonisolated enum PSDWriter {
             } else {
                 extra.u32(0)
             }
-            extra.u32(0) // no blending ranges
+            if let blendIf = record.blendIf?.nonIdentity {
+                extra.data(blendRangesData(for: blendIf), lengthPrefixed: true)
+            } else {
+                extra.u32(0) // default blending ranges
+            }
             let name = Array(record.name.data(using: .macOSRoman, allowLossyConversion: true) ?? Data()).prefix(255)
             extra.u8(name.count); extra.data(Data(name))
             extra.zeros((4 - (name.count + 1) % 4) % 4)
@@ -166,6 +189,14 @@ nonisolated enum PSDWriter {
             unicode.u32(utf16.count)
             for unit in utf16 { unicode.u16(Int(unit)) }
             extra.block("luni", unicode.bytes)
+            if let fillOpacity = record.fillOpacity, fillOpacity < 1 {
+                var iopa = PSDBytes()
+                iopa.u8(Int((min(1, max(0, fillOpacity)) * 255).rounded()))
+                extra.block("iOpa", iopa.bytes)
+            }
+            for block in record.extraBlocks {
+                extra.block(block.key, block.data)
+            }
             if let section = record.section {
                 var divider = PSDBytes()
                 divider.u32(section)
@@ -191,8 +222,14 @@ nonisolated enum PSDWriter {
         var record = Record(name: layer.name)
         record.blendKey = (layer.blendMode ?? .normal).psdKey
         record.opacity = layer.opacity ?? 1
+        record.fillOpacity = layer.fillOpacity
         record.hidden = !layer.isVisible
         record.clipping = layer.maskSourceID != nil
+        record.blendIf = layer.blendIf?.nonIdentity
+        if let effects = layer.effects?.visible, !effects.isEmpty, effects.isValid,
+           let fxData = effectsBlockData(for: effects) {
+            record.extraBlocks.append(("lrFX", fxData))
+        }
         let canvas = CGRect(x: 0, y: 0, width: snapshot.manifest.width, height: snapshot.manifest.height)
         guard let asset = snapshot.images[layer.id] else {
             record.channels = emptyChannels(sixteenBit: sixteenBit)
@@ -203,7 +240,6 @@ nonisolated enum PSDWriter {
         let maskGrid = fullMask?.clipImage(placement: fullMask?.placement, over: layer.transform, width: image.width, height: image.height)
         let effects = LayerEffectsRenderer.cached(image, mask: snapshot.mask(for: layer)?.enabledImage == nil ? nil : maskGrid,
                                                   effects: layer.effects, fillOpacity: layer.fillOpacity ?? 1)
-        if effects == nil { record.opacity *= (layer.fillOpacity ?? 1) }
         let placement = effects.map { LayerEffectsRenderer.placed(layer.transform, image: $0.image, inset: $0.inset) } ?? layer.transform
         let area = bounds(of: placement).intersection(canvas).integral
         guard !area.isEmpty else {
@@ -247,6 +283,217 @@ nonisolated enum PSDWriter {
         record.mask = (rect, 0, !mask.isEnabled, false)
         record.channels.append((-2, channel(try grayPlane(context, sixteenBit: sixteenBit), width: rect.width, height: rect.height,
                                             sixteenBit: sixteenBit)))
+    }
+
+    // MARK: Native Adjustment, Blend If & Layer Effects Blocks
+
+    /// Encodes supported adjustment layers into native Photoshop additional-layer-info blocks.
+    static func adjustmentBlock(for adjustment: LayerAdjustment) -> (key: String, data: Data)? {
+        switch adjustment.kind {
+        case .levels:
+            var out = PSDBytes()
+            out.u16(2) // version 2
+            for ch in 0..<29 {
+                if ch < 4 {
+                    let r = adjustment.levels.ranges[ch].normalized
+                    out.u16(Int(r.black.rounded()))
+                    out.u16(Int(r.white.rounded()))
+                    out.u16(Int(r.outputBlack.rounded()))
+                    out.u16(Int(r.outputWhite.rounded()))
+                    out.u16(max(10, min(999, Int((r.gamma * 100).rounded()))))
+                } else {
+                    out.u16(0); out.u16(255); out.u16(0); out.u16(255); out.u16(100)
+                }
+            }
+            return ("levl", out.bytes)
+
+        case .curves:
+            var out = PSDBytes()
+            out.u8(0) // points mode
+            out.u16(4) // version 4
+            out.u16(4) // RGB, R, G, B
+            for ch in 0..<4 {
+                let pts = adjustment.curves.channels[ch]
+                out.u16(pts.count)
+                for p in pts {
+                    out.u16(max(0, min(255, Int(p.y.rounded())))) // output
+                    out.u16(max(0, min(255, Int(p.x.rounded())))) // input
+                }
+            }
+            return ("curv", out.bytes)
+
+        case .hsv:
+            let hsv = adjustment.resolvedHSV
+            var out = PSDBytes()
+            out.u16(2) // version 2
+            out.u8(hsv.colorize ? 1 : 0); out.u8(0)
+            let master = hsv.adjustments[.master] ?? RangeAdjustment()
+            // Colorize HSL, then Master HSL
+            let col = hsv.colorize ? master : RangeAdjustment()
+            out.i16(Int(col.hue.rounded())); out.i16(Int(col.saturation.rounded())); out.i16(Int(col.lightness.rounded()))
+            out.i16(Int(master.hue.rounded())); out.i16(Int(master.saturation.rounded())); out.i16(Int(master.lightness.rounded()))
+            for range in ColorRange.colorRanges {
+                let band = hsv.bands[range] ?? range.defaultBand
+                let adj = hsv.adjustments[range] ?? RangeAdjustment()
+                out.i16(Int(band.falloffStart.rounded()))
+                out.i16(Int(band.rangeStart.rounded()))
+                out.i16(Int(band.rangeEnd.rounded()))
+                out.i16(Int(band.falloffEnd.rounded()))
+                out.i16(Int(adj.hue.rounded()))
+                out.i16(Int(adj.saturation.rounded()))
+                out.i16(Int(adj.lightness.rounded()))
+            }
+            return ("hue2", out.bytes)
+
+        case .brightnessContrast:
+            let bc = (adjustment.brightnessContrastSettings ?? BrightnessContrastSettings()).normalized
+            var out = PSDBytes()
+            out.i16(Int(bc.brightness.rounded()))
+            out.i16(Int(bc.contrast.rounded()))
+            out.i16(127) // mean value
+            out.u16(0) // Lab flag
+            return ("brit", out.bytes)
+
+        case .colorBalance:
+            let cb = (adjustment.colorBalanceSettings ?? ColorBalanceSettings()).normalized
+            var out = PSDBytes()
+            out.i16(Int(cb.shadowCyanRed.rounded())); out.i16(Int(cb.shadowMagentaGreen.rounded())); out.i16(Int(cb.shadowYellowBlue.rounded()))
+            out.i16(Int(cb.midCyanRed.rounded())); out.i16(Int(cb.midMagentaGreen.rounded())); out.i16(Int(cb.midYellowBlue.rounded()))
+            out.i16(Int(cb.highlightCyanRed.rounded())); out.i16(Int(cb.highlightMagentaGreen.rounded())); out.i16(Int(cb.highlightYellowBlue.rounded()))
+            out.u8(cb.preserveLuminosity ? 1 : 0)
+            return ("blnc", out.bytes)
+
+        case .invert:
+            return ("nvrt", Data())
+
+        case .posterize:
+            let p = (adjustment.posterizeSettings ?? PosterizeSettings()).normalized
+            var out = PSDBytes()
+            out.u16(Int(p.levels.rounded())); out.u16(0)
+            return ("post", out.bytes)
+
+        case .threshold:
+            let t = (adjustment.thresholdSettings ?? ThresholdSettings()).normalized
+            var out = PSDBytes()
+            out.u16(Int(t.level.rounded())); out.u16(0)
+            return ("thrs", out.bytes)
+
+        case .exposure:
+            let e = (adjustment.exposureSettings ?? ExposureSettings()).normalized
+            var out = PSDBytes()
+            out.u16(1) // version 1
+            out.u32(Int(Float32(e.exposure).bitPattern))
+            out.u32(Int(Float32(e.offset).bitPattern))
+            out.u32(Int(Float32(e.gamma).bitPattern))
+            return ("expA", out.bytes)
+
+        default:
+            return nil
+        }
+    }
+
+    /// Encodes `BlendIfSettings` into Photoshop's 40-byte layer blending ranges table (Gray, R, G, B, + 1 unused channel).
+    private static func blendRangesData(for blendIf: BlendIfSettings) -> Data {
+        let norm = blendIf.normalized
+        var out = PSDBytes()
+        let order: [BlendIfChannel] = [.gray, .red, .green, .blue]
+        for ch in order {
+            let src = (norm.channel == ch) ? norm.thisLayer : BlendIfRange()
+            let dst = (norm.channel == ch) ? norm.underlyingLayer : BlendIfRange()
+            out.u8(src.blackLow); out.u8(src.blackHigh); out.u8(src.whiteLow); out.u8(src.whiteHigh)
+            out.u8(dst.blackLow); out.u8(dst.blackHigh); out.u8(dst.whiteLow); out.u8(dst.whiteHigh)
+        }
+        // 5th channel pair (alpha/extra identity) completes the standard 40-byte table.
+        out.u8(0); out.u8(0); out.u8(255); out.u8(255)
+        out.u8(0); out.u8(0); out.u8(255); out.u8(255)
+        return out.bytes
+    }
+
+    /// Encodes visible `LayerEffects` into Adobe's classic `lrFX` (Layer Effects Info, version 0) block.
+    private static func effectsBlockData(for effects: LayerEffects) -> Data? {
+        var entries: [(String, Data)] = []
+        func color10(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, into buf: inout PSDBytes) {
+            buf.u16(0) // RGB space
+            buf.u16(Int((min(1, max(0, r)) * 65535).rounded()))
+            buf.u16(Int((min(1, max(0, g)) * 65535).rounded()))
+            buf.u16(Int((min(1, max(0, b)) * 65535).rounded()))
+            buf.u16(0)
+        }
+
+        if let shadow = effects.shadow, shadow.isEnabled {
+            var b = PSDBytes()
+            b.u32(2) // version 2
+            b.u32(Int((shadow.blur * 65536).rounded()))
+            b.u32(Int((shadow.opacity * 100).rounded()))
+            b.i32(Int(shadow.angle.rounded()))
+            b.u32(Int((shadow.distance * 65536).rounded()))
+            color10(shadow.red, shadow.green, shadow.blue, into: &b)
+            b.ascii("8BIM"); b.ascii((shadow.blendMode?.layerBlendMode ?? .multiply).psdKey)
+            b.u8(1) // enabled
+            b.u8(0) // use global angle
+            b.u8(Int((min(1, max(0, shadow.opacity)) * 255).rounded()))
+            color10(shadow.red, shadow.green, shadow.blue, into: &b)
+            entries.append(("dsdw", b.bytes))
+        }
+        if let inner = effects.innerShadow, inner.isEnabled {
+            var b = PSDBytes()
+            b.u32(2)
+            b.u32(Int((inner.blur * 65536).rounded()))
+            b.u32(Int((inner.opacity * 100).rounded()))
+            b.i32(Int(inner.angle.rounded()))
+            b.u32(Int((inner.distance * 65536).rounded()))
+            color10(inner.red, inner.green, inner.blue, into: &b)
+            b.ascii("8BIM"); b.ascii((inner.blendMode?.layerBlendMode ?? .multiply).psdKey)
+            b.u8(1); b.u8(0)
+            b.u8(Int((min(1, max(0, inner.opacity)) * 255).rounded()))
+            color10(inner.red, inner.green, inner.blue, into: &b)
+            entries.append(("isdw", b.bytes))
+        }
+        if let og = effects.outerGlow, og.isEnabled {
+            var b = PSDBytes()
+            b.u32(2)
+            b.u32(Int((og.size * 65536).rounded()))
+            b.u32(Int((og.opacity * 100).rounded()))
+            color10(og.red, og.green, og.blue, into: &b)
+            b.ascii("8BIM"); b.ascii((og.blendMode?.layerBlendMode ?? .screen).psdKey)
+            b.u8(1)
+            b.u8(Int((min(1, max(0, og.opacity)) * 255).rounded()))
+            color10(og.red, og.green, og.blue, into: &b)
+            entries.append(("oglw", b.bytes))
+        }
+        if let ig = effects.innerGlow, ig.isEnabled {
+            var b = PSDBytes()
+            b.u32(2)
+            b.u32(Int((ig.size * 65536).rounded()))
+            b.u32(Int((ig.opacity * 100).rounded()))
+            color10(ig.red, ig.green, ig.blue, into: &b)
+            b.ascii("8BIM"); b.ascii((ig.blendMode?.layerBlendMode ?? .screen).psdKey)
+            b.u8(1)
+            b.u8(Int((min(1, max(0, ig.opacity)) * 255).rounded()))
+            b.u8(1) // edge source
+            color10(ig.red, ig.green, ig.blue, into: &b)
+            entries.append(("iglw", b.bytes))
+        }
+        if let co = effects.colorOverlay, co.isEnabled {
+            var b = PSDBytes()
+            b.u32(2)
+            b.ascii("8BIM"); b.ascii((co.blendMode?.layerBlendMode ?? .normal).psdKey)
+            color10(co.red, co.green, co.blue, into: &b)
+            b.u8(Int((min(1, max(0, co.opacity)) * 255).rounded()))
+            b.u8(1)
+            color10(co.red, co.green, co.blue, into: &b)
+            entries.append(("sofi", b.bytes))
+        }
+        guard !entries.isEmpty else { return nil }
+        var out = PSDBytes()
+        out.u16(0) // version 0
+        out.u16(entries.count)
+        for (key, body) in entries {
+            out.ascii("8BIM"); out.ascii(key)
+            out.u32(body.count)
+            out.data(body)
+        }
+        return out.bytes
     }
 
     /// The four channels of a layer with no pixels: nothing but each one's compression.

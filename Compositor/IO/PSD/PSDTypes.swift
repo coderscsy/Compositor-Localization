@@ -44,6 +44,7 @@ nonisolated struct PSDRecord: @unchecked Sendable {
     var isVisible = true
     var opacity: Double = 1
     var blendKey = "norm"
+    var blendIf: BlendIfSettings? = nil
     var clipping = false
     var croppedToCanvas = false
     var bounds = CGRect.zero

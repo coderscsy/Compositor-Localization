@@ -112,6 +112,9 @@ nonisolated enum PSDDocumentBuilder {
                                    opacity: min(1, max(0, record.opacity)),
                                    blendMode: record.blendMode ?? .normal)
             }
+            if let blendIf = record.blendIf?.nonIdentity {
+                layer.blendIf = blendIf
+            }
             if let maskImage = record.mask.flatMap({ Self.maskOnLayerGrid($0, record: record, layer: layer, canvas: canvas) }),
                let maskAsset = try? LayerMask.asset(from: maskImage) {
                 layer.mask = LayerMask(asset: maskAsset, isEnabled: record.maskEnabled, isLinked: record.maskLinked)

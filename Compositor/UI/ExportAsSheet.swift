@@ -177,7 +177,7 @@ struct ExportAsSheet: View {
                             .frame(maxWidth: 420, alignment: .leading)
                     }
                 }
-                if format == .jpeg {
+                if format == .jpeg || format == .heic {
                     GridRow {
                         Text("Quality")
                         HStack {
@@ -251,11 +251,11 @@ struct ExportAsSheet: View {
                 }
             }
             HStack(spacing: 12) {
-                Text(format == .psd ? "Layers, folders and masks kept · sRGB"
+                Text(format == .psd ? "Layers, folders, adjustments and masks kept · sRGB"
                      : format == .channelPack ? "Each channel from a layer, read as grayscale · PNG"
                      : format == .gif ? "Up to 256 colors · sRGB" : format == .exr ? "Brighter than white kept · Transparency kept"
                      : takesCMYK && cmyk ? "CMYK – \(profile?.name ?? L10n.text("No profile"))"
-                     : format == .png || format == .tiff ? "Transparency kept · sRGB" : "sRGB")
+                     : format == .png || format == .tiff || format == .webp || format == .heic ? "Transparency kept · sRGB" : "sRGB")
                     .foregroundStyle(.secondary)
                 Spacer()
                 if isReady, let result {
@@ -330,6 +330,10 @@ struct ExportAsSheet: View {
                 case .jpeg:
                     let encoded = try await ImageExporter.shared.jpeg(sized, options: requested.options, cmyk: requested.cmyk)
                     (data, preview) = (encoded.data, encoded.preview)
+                case .heic:
+                    (data, preview) = try await ImageExporter.shared.heic(sized, quality: requested.options.quality)
+                case .webp:
+                    (data, preview) = try await ImageExporter.shared.webp(sized)
                 case .tiff:
                     let matte = CGColor(srgbRed: requested.options.red, green: requested.options.green, blue: requested.options.blue, alpha: 1)
                     (data, preview) = try await ImageExporter.shared.tiffData(sized, cmyk: requested.cmyk, matte: matte)

@@ -30,6 +30,22 @@ nonisolated enum EffectBlendMode: String, Codable, CaseIterable, Sendable {
         case .linearDodge: 10
         }
     }
+
+    var layerBlendMode: LayerBlendMode {
+        switch self {
+        case .normal: .normal
+        case .multiply: .multiply
+        case .screen: .screen
+        case .overlay: .overlay
+        case .softLight: .softLight
+        case .hardLight: .hardLight
+        case .darken: .darken
+        case .lighten: .lighten
+        case .colorDodge: .colorDodge
+        case .colorBurn: .colorBurn
+        case .linearDodge: .linearDodge
+        }
+    }
 }
 
 /// Stroke placement relative to the layer's alpha boundary.

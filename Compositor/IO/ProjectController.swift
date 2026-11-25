@@ -192,7 +192,7 @@ final class ProjectController {
     /// back out as a PNG, otherwise the format last used.
     static func startingFormat(source: URL?, projectURL: URL?) -> ExportFormat {
         guard projectURL == nil, let source, let type = UTType(filenameExtension: source.pathExtension) else { return lastExportFormat }
-        return [ExportFormat.png, .jpeg, .tiff, .gif, .exr, .psd].first { type.conforms(to: $0.type) } ?? lastExportFormat
+        return [ExportFormat.png, .jpeg, .webp, .heic, .tiff, .gif, .exr, .psd].first { type.conforms(to: $0.type) } ?? lastExportFormat
     }
 
     /// The name an export starts with: the project's, or the image the document began as, or Untitled.
@@ -530,7 +530,7 @@ final class ProjectController {
 /// What File › Export As… writes.
 enum ExportFormat: String, CaseIterable {
     // In the order Export As lists them: GIF after PDF, as fewer need it.
-    case png = "PNG", jpeg = "JPEG", tiff = "TIFF", pdf = "PDF", gif = "GIF", exr = "EXR"
+    case png = "PNG", jpeg = "JPEG", webp = "WebP", heic = "HEIC", tiff = "TIFF", pdf = "PDF", gif = "GIF", exr = "EXR"
     /// Layers packed into a PNG's red, green, blue and alpha, for game textures (see `ChannelPack`).
     case channelPack = "Channel Pack"
     /// The layers, for Photoshop and After Effects (see `PSDWriter`). Last, as an interchange format.
@@ -539,6 +539,8 @@ enum ExportFormat: String, CaseIterable {
         switch self {
         case .png, .channelPack: .png
         case .jpeg: .jpeg
+        case .webp: .webP
+        case .heic: .heic
         case .gif: .gif
         case .tiff: .tiff
         case .pdf: .pdf

@@ -49,6 +49,9 @@ struct PSDExportTests {
         var levels = ImageLayer(name: "Levels", blankSize: CGSize(width: 120, height: 80))
         levels.adjustment = LayerAdjustment(kind: .levels)
         layers.append(levels)
+        var bloom = ImageLayer(name: "Bloom", blankSize: CGSize(width: 120, height: 80))
+        bloom.adjustment = LayerAdjustment(kind: .bloomGlow)
+        layers.append(bloom)
         session.document?.layers = layers
         session.selectLayers([layers[red].id, layers[green].id], primary: layers[green].id)
         session.groupSelectedLayers()
@@ -61,8 +64,8 @@ struct PSDExportTests {
         let written = try await ImageExporter.shared.psdData(snapshot)
         let parsed = try PSDReader.read(written.data)
         #expect(parsed.width == 120 && parsed.height == 80)
-        // Bottom to top; the adjustment layer is left out.
-        #expect(parsed.layers.map(\.name) == ["Sky", "Red", "Green", "Folder 1", "Hidden"])
+        // Bottom to top; native Levels is preserved while Compositor-only Bloom is left out.
+        #expect(parsed.layers.map(\.name) == ["Sky", "Red", "Green", "Folder 1", "Hidden", "Levels"])
         let byName = Dictionary(uniqueKeysWithValues: parsed.layers.map { ($0.name, $0) })
         let folder = try #require(byName["Folder 1"])
         #expect(folder.isGroup && byName["Red"]?.parentID == folder.id && byName["Green"]?.parentID == folder.id)
@@ -72,19 +75,21 @@ struct PSDExportTests {
         #expect(red.mask != nil && red.maskDefault == 255)
         #expect(byName["Green"]?.clipping == true && red.clipping == false)
         #expect(byName["Hidden"]?.isVisible == false && byName["Sky"]?.isVisible == true)
+        #expect(byName["Levels"]?.adjustment?.kind == .levels)
         // Pixels come back as they were.
         let green = try #require(byName["Green"]?.image)
         let pixel = try BrushRaster.context(width: 1, height: 1, mask: false)
         BrushRaster.draw(green, in: CGRect(x: 0, y: 0, width: 40, height: 30), mask: false, context: pixel)
         let bytes = try #require(pixel.data?.assumingMemoryBound(to: UInt8.self))
         #expect(bytes[0] == 0 && bytes[1] == 255 && bytes[2] == 0 && bytes[3] == 255)
-        // The importer makes the same document again: the clipping, the folder and the mask.
+        // The importer makes the same document again: the clipping, the folder, the mask, and the Levels adjustment.
         let imported = try PSDDocumentBuilder.makeImport(parsed)
         let importedRed = try #require(imported.layers.first { $0.name == "Red" })
         #expect(imported.layers.first { $0.name == "Green" }?.maskSourceID == importedRed.id)
         #expect(importedRed.mask != nil)
-        #expect(imported.conversions.isEmpty, "\(imported.conversions.map(\.message))")
-        #expect(PSDWriter.summary(PSDWriter.notes(for: snapshot)) == "Adjustment layers left out: “Levels”")
+        #expect(imported.layers.first { $0.name == "Levels" }?.adjustment?.kind == .levels)
+        #expect(imported.conversions.allSatisfy { $0.layerName == "Levels" }, "\(imported.conversions.map(\.message))")
+        #expect(PSDWriter.summary(PSDWriter.notes(for: snapshot)) == "Adjustment layers left out: “Bloom”")
     }
 
     @Test func otherAppsSeeTheFlattenedPicture() async throws {

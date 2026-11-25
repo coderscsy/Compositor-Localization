@@ -114,6 +114,7 @@ nonisolated enum PSDReader {
         var clipping = false
         var hidden = false
         var blendKey = "norm"
+        var blendIf: BlendIfSettings? = nil
         var channels: [(id: Int, length: Int)] = []
         var extra: [String: Data] = [:]
         var maskTop = 0, maskLeft = 0, maskBottom = 0, maskRight = 0
@@ -186,7 +187,12 @@ nonisolated enum PSDReader {
         }
         cursor.offset = maskEnd
         let ranges = Int(try cursor.u32())
-        try cursor.skip(ranges)
+        if ranges >= 8 {
+            let rangeBytes = try cursor.bytes(ranges)
+            layer.blendIf = parseBlendRanges(rangeBytes)
+        } else {
+            try cursor.skip(ranges)
+        }
         let nameCount = Int(try cursor.u8())
         let nameBytes = try cursor.bytes(nameCount)
         layer.name = String(bytes: nameBytes, encoding: .macOSRoman) ?? String(bytes: nameBytes, encoding: .isoLatin1) ?? "Layer"
@@ -363,6 +369,7 @@ nonisolated enum PSDReader {
             let id = isGroup ? (groups.popLast() ?? UUID()) : UUID()
             var record = PSDRecord(id: id, name: layer.name.isEmpty ? "Layer" : layer.name)
             record.parentID = groups.last
+            record.blendIf = layer.blendIf
             record.isGroup = isGroup
             record.isVisible = !layer.hidden
             record.blendKey = isGroup && (layer.blendKey == "pass" || layer.blendKey == "norm") ? "pass" : layer.blendKey
@@ -428,6 +435,20 @@ nonisolated enum PSDReader {
     private static func u32(_ data: Data, _ offset: Int) -> UInt32 {
         UInt32(data[offset]) << 24 | UInt32(data[offset + 1]) << 16 | UInt32(data[offset + 2]) << 8 | UInt32(data[offset + 3])
     }
+
+    /// Parses Photoshop's 40-byte layer blending ranges table (Gray, R, G, B source & destination pairs) into `BlendIfSettings`.
+    private static func parseBlendRanges(_ data: Data) -> BlendIfSettings? {
+        let channels: [(BlendIfChannel, Int)] = [(.gray, 0), (.red, 8), (.green, 16), (.blue, 24)]
+        for (channel, base) in channels where base + 8 <= data.count {
+            let src = BlendIfRange(blackLow: Int(data[base]), blackHigh: Int(data[base + 1]),
+                                   whiteLow: Int(data[base + 2]), whiteHigh: Int(data[base + 3])).normalized
+            let dst = BlendIfRange(blackLow: Int(data[base + 4]), blackHigh: Int(data[base + 5]),
+                                   whiteLow: Int(data[base + 6]), whiteHigh: Int(data[base + 7])).normalized
+            let candidate = BlendIfSettings(channel: channel, thisLayer: src, underlyingLayer: dst)
+            if !candidate.isIdentity { return candidate }
+        }
+        return nil
+    }
 }
 
 nonisolated private struct PSDCursor: Sendable {
@@ -490,7 +511,54 @@ nonisolated enum PSDAdjustments {
         if let data = extra["levl"] { return levels(data) }
         if let data = extra["curv"] { return curves(data) }
         if let data = extra["hue2"] ?? extra["hue "] { return hue(data) }
+        if let data = extra["brit"] { return brightnessContrast(data) }
+        if let data = extra["blnc"] { return colorBalance(data) }
+        if extra["nvrt"] != nil { return LayerAdjustment(kind: .invert) }
+        if let data = extra["post"] { return posterize(data) }
+        if let data = extra["thrs"] { return threshold(data) }
+        if let data = extra["expA"] { return exposure(data) }
         return nil
+    }
+
+    static func brightnessContrast(_ data: Data) -> LayerAdjustment? {
+        guard data.count >= 4 else { return nil }
+        let brightness = Double(i16(data, 0))
+        let contrast = Double(i16(data, 2))
+        let settings = BrightnessContrastSettings(brightness: brightness, contrast: contrast).normalized
+        return LayerAdjustment(kind: .brightnessContrast, brightnessContrastSettings: settings)
+    }
+
+    static func colorBalance(_ data: Data) -> LayerAdjustment? {
+        guard data.count >= 19 else { return nil }
+        let settings = ColorBalanceSettings(
+            shadowCyanRed: Double(i16(data, 0)), shadowMagentaGreen: Double(i16(data, 2)), shadowYellowBlue: Double(i16(data, 4)),
+            midCyanRed: Double(i16(data, 6)), midMagentaGreen: Double(i16(data, 8)), midYellowBlue: Double(i16(data, 10)),
+            highlightCyanRed: Double(i16(data, 12)), highlightMagentaGreen: Double(i16(data, 14)), highlightYellowBlue: Double(i16(data, 16)),
+            preserveLuminosity: data[18] != 0
+        ).normalized
+        return LayerAdjustment(kind: .colorBalance, colorBalanceSettings: settings)
+    }
+
+    static func posterize(_ data: Data) -> LayerAdjustment? {
+        guard data.count >= 2 else { return nil }
+        let levels = Double(u16(data, 0))
+        return LayerAdjustment(kind: .posterize, posterizeSettings: PosterizeSettings(levels: levels).normalized)
+    }
+
+    static func threshold(_ data: Data) -> LayerAdjustment? {
+        guard data.count >= 2 else { return nil }
+        let level = Double(u16(data, 0))
+        return LayerAdjustment(kind: .threshold, thresholdSettings: ThresholdSettings(level: level).normalized)
+    }
+
+    static func exposure(_ data: Data) -> LayerAdjustment? {
+        guard data.count >= 14 else { return nil }
+        func f32(_ at: Int) -> Double {
+            let bits = UInt32(data[at]) << 24 | UInt32(data[at + 1]) << 16 | UInt32(data[at + 2]) << 8 | UInt32(data[at + 3])
+            return Double(Float32(bitPattern: bits))
+        }
+        let settings = ExposureSettings(exposure: f32(2), offset: f32(6), gamma: f32(10)).normalized
+        return LayerAdjustment(kind: .exposure, exposureSettings: settings)
     }
 
     /// Photoshop's 'levl': a version, then records of input black, input white, output black, output white and gamma

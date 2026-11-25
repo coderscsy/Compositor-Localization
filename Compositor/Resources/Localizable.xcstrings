@@ -29099,6 +29099,28 @@
         }
       }
     },
+    "HEIC": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HEIC"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HEIC"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HEIC"
+          }
+        }
+      }
+    },
     "HSL": {
       "extractionState": "manual",
       "localizations": {
@@ -37108,6 +37130,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "保留圖層、組和遮色片 · sRGB"
+          }
+        }
+      }
+    },
+    "Layers, folders, adjustments and masks kept · sRGB": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layers, folders, adjustments and masks kept · sRGB"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保留图层、文件夹、调整图层和蒙版 · sRGB"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保留圖層、資料夾、調整圖層與遮色片 · sRGB"
           }
         }
       }
@@ -71726,6 +71770,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "減弱指定紫色色相範圍內的色邊。"
+          }
+        }
+      }
+    },
+    "WebP": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WebP"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WebP"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WebP"
           }
         }
       }

@@ -289,6 +289,38 @@ actor ImageExporter {
         }
     }
 
+    /// Exports `raster` as HEIC (`public.heic`) with lossy compression quality and full transparency preservation.
+    func heic(_ raster: ExportRaster, quality: Double) throws -> (data: Data, preview: CGImage) {
+        try Task.checkCancellation()
+        return try autoreleasepool {
+            let data = try encode(raster.image, type: .heic, properties: [
+                kCGImageDestinationLossyCompressionQuality: min(1, max(0, quality)),
+                kCGImagePropertyDPIWidth: raster.resolution,
+                kCGImagePropertyDPIHeight: raster.resolution,
+            ] as CFDictionary)
+            try Task.checkCancellation()
+            guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+                  let preview = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+                return (data, raster.image)
+            }
+            return (data, preview)
+        }
+    }
+
+    /// Exports `raster` as lossless WebP (`VP8L`, preserving full RGBA transparency).
+    func webp(_ raster: ExportRaster) throws -> (data: Data, preview: CGImage) {
+        try Task.checkCancellation()
+        return try autoreleasepool {
+            let data = try WebPEncoder.encode(raster.image)
+            try Task.checkCancellation()
+            if let source = CGImageSourceCreateWithData(data as CFData, nil),
+               let preview = CGImageSourceCreateImageAtIndex(source, 0, nil) {
+                return (data, preview)
+            }
+            return (data, raster.image)
+        }
+    }
+
     /// The picture over a solid color, as a page with that background shows it.
     func flattened(_ raster: ExportRaster, over background: CGColor) throws -> CGImage {
         let image = raster.image
