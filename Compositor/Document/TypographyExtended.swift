@@ -211,9 +211,9 @@ nonisolated enum TypographyRenderer {
         let dh = min(DocumentLimits.maxSide, sh + padY * 2)
         guard dw * dh <= DocumentLimits.maxSurfacePixels else { return source }
 
-        // Read source pixels into top-left RGBA8 buffer.
+        // Read source pixels into top-left RGBA8 buffer (preserving upright orientation).
         let srcCtx = try BrushRaster.context(width: sw, height: sh, mask: false)
-        srcCtx.draw(source, in: CGRect(x: 0, y: 0, width: sw, height: sh))
+        BrushRaster.draw(source, in: CGRect(x: 0, y: 0, width: sw, height: sh), mask: false, context: srcCtx)
         guard let srcData = srcCtx.data else { throw ExportError.render }
         let src = srcData.assumingMemoryBound(to: UInt8.self)
 

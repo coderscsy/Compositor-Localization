@@ -39,7 +39,7 @@ nonisolated enum MaskOutlineTracer {
 
     static func grayscaleBytes(of image: CGImage, width: Int, height: Int) -> [UInt8]? {
         guard let ctx = try? BrushRaster.context(width: width, height: height, mask: true) else { return nil }
-        ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        BrushRaster.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height), mask: false, context: ctx)
         guard let ptr = ctx.data?.assumingMemoryBound(to: UInt8.self) else { return nil }
         var bytes = [UInt8](repeating: 0, count: width * height)
         for y in 0..<height {
@@ -241,9 +241,9 @@ struct SelectAndMaskSession {
 
         ci = ci.cropped(to: extent)
         guard let cg = Self.ciContext.createCGImage(ci, from: extent) else { return nil }
-        // Convert cleanly into 8-bit grayscale top-left mask.
+        // Convert cleanly into 8-bit grayscale top-left mask (preserving upright orientation).
         guard let ctx = try? BrushRaster.context(width: width, height: height, mask: true) else { return nil }
-        ctx.draw(cg, in: extent)
+        BrushRaster.draw(cg, in: extent, mask: false, context: ctx)
         return ctx.makeImage()
     }
 
@@ -253,7 +253,7 @@ struct SelectAndMaskSession {
         let w = width, h = height
         guard let srcCtx = try? BrushRaster.context(width: w, height: h, mask: false),
               let mBytes = MaskOutlineTracer.grayscaleBytes(of: mask, width: w, height: h) else { return source }
-        srcCtx.draw(source, in: CGRect(x: 0, y: 0, width: w, height: h))
+        BrushRaster.draw(source, in: CGRect(x: 0, y: 0, width: w, height: h), mask: false, context: srcCtx)
         guard let ptr = srcCtx.data?.assumingMemoryBound(to: UInt8.self) else { return source }
         let stride = srcCtx.bytesPerRow
         let orig = Array(UnsafeBufferPointer(start: ptr, count: h * stride))
@@ -309,7 +309,7 @@ struct SelectAndMaskSession {
         guard let outCtx = try? BrushRaster.context(width: w, height: h, mask: false),
               let srcCtx = try? BrushRaster.context(width: w, height: h, mask: false),
               let mBytes = MaskOutlineTracer.grayscaleBytes(of: mask, width: w, height: h) else { return src }
-        srcCtx.draw(src, in: CGRect(x: 0, y: 0, width: w, height: h))
+        BrushRaster.draw(src, in: CGRect(x: 0, y: 0, width: w, height: h), mask: false, context: srcCtx)
         guard let sp = srcCtx.data?.assumingMemoryBound(to: UInt8.self),
               let dp = outCtx.data?.assumingMemoryBound(to: UInt8.self) else { return src }
         let sStride = srcCtx.bytesPerRow, dStride = outCtx.bytesPerRow
@@ -423,7 +423,7 @@ extension EditorSession {
               let cov = try? current.coverage(width: w, height: h),
               let covBytes = MaskOutlineTracer.grayscaleBytes(of: cov, width: w, height: h),
               let rgbaCtx = try? BrushRaster.context(width: w, height: h, mask: false) else { return }
-        rgbaCtx.draw(rendered.image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        BrushRaster.draw(rendered.image, in: CGRect(x: 0, y: 0, width: w, height: h), mask: false, context: rgbaCtx)
         guard let ptr = rgbaCtx.data?.assumingMemoryBound(to: UInt8.self) else { return }
         let stride = rgbaCtx.bytesPerRow
 

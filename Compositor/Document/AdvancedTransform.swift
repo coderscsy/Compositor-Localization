@@ -141,10 +141,10 @@ nonisolated struct WarpMesh: Equatable, Sendable {
         let dstW = max(1, Int((bounds.width * factor).rounded(.up)))
         let dstH = max(1, Int((bounds.height * factor).rounded(.up)))
 
-        // Read source pixels into top-left RGBA8 (or Gray8 for masks).
+        // Read source pixels into top-left RGBA8 (or Gray8 for masks), preserving upright orientation.
         let srcW = image.width, srcH = image.height
         let srcCtx = try BrushRaster.context(width: srcW, height: srcH, mask: isMask)
-        srcCtx.draw(image, in: CGRect(x: 0, y: 0, width: srcW, height: srcH))
+        BrushRaster.draw(image, in: CGRect(x: 0, y: 0, width: srcW, height: srcH), mask: false, context: srcCtx)
         guard let srcRaw = srcCtx.data else { throw ExportError.render }
         let src = srcRaw.assumingMemoryBound(to: UInt8.self)
         let srcStride = srcCtx.bytesPerRow

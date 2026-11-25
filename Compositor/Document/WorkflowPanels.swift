@@ -128,7 +128,7 @@ nonisolated struct HistogramStats: Equatable, Sendable {
                                   luminosity: Array(repeating: 0, count: 256),
                                   pixelCount: 0)
         }
-        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        BrushRaster.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h), mask: false, context: ctx)
         guard let ptr = ctx.data?.assumingMemoryBound(to: UInt8.self) else {
             return HistogramStats(red: Array(repeating: 0, count: 256),
                                   green: Array(repeating: 0, count: 256),

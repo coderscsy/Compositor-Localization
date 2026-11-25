@@ -259,7 +259,7 @@ nonisolated enum CropProcessor {
     private static func trimToOpaqueBounds(_ image: CGImage) -> (image: CGImage, origin: CGPoint)? {
         let w = image.width, h = image.height
         guard let ctx = try? BrushRaster.context(width: w, height: h, mask: false) else { return nil }
-        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        BrushRaster.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h), mask: false, context: ctx)
         guard let ptr = ctx.data?.assumingMemoryBound(to: UInt8.self) else { return nil }
         var minX = w, minY = h, maxX = -1, maxY = -1
         for y in 0..<h {
