@@ -14,7 +14,7 @@ Compositor Localization은 Robbie Tilton의 Compositor를 여러 언어로 제�
 
 ## macOS용 다운로드
 
-**macOS 26 이상을 실행하는 Apple Silicon Mac**용 [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg)를 다운로드하세요. 같은 페이지에 있는 `SHA256SUMS.txt`로 다운로드한 파일을 확인할 수 있습니다. 디스크 이미지를 열고 앱을 응용 프로그램 폴더에 복사하세요. [GitHub 미리 보기 릴리스](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
+**macOS 26 이상을 실행하는 Apple Silicon Mac**용 [`Compositor-Localization-1.8.1-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.1/Compositor-Localization-1.8.1-macos-arm64.dmg)를 다운로드하세요. 같은 페이지에 있는 `SHA256SUMS.txt`로 다운로드한 파일을 확인할 수 있습니다. 디스크 이미지를 열고 앱을 응용 프로그램 폴더에 복사하세요. [GitHub 미리 보기 릴리스](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.1)
 
 이 앱은 임시 서명(ad hoc signing)을 사용하며 Apple의 공증을 받지 않았습니다. 처음 열 때 Gatekeeper가 실행을 차단할 수 있습니다. 아래 안내에 따라 소스에서 빌드할 수도 있습니다. [Apple의 Mac 앱 열기 안내](https://support.apple.com/ko-kr/102445)
 

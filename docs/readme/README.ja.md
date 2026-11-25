@@ -10,7 +10,7 @@ Compositor Localization は、Robbie Tilton が開発するオープンソース
 
 ## macOS 版のダウンロード
 
-**Appleシリコン搭載の Mac（macOS 26 以降）** 用の [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg) をダウンロードしてください。同じページの `SHA256SUMS.txt` でダウンロードしたファイルを検証できます。ディスクイメージを開き、アプリを「アプリケーション」フォルダにコピーします。[GitHub のプレリリース](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
+**Appleシリコン搭載の Mac（macOS 26 以降）** 用の [`Compositor-Localization-1.8.1-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.1/Compositor-Localization-1.8.1-macos-arm64.dmg) をダウンロードしてください。同じページの `SHA256SUMS.txt` でダウンロードしたファイルを検証できます。ディスクイメージを開き、アプリを「アプリケーション」フォルダにコピーします。[GitHub のプレリリース](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.1)
 
 このアプリはアドホック署名を使用しており、Apple の公証は受けていません。初回起動時に Gatekeeper によってブロックされることがあります。下記の手順でソースからビルドすることもできます。[Apple の Mac アプリ起動ガイド](https://support.apple.com/ja-jp/102445)
 

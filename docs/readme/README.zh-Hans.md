@@ -14,7 +14,7 @@ Compositor Localization 是 Robbie Tilton 的 Compositor 的非官方多语言�
 
 ## 下载 macOS 版
 
-在发布页下载 [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg)，适用于运行 **macOS 26 或更新版本的 Apple 芯片 Mac**。同页提供 `SHA256SUMS.txt` 用于校验下载文件。打开磁盘映像后，将应用复制到「应用程序」文件夹。[GitHub v1.8.0 发行版](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0) · [更新日志](../../CHANGELOG.md)
+在发布页下载 [`Compositor-Localization-1.8.1-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.1/Compositor-Localization-1.8.1-macos-arm64.dmg)，适用于运行 **macOS 26 或更新版本的 Apple 芯片 Mac**。同页提供 `SHA256SUMS.txt` 用于校验下载文件。打开磁盘映像后，将应用复制到「应用程序」文件夹。[GitHub v1.8.1 发行版](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.1) · [更新日志](../../CHANGELOG.md)
 
 此应用使用临时签名（ad hoc signing），未经 Apple 公证。首次打开时，Gatekeeper 可能会阻止运行。你也可以按下文从源码构建。[Apple 的 Mac 应用打开指南](https://support.apple.com/zh-cn/102445)
 

@@ -1,6 +1,6 @@
 # Compositor Localization
 
-**[Download for macOS v1.8.0 · 下载 DMG](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg)** · [Releases](https://github.com/coderscsy/Compositor-Localization/releases) · [Changelog](CHANGELOG.md)
+**[Download for macOS v1.8.1 · 下载 DMG](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.1/Compositor-Localization-1.8.1-macos-arm64.dmg)** · [Releases](https://github.com/coderscsy/Compositor-Localization/releases) · [Changelog](CHANGELOG.md)
 
 **English** · [简体中文](docs/readme/README.zh-Hans.md) · [繁體中文](docs/readme/README.zh-Hant.md) · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
 
@@ -8,7 +8,7 @@ Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s
 
 ## Download for macOS
 
-The public preview requires **Apple silicon and macOS 26 or later**. The release also includes `SHA256SUMS.txt` to verify the download. Open the disk image and copy the app to Applications. [GitHub v1.8.0 release](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
+The public preview requires **Apple silicon and macOS 26 or later**. The release also includes `SHA256SUMS.txt` to verify the download. Open the disk image and copy the app to Applications. [GitHub v1.8.1 release](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.1)
 
 The app uses ad hoc signing and has not been notarized by Apple. Gatekeeper may block it the first time you open it. You can also build the app from source. [Apple’s guide to opening Mac apps](https://support.apple.com/en-us/102445)
 

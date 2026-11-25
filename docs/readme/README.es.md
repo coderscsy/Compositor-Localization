@@ -13,7 +13,7 @@ El desarrollo, las pruebas y las publicaciones de este fork se centran exclusiva
 
 ## Descargar para macOS
 
-Descarga [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg) para un **Mac con chip de Apple y macOS 26 o posterior**. Puedes verificar el archivo descargado con `SHA256SUMS.txt`, disponible en la misma página. Abre la imagen de disco y copia la aplicación a la carpeta Aplicaciones. [Versión preliminar en GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
+Descarga [`Compositor-Localization-1.8.1-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.1/Compositor-Localization-1.8.1-macos-arm64.dmg) para un **Mac con chip de Apple y macOS 26 o posterior**. Puedes verificar el archivo descargado con `SHA256SUMS.txt`, disponible en la misma página. Abre la imagen de disco y copia la aplicación a la carpeta Aplicaciones. [Versión preliminar en GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.1)
 
 La aplicación utiliza una firma ad hoc y no está notarizada por Apple. Gatekeeper puede bloquearla la primera vez que la abras. También puedes compilarla desde el código fuente siguiendo los pasos de abajo. [Guía de Apple para abrir aplicaciones en el Mac](https://support.apple.com/es-es/102445)
 

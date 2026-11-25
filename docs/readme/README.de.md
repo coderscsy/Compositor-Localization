@@ -10,7 +10,7 @@ Dieses Projekt ist ausschließlich für macOS bestimmt. Es setzt einen Mac mit A
 
 ## Download für macOS
 
-Lade [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg) für einen **Mac mit Apple-Chip und macOS 26 oder neuer** herunter. Mit `SHA256SUMS.txt` auf derselben Seite kannst du die heruntergeladene Datei prüfen. Öffne das Disk-Image und kopiere die App in den Ordner „Programme“. [Vorschauversion auf GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
+Lade [`Compositor-Localization-1.8.1-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.1/Compositor-Localization-1.8.1-macos-arm64.dmg) für einen **Mac mit Apple-Chip und macOS 26 oder neuer** herunter. Mit `SHA256SUMS.txt` auf derselben Seite kannst du die heruntergeladene Datei prüfen. Öffne das Disk-Image und kopiere die App in den Ordner „Programme“. [Vorschauversion auf GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.1)
 
 Die App ist ad hoc signiert und wurde nicht von Apple notarisiert. Gatekeeper kann den ersten Start blockieren. Du kannst die App auch wie unten beschrieben aus dem Quellcode bauen. [Apple-Anleitung zum Öffnen von Mac-Apps](https://support.apple.com/de-de/102445)
 

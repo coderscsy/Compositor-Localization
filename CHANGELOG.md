@@ -1,5 +1,23 @@
 # Changelog · 更新日志
 
+## v1.8.1 (Build 81) — Rendering Orientation Fixes
+
+### English
+- **Rendering Fixes**: Preserved upright top-left image orientation when reading `CGImage` sources into flipped `BrushRaster` bitmap contexts across:
+  - **Warp Text** (`TypographyRenderer.applyWarp`): fixed vertically mirrored warped text output.
+  - **Select and Mask & Select Similar** (`SelectionRefinement`): fixed inverted preview, mask refinement, edge color decontamination, and color sampling coordinates.
+  - **3×3 Mesh Warp** (`WarpMesh.render`): fixed vertically flipped source sampling during mesh deformation.
+  - **Perspective Crop** (`CropProcessor.trimToOpaqueBounds`) & **Histogram** (`HistogramStats.compute`): unified upright `BrushRaster.draw` pixel reading.
+
+### 简体中文
+- **渲染坐标系修复**：统一修复 5 个模块在翻转后的 `BrushRaster` 绘图上下文中读取 `CGImage` 导致的 Y 轴垂直倒置问题：
+  - **文字变形（Warp Text）**：修复变形后文字上下翻转的问题。
+  - **「选择并遮住」与选取相似**：修复预览画面、遮罩精修、边缘颜色净化及颜色采样坐标倒置的问题。
+  - **3×3 网格变形（Mesh Warp）**：修复变形采样源图像垂直翻转的问题。
+  - **透视裁剪与直方图**：统一使用正向 `BrushRaster.draw` 读取像素并计算裁剪边界。
+
+---
+
 ## v1.8.0 (Build 80) — Photoshop-Class Feature Parity & `.abr` Brushes
 
 ### English
