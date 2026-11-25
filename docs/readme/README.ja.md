@@ -10,12 +10,13 @@ Compositor Localization は、Robbie Tilton が開発するオープンソース
 
 ## macOS 版のダウンロード
 
-**Appleシリコン搭載の Mac（macOS 26 以降）** 用の [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg) をダウンロードしてください。同じページの `SHA256SUMS.txt` でダウンロードしたファイルを検証できます。ディスクイメージを開き、アプリを「アプリケーション」フォルダにコピーします。[GitHub のプレリリース](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+**Appleシリコン搭載の Mac（macOS 26 以降）** 用の [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg) をダウンロードしてください。同じページの `SHA256SUMS.txt` でダウンロードしたファイルを検証できます。ディスクイメージを開き、アプリを「アプリケーション」フォルダにコピーします。[GitHub のプレリリース](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
 
 このアプリはアドホック署名を使用しており、Apple の公証は受けていません。初回起動時に Gatekeeper によってブロックされることがあります。下記の手順でソースからビルドすることもできます。[Apple の Mac アプリ起動ガイド](https://support.apple.com/ja-jp/102445)
 
 ## 主な機能
 
+- **v1.8.0 新機能:** Photoshop `.abr` ブラシの読み込みとブラシライブラリ、レイヤーロック、塗り不透明度、ブレンド条件（Blend If）、ベベルとエンボス、ペンツールとベジェパス、ベクトルマスクとブーリアン演算、縦書き・ワープ文字・パス上文字、メッシュワープ、クイックマスク（Q）と「選択とマスク」、ヒストリー／情報／ヒストグラムパネル、WebP・HEIC 書き出し、高再現 PSD 調整レイヤー往復に対応。[変更履歴](../../CHANGELOG.md)
 - レイヤー、フォルダ、描画モード、レイヤーマスク、クリッピングマスク、調整レイヤー。
 - 元の画像を保持したまま移動、拡大・縮小、回転、反転。ガイド、スナップ、レイヤーの整列にも対応。
 - 長方形・楕円形選択、なげなわ、自動選択、被写体選択、コンテンツに応じた塗りつぶし。

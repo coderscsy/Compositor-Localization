@@ -1,14 +1,14 @@
 # Compositor Localization
 
-**[Download for macOS · 下载 DMG](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg)** · [Releases](https://github.com/coderscsy/Compositor-Localization/releases)
+**[Download for macOS v1.8.0 · 下载 DMG](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg)** · [Releases](https://github.com/coderscsy/Compositor-Localization/releases) · [Changelog](CHANGELOG.md)
 
 **English** · [简体中文](docs/readme/README.zh-Hans.md) · [繁體中文](docs/readme/README.zh-Hant.md) · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Français](docs/readme/README.fr.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
 
-Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s Compositor](https://github.com/robbietilton/Compositor), an open-source image editor for compositing and photo editing. Development, testing, and releases for this fork focus exclusively on **macOS on Apple silicon**. The first release is based on upstream Compositor 1.7.1.
+Compositor Localization is an unofficial multilingual fork of [Robbie Tilton’s Compositor](https://github.com/robbietilton/Compositor), an open-source image editor for compositing and photo editing. Development, testing, and releases for this fork focus exclusively on **macOS on Apple silicon**. The first release is based on upstream Compositor 1.7.1, and **v1.8.0** adds comprehensive Photoshop-class retouching, brush, vector, typography, transform, selection, panel, and export upgrades.
 
 ## Download for macOS
 
-The public preview requires **Apple silicon and macOS 26 or later**. The release also includes `SHA256SUMS.txt` to verify the download. Open the disk image and copy the app to Applications. [GitHub preview release](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+The public preview requires **Apple silicon and macOS 26 or later**. The release also includes `SHA256SUMS.txt` to verify the download. Open the disk image and copy the app to Applications. [GitHub v1.8.0 release](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
 
 The app uses ad hoc signing and has not been notarized by Apple. Gatekeeper may block it the first time you open it. You can also build the app from source. [Apple’s guide to opening Mac apps](https://support.apple.com/en-us/102445)
 
@@ -55,18 +55,18 @@ Interface translations live in [Localizable.xcstrings](Compositor/Resources/Loca
 ## Features
 
 ### Layers
-- Layers and folders, with opacity and Photoshop's full set of blend modes in its order — a folder's opacity dims everything inside it
-- Layer masks: paint, fill, invert, blur and feather them anywhere on the canvas, past the layer's own pixels; link or unlink them to transform a mask on its own
+- Layers and folders, with **Layer Lock** (transparent pixels, image pixels, position, or lock all), **Fill Opacity** decoupled from Layer Styles, and Photoshop's full set of blend modes (including Dissolve, Darker Color, and Lighter Color), **Blend If** tonal visibility sliders, and isolated folder blend modes
+- Layer masks and **non-destructive Vector Masks**: paint, fill, invert, blur, feather, clip with Bézier paths, or link/unlink masks to transform independently
 - Clipping masks and folder masks
-- Adjustment layers: Hue/Saturation, Levels, Curves, Exposure, Gradient Map, Grain, Black & White, Color Balance, Invert, and filter layers: Gaussian Blur, Motion Blur, Progressive Blur, Sharpen, Reduce Noise, Noise, Vignette, Bloom / Glow, RGB Split, Lens Effects and Tonal Contrast
-- Layer effects: Stroke, Drop Shadow, Color Overlay, Inner Shadow, Outer Glow and Inner Glow, rendered on the GPU and editable at any time
+- Adjustment layers: Hue/Saturation, Levels, Curves, Exposure, Gradient Map, Grain, Black & White, Color Balance, Invert, **Brightness/Contrast, Vibrance, Selective Color, Color Lookup (`.cube` 3D LUTs), Threshold, Posterize**, and **Live Gradient Fill** layers; plus filter layers including **High Pass**, Gaussian Blur, Motion Blur, Progressive Blur, Sharpen, Reduce Noise, Noise, Vignette, Bloom / Glow, RGB Split, Lens Effects, and Tonal Contrast
+- Complete **Layer Styles**: Stroke (Outside / Center / Inside), Drop Shadow, Inner Shadow, Outer Glow, Inner Glow, Color Overlay, **Bevel & Emboss**, **Gradient Overlay**, and **Pattern Overlay**, with per-effect blend modes and spread/choke controls
 - Merge Down, Merge Layers and Merge Group (⌘E)
 - Duplicate, rename inline, reorder and nest by drag and drop; Option-drag to duplicate; a right-click menu in the Layers panel
 - Copy and paste whole layers and folders (⌘C/⌘V with no selection), within a project or between projects, or drag them between projects
 
-### Transform
-- Non-destructive move, scale, rotate and flip — images keep their full resolution however small you make them
-- Free distort (⌘-drag a handle), with Shift to lock to an axis
+### Transform & Crop
+- Non-destructive move, scale, rotate and flip with a **9-point Pivot reference grid**, independent **Skew X/Y**, free distort (⌘-drag), and **3×3 bicubic Bézier Mesh Warp** (with 5 presets and 16 draggable control points)
+- **Crop upgrade**: Straighten horizon drag & `-45°…45°` rotation, composition overlays (Rule of Thirds, Golden Ratio, Diagonal, Grid), non-destructive vs. Delete Cropped Pixels toggle, and **4-corner Perspective Crop**
 - Transform several layers, or a whole folder, together
 - Snapping to canvas and layer edges and centers, with guides
 - Distances (View › Show › Distances): pixel gaps to the canvas edges and nearby layers while moving a layer, and to the layer under the pointer with ⌘ held
@@ -76,45 +76,30 @@ Interface translations live in [Localizable.xcstrings](Compositor/Resources/Loca
 
 ### Selections
 - Rectangle and Ellipse Marquee, Freehand and Polygonal Lasso, and the Magic tool — Wand selects by color, Object traces whatever you click (Tab switches)
-- Select Subject, and Expand, Contract and Feather on any selection
-- Add to and subtract from selections, move the outline, or move and duplicate the pixels inside
-- Load a layer's pixels or a mask as a selection
-- Content-Aware Fill, which can also extend an image past its edges
+- **Quick Mask mode (`Q`)** with ruby overlay and live brush painting, **Border / Smooth / Select Similar**, and a dedicated **Select and Mask** workspace (Smooth, Feather, Contrast, Shift Edge, Decontaminate Colors, 4 view modes, and flexible output targets)
+- Select Subject, Expand, Contract, Feather, and Content-Aware Fill (including extending an image past its edges)
+- Add to and subtract from selections, move the outline, load a layer's pixels or mask as a selection
 
-### Painting and retouching
-- Brush with size, hardness, opacity and smoothing, in Paint or Erase mode (B and E), and Shift for straight lines
-- Pen pressure for the Brush's size and opacity, on a graphics tablet
-- Spot Healing Brush (content-aware)
-- Clone Stamp, aligned or not, sampling one layer or all of them
-- Blur tool, on pixels or masks
-- Gradient tool and Shape tool (rectangles, rounded rectangles, ellipses and lines), which stay editable rather than being rasterized
-- Type tool (T): inline multiline editing in draggable, resizable paragraph boxes; font, size, color, alignment and spacing in the tool header; transform text and use it as a clipping mask
+### Painting, Retouching, Vectors & Typography
+- **Brush engine & Photoshop `.abr` import**: import `.abr` brush packs (v1/v2/v6/v10 sampled bitmap tips) into a persistent local Brush Library, create/save custom presets, and paint with Flow, Airbrush, 12 brush blend modes (including Behind & Clear), Spacing, Angle, Roundness, Scatter, Size/Angle/Opacity Jitter, Smoothing, Anti-alias toggle, and tablet pen pressure
+- **Paint Bucket** flood fill (tolerance, contiguous, sample all layers, blend modes) grouped with the **Gradient tool** (multi-stop editor, Linear/Radial/Angle/Reflected/Diamond, and Live Gradient Fill layers)
+- **Dodge, Burn & Sponge (`O`)** and **Sharpen Brush (`R`)**, alongside Blur, Smudge, **multi-brush Liquify** (Forward/Bloat/Pucker/Twirl/Push/Reconstruct + Freeze Mask), **Manual-sample Healing Brush** (Poisson seamless blending), Spot Healing Brush, and Clone Stamp
+- **Pen tool (`P`) & Bézier Paths**: anchor/handle editing, Direct Selection, Convert Point, **Paths panel**, Path ↔ Selection conversion, Fill/Stroke Path, and **Shape/Path Boolean operations** (Unite, Subtract, Intersect, Exclude)
+- **Shape tool**: Rectangles, Rounded Rectangles, Ellipses, Lines, **Triangles, Polygons (3–32 sides), and Stars**, with Inside/Center/Outside strokes and Solid/Dotted/Dashed/Long Dash styles
+- **Type tool (`T`)**: inline multiline editing, **Vertical text**, underline/strikethrough/all caps/baseline shift/justified alignment, **Warp Text** (7 presets with bend & H/V distortion), and **Text on Path**
 - Eyedropper and a full color picker
 
-### Adjustments and filters
+### Adjustments, Filters & Panels
 - Camera Raw filter: light, color, curves, color mixer, color grading, detail, optics and geometry, in a panel beside the canvas; each section resets to its defaults from its header
-- Levels (with Auto), Curves, Hue/Saturation, Exposure, Gradient Map, Grain, Black & White, Color Balance and Invert
-- Gaussian Blur and Motion Blur that spread past a layer's edges
-- Sharpen, Reduce Noise, Add Noise, Vignette, Bloom / Glow, Dither, Scanlines, RGB Split, Lens Effects (anamorphic flare, starburst, mist, prism and bokeh in round, hexagon, oval or cat's-eye shapes), Tonal Contrast, Volumetric Light (fog that thickens with distance around the subject, lit by a light you place, with the photo's own lights glowing into it and optional beams), Rim Light (up to three colored lights behind the subject, with glow that wraps it into the light), Lens Correction and Remove Background
-- Live previews, limited to the selection when there is one
-- Last Filter (⌃⌘F) runs the last filter again with the same settings
+- Full adjustment & filter suite including **High Pass**, **Offset** (seamless tile wrap), **Brightness/Contrast**, **Vibrance**, **Selective Color**, **Color Lookup (`.cube` 3D LUTs)**, **Threshold**, **Posterize**, Levels, Curves, Hue/Saturation, Exposure, Gradient Map, Grain, Black & White, Color Balance, Invert, Gaussian/Motion/Progressive Blur, Sharpen, Reduce Noise, Vignette, Bloom/Glow, Lens Effects, Tonal Contrast, Volumetric Light, Rim Light, Lens Correction, and Remove Background
+- **Professional floating panels**: **History panel** (one-click state jump + named Snapshots), **Info panel** (live cursor X/Y + RGBA/Hex/HSB/CMYK sampling), persistent **Histogram panel** (RGB/Luminosity/channel statistics), **Paths panel**, and **Navigator** minimap
+- Live previews, limited to the selection when there is one, and Last Filter (⌃⌘F)
 
 ### Canvas and files
-- Multiple projects in tabs
-- Search Commands (⌘F): find every menu command and tool by name, as in Raycast or Obsidian, and run it with Return
-- Toggle Fullscreen (F): the canvas alone on black over the whole screen, with every panel put away; F or Esc brings them back
-- Rulers (⌘R), guides dragged from them, a layout grid with adjustable spacing and subdivisions, and Snap To for guides, grid, layers and document bounds
-- Crop with snapping, ratios including 3:4 and 9:16, and Option for symmetric cropping; with a selection, the crop starts at it
-- Canvas Size, Image Size and Trim
-- The tool bar moves into two columns when the window is too short for one
-- A Navigator minimap in the canvas's corner from 300% zoom: the whole document in small with a box around the view; click or drag to move there (View › Navigator)
-- Sharp high-quality downsampling when zoomed out, and a pixel grid when zoomed in
-- Import JPEG, PNG, HEIC, TIFF, WebP, SVG, PDF (every page its own layer, at 300 DPI or fitted to the canvas), animated GIF (one layer whose frames show in a strip under the canvas, to play, paint on, duplicate, delete and retime), camera RAW (with a develop step first) and Photoshop PSD and PSB (8-bit RGB; not CMYK). Each Photoshop artboard opens in a tab of its own; folders, masks, blend modes, fill rectangles/ellipses, and simple horizontal text stay editable; other vectors and vertical text become pixels. A conversion report is shown before anything is applied.
-- Large documents: the memory budget scales with your Mac, and a Photoshop file too big to open has its layers cropped to the canvas instead
-- Export PNG (⇧⌘E) and Export As (⇧⌥⌘S, or ⇧⌥⌘W) for PNG, JPEG, a one-page PDF at the print size or, with a GIF layer, an animated GIF, scaled if you like, with a live preview, JPEG quality and file size; Channel Pack in Export As packs layers into a PNG's red, green, blue and alpha for game textures, and RGB Split's Split to Layers turns a layer back into those four; right-click layers in the Layers panel to export each as its own PNG, trimmed to its pixels; Copy Merged
-- Keep working while a project saves
-- Photoshop-style keyboard shortcuts throughout, remappable in Edit > Keyboard Shortcuts
-- Drag a number's label to scrub its value, as in Photoshop
+- Multiple projects in tabs, Search Commands (⌘F), Toggle Fullscreen (F), Rulers (⌘R), Guides, Layout Grid, Snap To, Canvas Size, Image Size, and Trim
+- Import JPEG, PNG, HEIC, TIFF, WebP, SVG, PDF, animated GIF, camera RAW, and Photoshop PSD/PSB (including artboards, folders, masks, blend modes, Blend If, 9 native adjustment layer types, shapes, and text)
+- Export PNG (⇧⌘E) and Export As (⇧⌥⌘S, or ⇧⌥⌘W) for **PNG, JPEG, lossless WebP, HEIC, TIFF, PDF, animated GIF, EXR, Channel Pack, and high-fidelity PSD** (preserving layers, folders, masks, 9 native adjustment layer types, Blend If, Fill Opacity, and `lrFX` layer effects); Copy Merged
+- Photoshop-style keyboard shortcuts throughout, remappable in Edit > Keyboard Shortcuts, and scrubbable numeric labels
 
 ### Works with AI agents
 - AI agents and scripts can build and edit projects directly: a `.comp` is a folder of PNG layers and a manifest, and an open project updates live as it's written. See [Writing Compositor projects](docs/writing-comp-files.md)

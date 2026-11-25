@@ -14,19 +14,19 @@ Compositor Localization 是 Robbie Tilton 的 Compositor 的非官方多語言�
 
 ## 下載 macOS 版
 
-從發行頁面下載 [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg)，適用於執行 **macOS 26 或更新版本且搭載 Apple 晶片的 Mac**。同一頁面提供 `SHA256SUMS.txt`，可用於驗證下載檔案。打開磁碟映像檔後，將應用程式拷貝至「應用程式」資料夾。[GitHub 預覽發行版本](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+從發行頁面下載 [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg)，適用於執行 **macOS 26 或更新版本且搭載 Apple 晶片的 Mac**。同一頁面提供 `SHA256SUMS.txt`，可用於驗證下載檔案。打開磁碟映像檔後，將應用程式拷貝至「應用程式」資料夾。[GitHub v1.8.0 發行版本](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0) · [更新日誌](../../CHANGELOG.md)
 
 此應用程式採用臨時簽署（ad hoc signing），未經 Apple 公證。Gatekeeper 可能會在第一次開啟時阻擋執行。你也可以依照下文說明從原始碼建置。[Apple 的 Mac 應用程式開啟指南](https://support.apple.com/zh-tw/102445)
 
 ## 主要功能
 
-- **圖層與遮色片。** 支援圖層、資料夾、混合模式、剪裁遮色片和圖層遮色片。可隨時編輯筆畫、陰影和光暈等圖層效果。
-- **變形與選取。** 可非破壞性地移動、縮放、旋轉和翻轉，並利用標尺、參考線及格線吸附對齊。可用選取框、套索、魔棒或物件選取工具建立選取範圍，也能自動選取主體。
-- **繪製與修飾。** 提供筆刷、橡皮擦、污點修復筆刷、仿製印章和內容感知填滿。形狀、漸變和文字建立後仍可編輯。
-- **調整與濾鏡。** 提供色階、曲線、色相／飽和度、曝光度、Camera Raw、模糊與雜訊減少等功能。可即時預覽調整效果，並將效果限制在選取範圍內。
-- **匯入與匯出。** 可匯入 JPEG、PNG、HEIC、TIFF、WebP、SVG、PDF、GIF、相機 RAW 與 Photoshop PSD/PSB（8 位元 RGB）。支援逐格編輯 GIF，即時預覽後可匯出為 PNG、JPEG、單頁 PDF 或 GIF 動畫。
-- **專案與快速鍵。** 使用標籤頁同時開啟多個專案，按 ⌘F 搜尋指令與工具，也可以在「編輯 → 鍵盤快捷鍵」中自訂快速鍵。
-- **專案自動化。** 指令稿或 AI 代理程式可以直接建立與編輯 `.comp` 專案。應用程式會即時更新已開啟的專案。[編寫 `.comp` 專案](../writing-comp-files.md)
+- **圖層、混合與樣式。** 支援圖層鎖定（透明像素／影像像素／位置／全部鎖定）、與圖層樣式解耦的填滿不透明度（Fill Opacity）、混合色帶（Blend If）、資料夾獨立混合模式、向量遮色片與完整圖層樣式（筆畫內／中／外、陰影、內陰影、外／內光暈、顏色覆蓋、斜角和浮雕、漸層覆蓋與圖樣覆蓋）。
+- **筆刷、`.abr` 匯入與修飾。** 支援直接匯入 Photoshop `.abr` 筆刷包至本機筆刷庫並儲存自訂預設，支援取樣位圖筆尖、流量、噴槍、12 種筆刷混合模式、筆尖間距／角度／圓度／散佈／抖動，以及油漆桶、加亮／加深／海綿（`O`）、銳利化筆刷（`R`）、多筆刷液化（含凍結遮色片）與手動取樣泊松修復筆刷。
+- **向量路徑與文字排版。** 內建三角形／多邊形／星形工具、鋼筆工具（`P`）與路徑面板、非破壞性向量遮色片與布林運算，以及直排文字、文字彎曲變形（7 種預設）與路徑文字。
+- **變形、裁切與選取精修。** 支援 9 點自訂軸心、獨立傾斜與 3×3 網格變形（Warp）；裁切支援拉直旋轉、構圖參考線、非破壞性切換與 4 角點透視裁切；選取新增快速遮色片（`Q`）與獨立「選取並遮住」工作區。
+- **調整、濾鏡與專業面板。** 支援高反差保留、位移、亮度／對比、自然飽和度、選取顏色、顏色查閱（`.cube` 3D LUT）、臨界值、色調分離、色階、曲線、Camera Raw 與即時漸層填滿圖層；內建歷史記錄面板（含快照）、資訊面板與常駐色階分佈圖面板。
+- **匯入、匯出與 PSD 互通。** 支援預覽並匯出為 PNG、JPEG、無損 WebP、HEIC、TIFF、單頁 PDF、GIF 動畫、EXR 與高保真 PSD（原生雙向讀寫 9 類 Photoshop 調整圖層、混合色帶、填滿不透明度與圖層樣式）。
+- **專案自動化。** 指令稿或 AI 代理程式可以直接建立與編輯 `.comp`（v33）專案。應用程式會即時更新已開啟的專案。[編寫 `.comp` 專案](../writing-comp-files.md)
 
 ## 介面語言
 

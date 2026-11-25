@@ -10,12 +10,13 @@ Dieses Projekt ist ausschließlich für macOS bestimmt. Es setzt einen Mac mit A
 
 ## Download für macOS
 
-Lade [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg) für einen **Mac mit Apple-Chip und macOS 26 oder neuer** herunter. Mit `SHA256SUMS.txt` auf derselben Seite kannst du die heruntergeladene Datei prüfen. Öffne das Disk-Image und kopiere die App in den Ordner „Programme“. [Vorschauversion auf GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+Lade [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg) für einen **Mac mit Apple-Chip und macOS 26 oder neuer** herunter. Mit `SHA256SUMS.txt` auf derselben Seite kannst du die heruntergeladene Datei prüfen. Öffne das Disk-Image und kopiere die App in den Ordner „Programme“. [Vorschauversion auf GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
 
 Die App ist ad hoc signiert und wurde nicht von Apple notarisiert. Gatekeeper kann den ersten Start blockieren. Du kannst die App auch wie unten beschrieben aus dem Quellcode bauen. [Apple-Anleitung zum Öffnen von Mac-Apps](https://support.apple.com/de-de/102445)
 
 ## Funktionen
 
+- **Neu in v1.8.0:** Import von Photoshop-`.abr`-Pinseln mit lokaler Bibliothek, Ebenensperre, Flächendeckkraft (Fill), Farbbereichs-Überblendung (Blend If), Abgeflachte Kante und Relief, Zeichenstift und Bézier-Pfade, Vektormasken und boolesche Operationen, vertikaler/verkrümmter Text und Text auf Pfad, Gitter-Verkrümmung (Warp), Maskierungsmodus (Q) und Auswählen und maskieren, Protokoll-/Info-/Histogramm-Bedienfelder, verlustfreier WebP- & HEIC-Export sowie originalgetreuer PSD-Austausch. [Änderungsprotokoll](../../CHANGELOG.md)
 - Ebenen, Ordner, Mischmodi, Ebenenmasken, Schnittmasken und Einstellungsebenen.
 - Nichtdestruktives Verschieben, Skalieren, Drehen und Spiegeln. Hilfslinien, Einrasten und Ausrichten von Ebenen.
 - Rechteckige und elliptische Auswahl, Lasso, Zauberstab, Motivauswahl und inhaltsbasiertes Füllen.

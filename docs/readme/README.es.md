@@ -13,12 +13,13 @@ El desarrollo, las pruebas y las publicaciones de este fork se centran exclusiva
 
 ## Descargar para macOS
 
-Descarga [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg) para un **Mac con chip de Apple y macOS 26 o posterior**. Puedes verificar el archivo descargado con `SHA256SUMS.txt`, disponible en la misma página. Abre la imagen de disco y copia la aplicación a la carpeta Aplicaciones. [Versión preliminar en GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+Descarga [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg) para un **Mac con chip de Apple y macOS 26 o posterior**. Puedes verificar el archivo descargado con `SHA256SUMS.txt`, disponible en la misma página. Abre la imagen de disco y copia la aplicación a la carpeta Aplicaciones. [Versión preliminar en GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
 
 La aplicación utiliza una firma ad hoc y no está notarizada por Apple. Gatekeeper puede bloquearla la primera vez que la abras. También puedes compilarla desde el código fuente siguiendo los pasos de abajo. [Guía de Apple para abrir aplicaciones en el Mac](https://support.apple.com/es-es/102445)
 
 ## Funciones
 
+- **Novedades de v1.8.0:** Importación de pinceles `.abr` de Photoshop y biblioteca local, bloqueo de capas, opacidad de relleno (Fill), Fusionar si (Blend If), Bisel y relieve, herramienta Pluma y trazados Bézier, máscaras vectoriales y operaciones booleanas, texto vertical/deformado/en trazado, deformación por malla (Warp), Máscara rápida (Q) y Seleccionar y aplicar máscara, paneles Historia/Información/Histograma, exportación WebP sin pérdida y HEIC, e intercambio PSD de alta fidelidad. [Registro de cambios](../../CHANGELOG.md)
 - Capas, grupos, máscaras de capa, máscaras de recorte y modos de fusión.
 - Desplazamiento, escala, rotación y volteo no destructivos. Alineación y distribución de capas. Ajuste a las guías y a la cuadrícula.
 - Selecciones rectangulares y elípticas, lazo, varita mágica, selección de objetos y relleno según el contenido.

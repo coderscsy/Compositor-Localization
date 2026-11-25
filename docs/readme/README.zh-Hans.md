@@ -14,19 +14,19 @@ Compositor Localization 是 Robbie Tilton 的 Compositor 的非官方多语言�
 
 ## 下载 macOS 版
 
-在发布页下载 [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg)，适用于运行 **macOS 26 或更新版本的 Apple 芯片 Mac**。同页提供 `SHA256SUMS.txt` 用于校验下载文件。打开磁盘映像后，将应用复制到「应用程序」文件夹。[GitHub 预览发行版](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+在发布页下载 [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg)，适用于运行 **macOS 26 或更新版本的 Apple 芯片 Mac**。同页提供 `SHA256SUMS.txt` 用于校验下载文件。打开磁盘映像后，将应用复制到「应用程序」文件夹。[GitHub v1.8.0 发行版](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0) · [更新日志](../../CHANGELOG.md)
 
 此应用使用临时签名（ad hoc signing），未经 Apple 公证。首次打开时，Gatekeeper 可能会阻止运行。你也可以按下文从源码构建。[Apple 的 Mac 应用打开指南](https://support.apple.com/zh-cn/102445)
 
 ## 主要功能
 
-- **图层和蒙版。** 支持图层、文件夹、混合模式、剪贴蒙版和图层蒙版。可以随时编辑描边、投影和发光等图层效果。
-- **变换和选区。** 支持非破坏性移动、缩放、旋转和翻转，以及标尺、参考线和网格吸附。可使用选框、套索、魔棒或对象选择工具创建选区，也可以自动选择主体。
-- **绘制和修饰。** 提供画笔、橡皮擦、污点修复画笔、仿制图章和内容识别填充。形状、渐变和文字在创建后仍可编辑。
-- **调整和滤镜。** 支持色阶、曲线、色相/饱和度、曝光、Camera Raw、模糊和降噪。调整带实时预览，也可以限制在选区内。
-- **导入和导出。** 导入 JPEG、PNG、HEIC、TIFF、WebP、SVG、PDF、GIF、相机 RAW 以及 Photoshop PSD/PSB（8 位 RGB）。动画 GIF 可逐帧编辑。支持预览并导出为 PNG、JPEG、单页 PDF 或动画 GIF。
-- **项目和快捷键。** 使用标签页同时打开多个项目，按 ⌘F 搜索命令和工具，在「编辑 → 键盘快捷键」中自定义快捷键。
-- **项目自动化。** 脚本和 AI 智能体可以直接创建或编辑 `.comp` 项目。应用会实时更新已打开的项目。[编写 `.comp` 项目](../writing-comp-files.md)
+- **图层、混合与样式。** 支持图层锁定（透明像素/图像像素/位置/全部锁定）、与图层样式解耦的填充不透明度（Fill Opacity）、混合颜色带（Blend If）、文件夹独立隔离混合模式、矢量蒙版与完整图层样式（描边内/中/外、投影、内阴影、外/内发光、颜色叠加、斜面和浮雕、渐变叠加与图案叠加）。
+- **画笔、`.abr` 导入与精修。** 支持直接导入 Photoshop `.abr` 笔刷包到本地笔刷库并自定义保存预设，支持采样位图笔尖、流量、喷枪、12 种画笔混合模式、笔尖间距/角度/圆度/散布/抖动，以及油漆桶、减淡/加深/海绵（`O`）、锐化画笔（`R`）、多笔刷液化（含冻结蒙版）和手动取样泊松修复画笔。
+- **矢量路径与文字排版。** 内置三角形/多边形/星形工具、钢笔工具（`P`）与路径面板、非破坏性矢量蒙版与布尔运算（合并/减去/交集/排除重叠），以及竖排文字、文字变形（7 种预设）与路径文字。
+- **变换、裁剪与选区精修。** 支持 9 点自定义参考点、独立斜切与 3×3 网格变形（Warp）；裁剪支持拉直旋转、构图参考线、非破坏性开关与 4 角点透视裁剪；选区新增快速蒙版（`Q`）、边界/平滑/选取相似及独立「选择并遮住」工作区。
+- **调色、滤镜与专业面板。** 支持高反差保留、位移、亮度/对比度、自然饱和度、可选颜色、颜色查找（`.cube` 3D LUT）、阈值、色调分离、色阶、曲线、Camera Raw 与实时渐变填充图层；配备历史记录面板（含命名快照）、信息面板（RGBA/Hex/HSB/CMYK 采样）和常驻直方图面板。
+- **导入、导出与 PSD 互通。** 支持预览并导出为 PNG、JPEG、无损 WebP、HEIC、TIFF、单页 PDF、动画 GIF、EXR、通道打包与高保真 PSD（原生双向读写 9 类 Photoshop 调整图层、混合颜色带、填充不透明度与图层样式）。
+- **项目自动化。** 脚本和 AI 智能体可以直接创建或编辑 `.comp`（v33）项目。应用会实时更新已打开的项目。[编写 `.comp` 项目](../writing-comp-files.md)
 
 ## 界面语言
 

@@ -13,12 +13,13 @@ Le développement, les tests et les publications de ce fork concernent exclusive
 
 ## Télécharger pour macOS
 
-Téléchargez [`Compositor-Localization-1.7.2-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.7.2/Compositor-Localization-1.7.2-macos-arm64.dmg) pour un Mac équipé **d’une puce Apple sous macOS 26 ou version ultérieure**. Le fichier `SHA256SUMS.txt`, disponible sur la même page, permet de vérifier le téléchargement. Ouvrez l’image disque et copiez l’app dans le dossier Applications. [Préversion sur GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.7.2)
+Téléchargez [`Compositor-Localization-1.8.0-macos-arm64.dmg`](https://github.com/coderscsy/Compositor-Localization/releases/download/v1.8.0/Compositor-Localization-1.8.0-macos-arm64.dmg) pour un Mac équipé **d’une puce Apple sous macOS 26 ou version ultérieure**. Le fichier `SHA256SUMS.txt`, disponible sur la même page, permet de vérifier le téléchargement. Ouvrez l’image disque et copiez l’app dans le dossier Applications. [Préversion sur GitHub](https://github.com/coderscsy/Compositor-Localization/releases/tag/v1.8.0)
 
 L’app utilise une signature ad hoc et n’a pas été notariée par Apple. Gatekeeper peut en bloquer la première ouverture. Vous pouvez aussi compiler l’app à partir du code source en suivant les instructions ci-dessous. [Guide d’Apple sur l’ouverture des apps Mac](https://support.apple.com/fr-fr/102445)
 
 ## Fonctionnalités
 
+- **Nouveautés v1.8.0 :** Importation de pinceaux Photoshop `.abr` et bibliothèque locale, verrouillage des calques, opacité de fond (Fill), options de fusion (Blend If), Biseautage et estampage, outil Plume et tracés de Bézier, masques vectoriels et opérations booléennes, texte vertical/déformé/sur tracé, déformation par maillage (Warp), Masque rapide (Q) et Sélectionner et masquer, panneaux Historique/Informations/Histogramme, export WebP sans perte et HEIC, et aller-retour PSD haute fidélité. [Journal des modifications](../../CHANGELOG.md)
 - Calques, groupes, masques de fusion, masques d’écrêtage et modes de fusion.
 - Déplacement, mise à l’échelle, rotation et symétrie non destructifs. Alignement et répartition des calques. Magnétisme aux repères et à la grille.
 - Sélections rectangulaires et elliptiques, lasso, baguette magique, sélection d’objet et remplissage d’après le contenu.
