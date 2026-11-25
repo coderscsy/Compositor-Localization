@@ -8,3 +8,4 @@
 #import "Rendering/AdjustPixels.h"
 #import "Rendering/DitherPixels.h"
 #import "Rendering/DeepPixels.h"
+#import "Rendering/TonePixels.h"

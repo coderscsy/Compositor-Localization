@@ -4,7 +4,11 @@ struct BrushControls: View {
     @Bindable var session: EditorSession
     var body: some View {
         HStack(spacing: 12) {
-            Text(L10n.text(session.tool == .spotHealing ? "Spot Healing" : session.tool == .cloneStamp ? "Clone Stamp" : session.tool == .blur ? "Smear" : session.brushMode == .erase ? "Eraser" : "Brush")).font(ToolHeaderStyle.titleFont)
+            Text(L10n.text(session.tool == .spotHealing ? "Spot Healing"
+                           : session.tool == .cloneStamp ? "Clone Stamp"
+                           : session.tool == .blur ? (session.blurMode == .sharpen ? "Sharpen" : "Smear")
+                           : session.tool == .tone ? session.toneSettings.mode.rawValue
+                           : session.brushMode == .erase ? "Eraser" : "Brush")).font(ToolHeaderStyle.titleFont)
             ScrollView(.horizontal) {
                 HStack(spacing: 12) {
                     if session.tool == .brush {
@@ -19,7 +23,28 @@ struct BrushControls: View {
                             ForEach(BlurToolMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
                         }
                         .pickerStyle(.segmented).labelsHidden().fixedSize()
-                        .help("Liquify pushes pixels · Blur softens · Smudge drags color along")
+                        .help("Liquify pushes pixels · Blur softens · Smudge drags color · Sharpen crisps edges")
+                    }
+                    if session.tool == .tone {
+                        Picker("Mode", selection: $session.toneSettings.mode) {
+                            ForEach(ToneToolMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                        }
+                        .pickerStyle(.segmented).labelsHidden().fixedSize()
+                        .help("Dodge lightens · Burn darkens · Sponge shifts saturation (Tab)")
+                        if session.toneSettings.mode == .sponge {
+                            Picker("Sponge Mode", selection: $session.toneSettings.spongeMode) {
+                                ForEach(SpongeMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                            }
+                            .pickerStyle(.segmented).labelsHidden().fixedSize()
+                        } else {
+                            Picker("Range", selection: $session.toneSettings.range) {
+                                ForEach(ToneRange.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                            }
+                            .pickerStyle(.menu).fixedSize()
+                            .help("Tonal range affected by Dodge or Burn")
+                            Toggle("Protect Tones", isOn: $session.toneSettings.protectTones)
+                                .help("Preserve hue and avoid clipping colors while dodging or burning")
+                        }
                     }
                     if session.tool == .spotHealing {
                         Picker("Type", selection: $session.spotHealingMode) {
@@ -72,10 +97,14 @@ struct BrushControls: View {
                         .unitSuffix("%")
                     }
                     .disabled(session.tool == .brush && !session.brushSettings.antialiased)
-                    Text(L10n.text(session.tool == .blur ? "Strength" : "Opacity"))
+                    Text(L10n.text(session.tool == .blur ? "Strength"
+                                   : session.tool == .tone ? (session.toneSettings.mode == .sponge ? "Flow" : "Exposure")
+                                   : "Opacity"))
                         .scrubbable(sensitivity: 0.01, value: $session.brushSettings.opacity, range: 0.01...1)
                     AppSlider(value: $session.brushSettings.opacity, in: 0.01...1).frame(width: 100)
-                        .accessibilityLabel(session.tool == .blur ? "Strength" : "Opacity")
+                        .accessibilityLabel(session.tool == .blur ? "Strength"
+                                            : session.tool == .tone ? (session.toneSettings.mode == .sponge ? "Flow" : "Exposure")
+                                            : "Opacity")
                     TextField("Opacity", value: Binding<Double>(get: { Double(session.brushSettings.opacity * 100) },
                                                                 set: { session.brushSettings.opacity = $0.isFinite ? CGFloat(min(100, max(1, $0)) / 100) : 1 }),
                               format: .number.precision(.fractionLength(0)))
@@ -90,8 +119,8 @@ struct BrushControls: View {
                             .help("Pen pressure sets the opacity: a light touch paints fainter, up to the brush’s Opacity")
                             .accessibilityLabel("Pressure for opacity")
                     }
-                    // Blur softens by a radius of its own, apart from how strongly it lays the softening down.
-                    if session.tool == .blur, session.blurMode == .blur {
+                    // Blur softens and Sharpen crisps by a radius of their own, apart from Strength.
+                    if session.tool == .blur, session.blurMode == .blur || session.blurMode == .sharpen {
                         Text("Radius").scrubbable(sensitivity: 0.1, value: $session.brushSettings.blurRadius, range: 0.5...50)
                         // The slider covers everyday radii; typing or scrubbing reaches up to 50.
                         AppSlider(value: Binding(get: { min(20, session.brushSettings.blurRadius) },

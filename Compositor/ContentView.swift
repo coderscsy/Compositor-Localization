@@ -389,8 +389,11 @@ struct ContentView: View {
             L10n.text(session.brushMode == .erase ? "Drag to erase" : "Drag to paint")
                 + L10n.text(" · [ ] size · Shift-[ ] hardness · 1–0 opacity · Escape cancel · Space to pan")
         case .blur:
-            L10n.text(session.blurMode == .blur ? "Drag to soften" : session.blurMode == .smudge ? "Drag to smudge" : "Drag to push pixels")
+            L10n.text(session.blurMode == .blur ? "Drag to soften" : session.blurMode == .sharpen ? "Drag to sharpen" : session.blurMode == .smudge ? "Drag to smudge" : "Drag to push pixels")
                 + L10n.text(" · [ ] size · Shift-[ ] hardness · 1–0 strength · Space to pan")
+        case .tone:
+            L10n.text(session.toneSettings.mode == .dodge ? "Drag to lighten" : session.toneSettings.mode == .burn ? "Drag to darken" : session.toneSettings.spongeMode == .saturate ? "Drag to saturate" : "Drag to desaturate")
+                + L10n.text(" · Tab mode · [ ] size · Shift-[ ] hardness · 1–0 exposure · Space to pan")
         case .cloneStamp:
             L10n.text("Option-click to set the source · Drag to clone · [ ] size · Shift-[ ] hardness · 1–0 opacity · Space to pan")
         case .spotHealing:

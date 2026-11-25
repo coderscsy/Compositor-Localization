@@ -77,8 +77,8 @@ extension EditorSession {
     }
     /// `pressure` is a pen's, 0–1; nil for a mouse or trackpad, which presses fully.
     func beginBrush(at point: CGPoint, pressure: CGFloat? = nil) {
-        // Spot Healing and Clone Stamp rework image pixels; they have nothing to do on a mask.
-        if tool == .blur, blurMode != .blur { beginWarp(at: point); return }
+        // Spot Healing, Clone Stamp and Tone tools rework image pixels; they have nothing to do on a mask.
+        if tool == .blur, blurMode == .liquify || blurMode == .smudge { beginWarp(at: point); return }
         guard tool == .brush || tool == .blur || (tool.isBrushTool && !isMaskSelected) else { return }
         guard canPaint, let layer = activeLayer, let document else { brushError = paintRefusal; return }
         var sourceOffset: CGSize?
@@ -100,23 +100,48 @@ extension EditorSession {
             // A pencil is always hard.
             if !settings.antialiased { settings.hardness = 1 }
             if isMaskSelected { settings.red = maskPaintWhite ? 1 : 0; settings.green = settings.red; settings.blue = settings.red }
+            let toneExposure = settings.opacity
+            if tool == .tone {
+                // Exposure drives the tonal curve directly; tip coverage controls the falloff.
+                settings.opacity = 1
+            }
             var stroke = try makeRasterEdit(for: layer, settings: settings, growsMask: tool == .brush)
             if let offset = sourceOffset {
                 guard let sample = cloneSample(document, for: stroke, offset: offset) else { return }
                 cloneOffset = offset
                 stroke.clone = sample
             }
-            // Blur paints a softened copy of the layer, in place, through the brush tip.
+            // Blur softens and Sharpen crisps a lazy copy of the layer through the brush tip.
             if tool == .blur {
-                guard let blur = blurSample(for: stroke) else { return }
-                stroke.clone = blur.sample
-                stroke.cloneRender = blur.render
-                if let deepRender = blur.deepRender {
-                    stroke.deepClone = blur.sample
-                    stroke.deepCloneRender = deepRender
+                if blurMode == .sharpen {
+                    guard let sharp = sharpenSample(for: stroke) else { return }
+                    stroke.clone = sharp.sample
+                    stroke.cloneRender = sharp.render
+                    if let deepRender = sharp.deepRender {
+                        stroke.deepClone = sharp.sample
+                        stroke.deepCloneRender = deepRender
+                    }
+                    stroke.isBlur = true
+                    stroke.replacesWithClone = true
+                    stroke.editName = "Sharpen"
+                } else {
+                    guard let blur = blurSample(for: stroke) else { return }
+                    stroke.clone = blur.sample
+                    stroke.cloneRender = blur.render
+                    if let deepRender = blur.deepRender {
+                        stroke.deepClone = blur.sample
+                        stroke.deepCloneRender = deepRender
+                    }
+                    stroke.isBlur = true
                 }
             }
-            stroke.isBlur = tool == .blur
+            if tool == .tone {
+                guard let toned = toneSample(for: stroke, exposure: toneExposure) else { return }
+                stroke.clone = toned.sample
+                stroke.cloneRender = toned.render
+                stroke.replacesWithClone = true
+                stroke.editName = toneSettings.editName
+            }
             limitGrowth(of: stroke)
             // A layer scaled so far down that paint across the canvas would outgrow it, and a stroke starting past its
             // edges: the stroke is likely to outgrow it, so it starts on the layer at its displayed size rather than
@@ -368,7 +393,7 @@ extension EditorSession {
         }
         let value = CGFloat(percent) / 100
         switch tool {
-        case .brush, .spotHealing, .cloneStamp, .blur: brushSettings.opacity = value
+        case .brush, .spotHealing, .cloneStamp, .blur, .tone: brushSettings.opacity = value
         case .gradient: gradientSettings.opacity = value
         default: setSelectedLayersOpacity(Double(value))
         }

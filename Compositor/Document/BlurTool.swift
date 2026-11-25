@@ -71,4 +71,53 @@ extension EditorSession {
         }
         return ((sharp, region, true), render, deepRender)
     }
+
+    /// What a Sharpen brush stroke paints: the layer's own pixels (or mask), crispened via unsharp mask
+    /// lazily on touched regions at the layer's own resolution.
+    func sharpenSample(for stroke: BrushStroke) -> (sample: (image: CGImage, placed: CGRect, inGrid: Bool), render: (CGRect) -> CGImage?,
+                                                    deepRender: ((CGRect) -> CGImage?)?)? {
+        let layer = stroke.layer
+        guard let image = stroke.isMask ? layer.mask?.asset.image : layer.asset?.image else { return nil }
+        let map = stroke.pixelToDocument
+        let perPixel = max(1e-6, abs(map.a * map.d - map.b * map.c).squareRoot())
+        let radius = min(20, max(0.5, Double(brushSettings.blurRadius) / perPixel))
+        let width = image.width, height = image.height
+        guard width > 0, height > 0 else { return nil }
+        let extent = CGRect(x: 0, y: 0, width: width, height: height)
+        let source = CIImage(cgImage: image)
+        let sharpened = source.clampedToExtent()
+            .applyingFilter("CIUnsharpMask", parameters: [kCIInputRadiusKey: radius, kCIInputIntensityKey: 1.5])
+            .cropped(to: extent)
+        let isMask = stroke.isMask
+        let render: (CGRect) -> CGImage? = { part in
+            let clipped = part.integral.intersection(extent)
+            guard !clipped.isNull, clipped.width >= 1, clipped.height >= 1 else { return nil }
+            let ciRect = CGRect(x: clipped.minX, y: CGFloat(height) - clipped.maxY, width: clipped.width, height: clipped.height)
+            return PixelAdjust.ciContext.createCGImage(sharpened, from: ciRect,
+                format: isMask ? .L8 : .RGBA8,
+                colorSpace: isMask ? CGColorSpaceCreateDeviceGray() : CGColorSpace(name: CGColorSpace.sRGB)!)
+        }
+        var deepRender: ((CGRect) -> CGImage?)?
+        if !isMask, let asset = layer.asset, asset.deep != nil {
+            var deepSharp: CIImage?
+            deepRender = { part in
+                let clipped = part.integral.intersection(extent)
+                guard !clipped.isNull, clipped.width >= 1, clipped.height >= 1 else { return nil }
+                if deepSharp == nil, let deep = try? DeepLayer.flattened(asset) {
+                    deepSharp = CIImage(cgImage: deep).clampedToExtent()
+                        .applyingFilter("CIUnsharpMask", parameters: [kCIInputRadiusKey: radius, kCIInputIntensityKey: 1.5])
+                        .cropped(to: extent)
+                }
+                guard let deepSharp else { return nil }
+                let ciRect = CGRect(x: clipped.minX, y: CGFloat(height) - clipped.maxY, width: clipped.width, height: clipped.height)
+                return DeepLayer.ciContext.createCGImage(deepSharp, from: ciRect,
+                    format: asset.isHDR ? .RGBAh : .RGBA16,
+                    colorSpace: asset.isHDR ? DeepLayer.hdrSpace : CGColorSpace(name: CGColorSpace.sRGB)!)
+            }
+        }
+        if let deepRender {
+            return ((image, stroke.sourceRect, true), { part in deepRender(part).flatMap { try? DeepLayer.dithered($0) } ?? render(part) }, deepRender)
+        }
+        return ((image, stroke.sourceRect, true), render, nil)
+    }
 }
