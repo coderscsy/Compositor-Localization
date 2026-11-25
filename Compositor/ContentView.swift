@@ -47,6 +47,10 @@ struct ContentView: View {
                 TypeControls(session: session)
                 Divider()
             }
+            if session.tool == .pen {
+                PenControls(session: session)
+                Divider()
+            }
             if session.tool == .shape {
                 ShapeControls(session: session)
                 Divider()
@@ -407,6 +411,8 @@ struct ContentView: View {
             L10n.text("Drag over blemishes to heal · [ ] size · Shift-[ ] hardness · Escape cancel · Space to pan")
         case .type:
             L10n.text("Drag a text box · Click text to edit · Drag box handles to resize · ⌘Return finish · Escape cancel")
+        case .pen:
+            L10n.text("Click corners · Drag smooth Bézier handles · Option breaks tangent · Click start or Return to close · Tab switches mode")
         case .shape:
             String(localized: "Drag to draw a shape on a new layer · Shift \(L10n.text(session.shapeKind == .line ? "45°" : session.shapeKind == .rectangle ? "square" : "circle")) · Option from center · Shift-U or Tab for the next shape · Escape cancel · Space to pan")
         case .gradient:

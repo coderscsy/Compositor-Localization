@@ -18,7 +18,7 @@ extension UTType {
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
     /// Note: version 27 was historically used by the GIF branch, so new features after 26 begin at 28.
-    static let current = 30
+    static let current = 31
     /// Every version `load` accepts (1 through `current`, including historical GIF v27).
     static let supported = Set(1...current)
 
@@ -33,6 +33,8 @@ nonisolated struct ProjectManifest: Codable, Sendable {
     var layers: [ProjectLayerRecord]
     /// Alignment guides. Missing on versions 1–7.
     var guides: [CanvasGuide]? = nil
+    /// Document vector paths (Pen tool / Paths panel). Missing on versions 1–30.
+    var paths: [VectorPath]? = nil
 }
 
 nonisolated struct ProjectLayerRecord: Codable, Sendable {
@@ -511,6 +513,16 @@ actor ProjectStore {
         }
         if let id = manifest.activeLayerID, !ids.contains(id) { throw ProjectError.invalid }
         try validateGuides(manifest)
+        try validatePaths(manifest)
+    }
+
+    private func validatePaths(_ manifest: ProjectManifest) throws {
+        guard let paths = manifest.paths else { return }
+        guard manifest.version >= 31, paths.count <= 256 else { throw ProjectError.invalid }
+        var ids = Set<UUID>()
+        for path in paths {
+            guard ids.insert(path.id).inserted, path.isValid else { throw ProjectError.invalid }
+        }
     }
 
     private func validateGuides(_ manifest: ProjectManifest) throws {

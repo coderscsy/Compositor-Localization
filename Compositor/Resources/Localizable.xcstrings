@@ -328,6 +328,50 @@
         }
       }
     },
+    "%@ Fill": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ Fill"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 填充"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 填色"
+          }
+        }
+      }
+    },
+    "%@ Stroke": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ Stroke"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 描边"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 筆畫"
+          }
+        }
+      }
+    },
     "%@ color": {
       "localizations": {
         "de": {
@@ -765,6 +809,28 @@
       }
     },
     "%lld": {},
+    "%lld anchors": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld anchors"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个锚点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 個錨點"
+          }
+        }
+      }
+    },
     "%lld degrees": {
       "localizations": {
         "de": {
@@ -10392,6 +10458,28 @@
         }
       }
     },
+    "Click corners · Drag smooth Bézier handles · Option breaks tangent · Click start or Return to close · Tab switches mode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click corners · Drag smooth Bézier handles · Option breaks tangent · Click start or Return to close · Tab switches mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单击添加角点 · 拖移拉出平滑贝塞尔手柄 · Option 断开切线 · 单击起点或按 Return 闭合 · Tab 切换模式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按一下加入角點 · 拖曳拉出平滑貝茲控制桿 · Option 斷開切線 · 按一下起點或按 Return 閉合 · Tab 切換模式"
+          }
+        }
+      }
+    },
     "Click or drag on the canvas to move the center": {
       "localizations": {
         "de": {
@@ -11482,6 +11570,28 @@
         }
       }
     },
+    "Close": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闭合"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉合"
+          }
+        }
+      }
+    },
     "Close %@": {
       "localizations": {
         "de": {
@@ -11617,6 +11727,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "關閉搜尋"
+          }
+        }
+      }
+    },
+    "Close the current subpath (Return)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close the current subpath (Return)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闭合当前子路径（Return）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉合目前子路徑（Return）"
           }
         }
       }
@@ -13732,6 +13864,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "控制銳化的強度。"
+          }
+        }
+      }
+    },
+    "Convert Point": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert Point"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "转换点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轉換點"
+          }
+        }
+      }
+    },
+    "Convert active path to a marching-ants selection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert active path to a marching-ants selection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将当前路径转换为选区"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將目前路徑轉換為選取範圍"
           }
         }
       }
@@ -16789,6 +16965,28 @@
         }
       }
     },
+    "Delete Anchor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Anchor"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除锚点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除錨點"
+          }
+        }
+      }
+    },
     "Delete Frame": {
       "localizations": {
         "de": {
@@ -17160,6 +17358,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "刪除遮色片"
+          }
+        }
+      }
+    },
+    "Delete Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除路徑"
           }
         }
       }
@@ -17991,6 +18211,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "調暗此顏色範圍之外的影象以突出範圍。點按「確定」後會退出預覽。"
+          }
+        }
+      }
+    },
+    "Direct Select": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direct Select"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接选择"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接選取"
           }
         }
       }
@@ -21055,6 +21297,28 @@
         }
       }
     },
+    "Duplicate Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "複製路徑"
+          }
+        }
+      }
+    },
     "Duplicate Pixels": {
       "extractionState": "manual",
       "localizations": {
@@ -24028,6 +24292,28 @@
         }
       }
     },
+    "Fill Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "填充路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "填滿路徑"
+          }
+        }
+      }
+    },
     "Fill Text": {
       "extractionState": "manual",
       "localizations": {
@@ -24071,6 +24357,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "填充文字"
+          }
+        }
+      }
+    },
+    "Fill active path with the foreground color on a new layer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill active path with the foreground color on a new layer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用前景色在新图层上填充当前路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用前景色在新圖層上填滿目前路徑"
           }
         }
       }
@@ -29343,6 +29651,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "隱藏選區"
+          }
+        }
+      }
+    },
+    "Hide path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐藏路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隱藏路徑"
           }
         }
       }
@@ -39430,6 +39760,72 @@
         }
       }
     },
+    "Make Path from Selection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make Path from Selection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从选区生成路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從選取範圍建立路徑"
+          }
+        }
+      }
+    },
+    "Make Selection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make Selection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建立选区"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建立選取範圍"
+          }
+        }
+      }
+    },
+    "Make Selection from Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make Selection from Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将路径作为选区载入"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將路徑轉為選取範圍"
+          }
+        }
+      }
+    },
     "Make each dithered pixel this many pixels across, for a chunky old-screen look": {
       "localizations": {
         "de": {
@@ -43102,6 +43498,28 @@
         }
       }
     },
+    "New Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增路徑"
+          }
+        }
+      }
+    },
     "New Text Layer": {
       "extractionState": "manual",
       "localizations": {
@@ -43871,6 +44289,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "此圖層無鏡頭後設資料。配置檔案滑塊用於設定通用校正的強度。"
+          }
+        }
+      }
+    },
+    "No paths yet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No paths yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無路徑"
           }
         }
       }
@@ -47446,6 +47886,94 @@
         }
       }
     },
+    "Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路徑"
+          }
+        }
+      }
+    },
+    "Path %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Path %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径 %lld"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路徑 %lld"
+          }
+        }
+      }
+    },
+    "Path stroke width in pixels": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Path stroke width in pixels"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径描边像素宽度"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路徑描邊像素寬度"
+          }
+        }
+      }
+    },
+    "Paths": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paths"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路徑"
+          }
+        }
+      }
+    },
     "Pattern": {
       "localizations": {
         "en": {
@@ -47625,6 +48153,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "暫停動畫預覽。"
+          }
+        }
+      }
+    },
+    "Pen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pen"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "钢笔"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鋼筆"
+          }
+        }
+      }
+    },
+    "Pen (P) · Tab switches mode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pen (P) · Tab switches mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "钢笔 (P) · Tab 切换模式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鋼筆 (P) · Tab 切換模式"
           }
         }
       }
@@ -56263,6 +56835,28 @@
         }
       }
     },
+    "Selection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选区"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選取"
+          }
+        }
+      }
+    },
     "Selection %lld × %lld px": {
       "localizations": {
         "de": {
@@ -56948,6 +57542,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "形狀（U）· Shift-U 切換矩形與橢圓"
+          }
+        }
+      }
+    },
+    "Shape (U) · Shift-U switches shape kinds": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shape (U) · Shift-U switches shape kinds"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "形状 (U) · Shift-U 切换形状类型"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "形狀 (U) · Shift-U 切換形狀類型"
           }
         }
       }
@@ -58304,6 +58920,28 @@
         }
       }
     },
+    "Show Paths Panel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Paths Panel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示路径面板"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "顯示路徑面板"
+          }
+        }
+      }
+    },
     "Show Rulers": {
       "extractionState": "manual",
       "localizations": {
@@ -58548,6 +59186,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "僅顯示指定型別的圖層"
+          }
+        }
+      }
+    },
+    "Show path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "顯示路徑"
           }
         }
       }
@@ -60756,6 +61416,28 @@
         }
       }
     },
+    "Start a new vector path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a new vector path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建一条矢量路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建立新的向量路徑"
+          }
+        }
+      }
+    },
     "Start of the hue range, in degrees.": {
       "localizations": {
         "de": {
@@ -61528,6 +62210,50 @@
         }
       }
     },
+    "Stroke Path": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stroke Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "描边路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "描邊路徑"
+          }
+        }
+      }
+    },
+    "Stroke active path with the foreground color on a new layer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stroke active path with the foreground color on a new layer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用前景色在新图层上描边当前路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用前景色在新圖層上描邊目前路徑"
+          }
+        }
+      }
+    },
     "Stroke alignment: Inside, Center, or Outside": {
       "localizations": {
         "en": {
@@ -62161,6 +62887,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tab 鍵"
+          }
+        }
+      }
+    },
+    "Tab cycles Pen, Direct Select, Delete Anchor, and Convert Point": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab cycles Pen, Direct Select, Delete Anchor, and Convert Point"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按 Tab 在钢笔、直接选择、删除锚点和转换点间切换"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按 Tab 在鋼筆、直接選取、刪除錨點與轉換點間切換"
           }
         }
       }
@@ -67737,6 +68485,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "使用平滑度為 60% 的圓角，與 Figma 的 iOS 設定一致"
+          }
+        }
+      }
+    },
+    "Use the Pen tool (P) to draw Bézier paths, or convert a selection to a path.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the Pen tool (P) to draw Bézier paths, or convert a selection to a path."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用钢笔工具 (P) 绘制贝塞尔路径，或从当前选区生成路径。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用鋼筆工具 (P) 繪製貝茲路徑，或從目前選取範圍建立路徑。"
           }
         }
       }

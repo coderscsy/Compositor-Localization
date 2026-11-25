@@ -76,6 +76,7 @@ extension EditorSession {
     /// The Delete key: clears the selection when there is one; otherwise deletes the
     /// targeted mask, or the layer when its pixels are targeted.
     func deleteKeyPressed() {
+        if tool == .pen, deleteSelectedAnchorOrPath() { return }
         if selectedEffect != nil { removeSelectedEffect(); return }
         if selection != nil { Task { await clearSelectedPixels() } }
         else { deleteLayerOrMask() }

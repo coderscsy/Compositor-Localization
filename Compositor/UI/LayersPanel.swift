@@ -10,36 +10,43 @@ struct LayersPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            LayersHeader(session: session)
-            Divider()
-            LayerAppearanceControls(session: session, layerID: session.activeLayerID).id(session.activeLayerID)
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { session.layerControlsFrame = $0 }
-                // A layer drag that left the list and comes back over the controls is the list's again.
-                // It reaches a few points down, over the divider and the list's top edge: in the gap between the two, the
-                // window's own drop briefly took the drag, showing it small with a "+". It's put in place as the row is
-                // picked up, rather than as the drag leaves the list, which came a frame late for a drag turned straight back.
-                .overlay { if session.layerDragIsOutside { LayerDropForwarder(session: session).padding(.bottom, -6) } }
-            Divider()
-            if let layers = session.document?.layers, !layers.isEmpty {
-                if session.isFilteringLayers, session.filteredLayerRows.isEmpty {
-                    LayersUnavailableView("No layers match the filter.", systemImage: "line.3.horizontal.decrease.circle.fill") {
-                        Button("Clear All") {
-                            session.clearLayerSearch()
-                            session.clearLayerTypeFilter()
-                        }
-                        .controlSize(.large)
-                    }
-                } else {
-                    NativeLayerList(session: session)
-                }
-            } else {
-                LayersUnavailableView("No layers yet", systemImage: "square.3.layers.3d") {
-                    Text(L10n.text(session.document == nil ? "Create a canvas or import a file." : "Import a file or add a blank layer."))
+            Picker("Panel", selection: $session.rightPanelTab) {
+                ForEach(RightPanelTab.allCases, id: \.self) { tab in
+                    Text(L10n.text(tab.rawValue)).tag(tab)
                 }
             }
+            .pickerStyle(.segmented).labelsHidden()
+            .padding(.horizontal, 10).padding(.vertical, 6)
             Divider()
-            LayersFooter(session: session)
-
+            if session.rightPanelTab == .paths {
+                PathsPanel(session: session)
+            } else {
+                LayersHeader(session: session)
+                Divider()
+                LayerAppearanceControls(session: session, layerID: session.activeLayerID).id(session.activeLayerID)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { session.layerControlsFrame = $0 }
+                    .overlay { if session.layerDragIsOutside { LayerDropForwarder(session: session).padding(.bottom, -6) } }
+                Divider()
+                if let layers = session.document?.layers, !layers.isEmpty {
+                    if session.isFilteringLayers, session.filteredLayerRows.isEmpty {
+                        LayersUnavailableView("No layers match the filter.", systemImage: "line.3.horizontal.decrease.circle.fill") {
+                            Button("Clear All") {
+                                session.clearLayerSearch()
+                                session.clearLayerTypeFilter()
+                            }
+                            .controlSize(.large)
+                        }
+                    } else {
+                        NativeLayerList(session: session)
+                    }
+                } else {
+                    LayersUnavailableView("No layers yet", systemImage: "square.3.layers.3d") {
+                        Text(L10n.text(session.document == nil ? "Create a canvas or import a file." : "Import a file or add a blank layer."))
+                    }
+                }
+                Divider()
+                LayersFooter(session: session)
+            }
         }
         .frame(width: width)
         .task(id: session.adjustmentEditingID) {

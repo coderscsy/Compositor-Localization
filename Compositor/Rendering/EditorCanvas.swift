@@ -733,6 +733,10 @@ final class CanvasView: NSView {
         // Observe selection only for the lightweight handles overlay.
         _ = session.activeLayerID
         _ = session.cropRect
+        _ = session.document?.paths
+        _ = session.activePathID
+        _ = session.selectedAnchor
+        _ = session.rightPanelTab
         transformOverlay.needsDisplay = true
         redrawRulers()
         return changed
@@ -2054,6 +2058,10 @@ final class CanvasView: NSView {
             beginGradientDrag(at: point)
         } else if session.tool == .type {
             beginTextGesture(at: point, event: event)
+        } else if session.tool == .pen, let document = session.document {
+            let docPt = session.viewport.documentPoint(from: point, documentSize: document.size)
+            session.penMouseDown(at: docPt, option: event.modifierFlags.contains(.option), shift: event.modifierFlags.contains(.shift))
+            transformOverlay.needsDisplay = true
         } else if session.tool == .shape, let document = session.document {
             session.beginShape(at: snappedCorner(session.viewport.documentPoint(from: point, documentSize: document.size),
                                                  flags: event.modifierFlags))
@@ -2154,6 +2162,12 @@ final class CanvasView: NSView {
                 updateMarqueeAutoscroll(at: point)
             }
             synchronizeDisplay()
+            return
+        }
+        if session.penDrag != nil, let document = session.document {
+            let docPt = session.viewport.documentPoint(from: point, documentSize: document.size)
+            session.penMouseDragged(to: docPt, option: event.modifierFlags.contains(.option), shift: event.modifierFlags.contains(.shift))
+            transformOverlay.needsDisplay = true
             return
         }
         if session.shapeDraft != nil, lastDragPoint == nil, let document = session.document {
@@ -2366,6 +2380,10 @@ final class CanvasView: NSView {
             gradientDrag = nil
             session.endGradientDrag()
         }
+        if session.penDrag != nil {
+            session.penMouseUp()
+            transformOverlay.needsDisplay = true
+        }
         if session.shapeDraft != nil {
             session.finishShape()
             synchronizeDisplay()
@@ -2473,6 +2491,12 @@ final class CanvasView: NSView {
             else { session.removeLastLassoPoint() }
             synchronizeDisplay()
             refreshLassoCursor()
+        } else if session.tool == .pen, [36, 76].contains(event.keyCode) {
+            session.closeActiveSubpath()
+            transformOverlay.needsDisplay = true
+        } else if session.tool == .pen, event.keyCode == 53 {
+            session.finishCurrentSubpath()
+            transformOverlay.needsDisplay = true
         } else if session.shapeDraft != nil, event.keyCode == 53 {
             session.cancelShape()
             synchronizeDisplay()
@@ -2543,6 +2567,7 @@ final class CanvasView: NSView {
             case "j": session.selectTool(.spotHealing)
             case "s": session.selectTool(.cloneStamp)
             case "t": session.selectTool(.type)
+            case "p": session.selectTool(.pen)
             case "g": session.selectTool(.gradient)
             case "u":
                 if event.modifierFlags.contains(.shift), session.tool == .shape { session.toggleShapeKind() }

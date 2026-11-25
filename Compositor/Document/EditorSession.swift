@@ -87,16 +87,20 @@ struct CanvasDocument: Equatable {
     var layers: [ImageLayer] = [] // Bottom to top.
     /// User-placed alignment lines. Saved with the project; undo covers them.
     var guides: [CanvasGuide] = []
+    /// Document vector paths (format version 31). Saved with the project; undo covers them.
+    var paths: [VectorPath] = []
     /// Part of the document so undo/redo covers selection changes. Not saved to disk.
     var selection: DocumentSelection?
     var size: CGSize { CGSize(width: width, height: height) }
-    init(id: UUID = UUID(), width: Int, height: Int, layers: [ImageLayer] = [], resolution: Double = 72, guides: [CanvasGuide] = []) {
+    init(id: UUID = UUID(), width: Int, height: Int, layers: [ImageLayer] = [], resolution: Double = 72,
+         guides: [CanvasGuide] = [], paths: [VectorPath] = []) {
         self.id = id
         self.width = width
         self.height = height
         self.layers = layers
         self.resolution = resolution
         self.guides = guides
+        self.paths = paths
     }
 
     // Geometry limit; raster memory limits will be established with image import.
@@ -108,15 +112,15 @@ struct CanvasDocument: Equatable {
 }
 
 enum NavigationTool: String, CaseIterable {
-    case move, marquee, lasso, wand, crop, brush, spotHealing, cloneStamp, blur, tone, gradient, shape, type, eyedropper, hand, zoom
+    case move, marquee, lasso, wand, crop, brush, spotHealing, cloneStamp, blur, tone, gradient, pen, shape, type, eyedropper, hand, zoom
     /// No tool (A): nothing in the tool rail is selected and canvas clicks do nothing.
     case idle
     /// Tools that paint with the brush tip, sharing its size, hardness, opacity, and keys.
     var isBrushTool: Bool { self == .brush || self == .spotHealing || self == .cloneStamp || self == .blur || self == .tone }
     /// Tools that draw and edit selections, sharing modifiers, moving, and nudging.
     var isSelectionTool: Bool { self == .marquee || self == .lasso || self == .wand }
-    var symbol: String { self == .type ? "textformat" : self == .eyedropper ? "eyedropper" : self == .marquee ? "rectangle.dashed" : self == .lasso ? "lasso" : self == .wand ? "wand.and.stars" : self == .brush ? "paintbrush.pointed" : self == .spotHealing ? "bandage" : self == .cloneStamp ? "seal" : self == .blur ? "drop" : self == .tone ? "sun.max" : self == .gradient ? "square.bottomhalf.filled" : self == .shape ? "square.on.circle" : self == .crop ? "crop" : self == .move ? "arrow.up.left.and.arrow.down.right" : self == .hand ? "hand.raised" : "magnifyingglass" }
-    var label: String { self == .type ? "Type (T)" : self == .eyedropper ? "Eyedropper (I)" : self == .marquee ? "Marquee (M)" : self == .lasso ? "Lasso (L)" : self == .wand ? "Magic (W) · Tab switches Wand and Object" : self == .brush ? "Brush (B) · Eraser (E)" : self == .spotHealing ? "Spot Healing Brush (J)" : self == .cloneStamp ? "Clone Stamp (S) · Option-click sets the source" : self == .blur ? "Smear / Sharpen (R)" : self == .tone ? "Dodge / Burn / Sponge (O) · Tab switches mode" : self == .gradient ? "Gradient / Paint Bucket (G)" : self == .shape ? "Shape (U) · Shift-U switches Rectangle/Ellipse" : self == .crop ? "Crop (C)" : self == .move ? "Move / Transform (V)" : self == .hand ? "Hand (H)" : "Zoom (Z)" }
+    var symbol: String { self == .type ? "textformat" : self == .eyedropper ? "eyedropper" : self == .marquee ? "rectangle.dashed" : self == .lasso ? "lasso" : self == .wand ? "wand.and.stars" : self == .brush ? "paintbrush.pointed" : self == .spotHealing ? "bandage" : self == .cloneStamp ? "seal" : self == .blur ? "drop" : self == .tone ? "sun.max" : self == .gradient ? "square.bottomhalf.filled" : self == .pen ? "pencil.tip.crop.circle" : self == .shape ? "square.on.circle" : self == .crop ? "crop" : self == .move ? "arrow.up.left.and.arrow.down.right" : self == .hand ? "hand.raised" : "magnifyingglass" }
+    var label: String { self == .type ? "Type (T)" : self == .eyedropper ? "Eyedropper (I)" : self == .marquee ? "Marquee (M)" : self == .lasso ? "Lasso (L)" : self == .wand ? "Magic (W) · Tab switches Wand and Object" : self == .brush ? "Brush (B) · Eraser (E)" : self == .spotHealing ? "Spot Healing Brush (J)" : self == .cloneStamp ? "Clone Stamp (S) · Option-click sets the source" : self == .blur ? "Smear / Sharpen (R)" : self == .tone ? "Dodge / Burn / Sponge (O) · Tab switches mode" : self == .gradient ? "Gradient / Paint Bucket (G)" : self == .pen ? "Pen (P) · Tab switches mode" : self == .shape ? "Shape (U) · Shift-U switches shape kinds" : self == .crop ? "Crop (C)" : self == .move ? "Move / Transform (V)" : self == .hand ? "Hand (H)" : "Zoom (Z)" }
 }
 
 private struct GIFLayerTimelineState {
@@ -435,6 +439,13 @@ final class EditorSession {
     var shapeColorPreview: (layerID: UUID, image: CGImage)?
     /// The shape being dragged out with the Shape tool, before it becomes a layer.
     var shapeDraft: ShapeDraft?
+    /// Pen tool & Paths panel state.
+    var activePathID: UUID?
+    var penMode = PenToolMode.draw
+    var selectedAnchor: PathAnchorRef?
+    @ObservationIgnored var penDrag: PenDragTarget?
+    var penStrokeWidth: Double = 3
+    var rightPanelTab = RightPanelTab.layers
     var selectionModeChoice = SelectionMode.replace
     /// Mode implied by the Shift/Option keys currently held, nil when neither is.
     var heldSelectionMode: SelectionMode?
@@ -641,6 +652,7 @@ final class EditorSession {
         case .marquee: toggleMarqueeKind()
         case .wand: wandMode = next(wandMode)
         case .lasso: toggleLassoKind()
+        case .pen: penMode = next(penMode)
         case .shape: toggleShapeKind()
         case .brush: brushMode = next(brushMode)
         case .blur: blurMode = next(blurMode)

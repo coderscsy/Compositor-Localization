@@ -244,9 +244,73 @@ final class TransformOverlay: NSView {
         else { drawTransformHandles() }
         drawSelection()
         drawLassoDraft()
+        drawVectorPaths()
         drawSnapGuides()
         drawDistances()
         drawDragOutSize()
+    }
+
+    /// Draws active/visible Bézier vector paths, anchors, and control handles in native screen resolution.
+    private func drawVectorPaths() {
+        guard let document = session.document, let transform = documentToView,
+              let context = NSGraphicsContext.current?.cgContext else { return }
+        let showAll = session.tool == .pen || session.rightPanelTab == .paths
+        let pathsToDraw = document.paths.filter { path in
+            guard path.isVisible, !path.isEmpty else { return false }
+            return showAll || path.id == session.activePathID
+        }
+        guard !pathsToDraw.isEmpty else { return }
+        context.saveGState()
+        for path in pathsToDraw {
+            let isActive = path.id == session.activePathID
+            let cg = path.cgPath(transform: transform)
+            // Subtle dark halo behind the path curve for contrast on light canvases.
+            context.setStrokeColor(NSColor.black.withAlphaComponent(isActive ? 0.35 : 0.2).cgColor)
+            context.setLineWidth(isActive ? 2.5 : 1.5)
+            context.addPath(cg)
+            context.strokePath()
+            // Crisp cyan-blue vector path curve.
+            let accent = isActive ? NSColor.systemBlue : NSColor.systemBlue.withAlphaComponent(0.55)
+            context.setStrokeColor(accent.cgColor)
+            context.setLineWidth(isActive ? 1.5 : 1.0)
+            context.addPath(cg)
+            context.strokePath()
+
+            guard isActive, (session.tool == .pen || session.rightPanelTab == .paths) else { continue }
+            for (sIdx, sub) in path.subpaths.enumerated() {
+                for (aIdx, anchor) in sub.anchors.enumerated() {
+                    let pt = anchor.point.applying(transform)
+                    let ref = PathAnchorRef(pathID: path.id, subpathIndex: sIdx, anchorIndex: aIdx)
+                    let isSelected = session.selectedAnchor == ref
+
+                    // Draw tangent handles for selected anchor (or any anchor with handles while in Pen tool).
+                    if isSelected || session.tool == .pen {
+                        for handle in [anchor.handleIn, anchor.handleOut].compactMap({ $0 }) {
+                            let hp = handle.applying(transform)
+                            context.setStrokeColor(NSColor.systemBlue.withAlphaComponent(0.75).cgColor)
+                            context.setLineWidth(1)
+                            context.move(to: pt)
+                            context.addLine(to: hp)
+                            context.strokePath()
+                            let knob = CGRect(x: hp.x - 3, y: hp.y - 3, width: 6, height: 6)
+                            context.setFillColor(isSelected ? NSColor.systemBlue.cgColor : NSColor.white.cgColor)
+                            context.setStrokeColor(NSColor.systemBlue.cgColor)
+                            context.fillEllipse(in: knob)
+                            context.strokeEllipse(in: knob)
+                        }
+                    }
+
+                    // Anchor square.
+                    let box = CGRect(x: pt.x - 3.5, y: pt.y - 3.5, width: 7, height: 7)
+                    context.setFillColor(isSelected ? NSColor.systemBlue.cgColor : NSColor.white.cgColor)
+                    context.setStrokeColor(NSColor.systemBlue.cgColor)
+                    context.setLineWidth(1.2)
+                    context.fill(box)
+                    context.stroke(box)
+                }
+            }
+        }
+        context.restoreGState()
     }
 
     /// A Marquee's or shape's size, a line's length, or a resized layer's size, as it's dragged: in a dark label just

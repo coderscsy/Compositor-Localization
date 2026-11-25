@@ -418,6 +418,22 @@ struct CompositorApp: App {
                     }.disabled(!session.canEditLayers || session.activeLayer == nil)
                     Button("Blending Options…") { session.openBlendIf() }
                         .disabled(!session.canEditBlendIf)
+                    Menu("Path") {
+                        Button("New Path") { _ = session.addNewPath(); session.rightPanelTab = .paths }
+                            .disabled(session.document == nil)
+                        Button("Make Selection from Path") { session.pathToSelection() }
+                            .disabled(session.activePath?.isEmpty != false)
+                        Button("Make Path from Selection") { _ = session.selectionToPath(); session.rightPanelTab = .paths }
+                            .disabled(session.selection?.isEmpty != false)
+                        Divider()
+                        Button("Fill Path") { session.fillPath() }
+                            .disabled(session.activePath?.isEmpty != false || !session.canEditLayers)
+                        Button("Stroke Path") { session.strokePath() }
+                            .disabled(session.activePath?.isEmpty != false || !session.canEditLayers)
+                        Divider()
+                        Button("Show Paths Panel") { session.rightPanelTab = .paths }
+                            .disabled(session.document == nil)
+                    }
                     Divider()
                     Button("Move Layer Up") { session.moveActiveLayer(by: 1) }
                         .configuredKeyboardShortcut("]").disabled(!session.canMoveActiveLayer(by: 1))

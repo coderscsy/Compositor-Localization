@@ -26,7 +26,8 @@ extension EditorSession {
         }
         return ProjectSnapshot(manifest: ProjectManifest(resolution: document.resolution, documentID: document.id, width: document.width,
             height: document.height, activeLayerID: activeLayerID, layers: layers,
-            guides: document.guides.isEmpty ? nil : document.guides), images: images, masks: masks,
+            guides: document.guides.isEmpty ? nil : document.guides,
+            paths: document.paths.isEmpty ? nil : document.paths), images: images, masks: masks,
             animations: animations)
     }
 
@@ -41,7 +42,11 @@ extension EditorSession {
         let manifest = snapshot.manifest
         transformEdit = nil
         document = CanvasDocument(id: manifest.documentID, width: manifest.width, height: manifest.height,
-            layers: snapshot.documentLayers, resolution: manifest.resolution ?? 72, guides: manifest.guides ?? [])
+            layers: snapshot.documentLayers, resolution: manifest.resolution ?? 72,
+            guides: manifest.guides ?? [], paths: manifest.paths ?? [])
+        activePathID = manifest.paths?.first?.id
+        selectedAnchor = nil
+        penDrag = nil
         activeLayerID = manifest.activeLayerID
         projectURL = url
         sourceImageURL = nil
