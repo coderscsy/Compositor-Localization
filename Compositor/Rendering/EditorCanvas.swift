@@ -103,6 +103,7 @@ final class CanvasView: NSView {
     private var perspectiveCropCornerDrag: Int?
     /// Index (0…15) of the 3×3 Mesh Warp control point being dragged, if any.
     private var meshWarpPointDrag: Int?
+    private var quickMaskPainting = false
     private var guideDragging = false {
         didSet { if !guideDragging { releaseDragCursor() } }
     }
@@ -744,6 +745,8 @@ final class CanvasView: NSView {
         _ = session.perspectiveCropQuad
         _ = session.meshWarpEdit
         _ = session.transformPivot
+        _ = session.quickMaskRevision
+        _ = session.isInQuickMaskMode
         _ = session.document?.paths
         _ = session.activePathID
         _ = session.selectedAnchor
@@ -2071,6 +2074,12 @@ final class CanvasView: NSView {
             NSCursor.closedHand.set()
         } else if session.tool.isBrushTool, let document = session.document {
             let pixel = session.viewport.documentPoint(from: point, documentSize: document.size)
+            if session.isInQuickMaskMode, session.tool == .brush {
+                quickMaskPainting = true
+                session.quickMaskBrushDown(at: pixel)
+                transformOverlay.needsDisplay = true
+                return
+            }
             // Option-click with Clone Stamp or manual Healing Brush sets where it copies/samples from.
             if (session.tool == .cloneStamp || (session.tool == .spotHealing && session.healingToolMode == .manual)),
                event.modifierFlags.contains(.option) {
@@ -2215,6 +2224,12 @@ final class CanvasView: NSView {
         if var line = session.cropStraightenLine, let document = session.document {
             line.end = session.viewport.documentPoint(from: point, documentSize: document.size)
             session.cropStraightenLine = line
+            transformOverlay.needsDisplay = true
+            return
+        }
+        if quickMaskPainting, let document = session.document {
+            let pixel = session.viewport.documentPoint(from: point, documentSize: document.size)
+            session.quickMaskBrushDragged(to: pixel)
             transformOverlay.needsDisplay = true
             return
         }
@@ -2452,6 +2467,11 @@ final class CanvasView: NSView {
             session.cropStraightening = false
             transformOverlay.needsDisplay = true
         }
+        if quickMaskPainting {
+            quickMaskPainting = false
+            session.quickMaskBrushUp()
+            transformOverlay.needsDisplay = true
+        }
         if meshWarpPointDrag != nil {
             meshWarpPointDrag = nil
             synchronizeDisplay()
@@ -2654,6 +2674,7 @@ final class CanvasView: NSView {
             case "s": session.selectTool(.cloneStamp)
             case "t": session.selectTool(.type)
             case "p": session.selectTool(.pen)
+            case "q": if !event.isARepeat { session.toggleQuickMask(); transformOverlay.needsDisplay = true }
             case "g": session.selectTool(.gradient)
             case "u":
                 if event.modifierFlags.contains(.shift), session.tool == .shape { session.toggleShapeKind() }

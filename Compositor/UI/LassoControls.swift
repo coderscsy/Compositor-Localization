@@ -193,6 +193,11 @@ struct SelectionModifyIcon: View {
                 var outer = context
                 outer.opacity = 0.28
                 outer.stroke(Path(roundedRect: square(1.4), cornerRadius: 3.4 * unit), with: .foreground, lineWidth: 1.2 * unit)
+            case .border:
+                context.stroke(Path(square(2.2)), with: .foreground, lineWidth: 1.3 * unit)
+                context.stroke(Path(square(5.8)), with: .foreground, lineWidth: 1.1 * unit)
+            case .smooth:
+                context.stroke(Path(roundedRect: square(2.2), cornerRadius: 4.5 * unit), with: .foreground, lineWidth: 1.4 * unit)
             }
         }
         .accessibilityHidden(true)
@@ -233,10 +238,13 @@ struct SelectionAmountSheet: View {
         self.session = session
         self.operation = operation
         // The shared amount can be more than Feather accepts.
-        _input = State(initialValue: String(min(session.selectionModifyAmount, operation == .feather ? 250 : 500)))
+        let limit = operation == .feather ? 250 : operation == .smooth ? 100 : operation == .border ? 200 : 500
+        _input = State(initialValue: String(min(session.selectionModifyAmount, limit)))
     }
 
-    private var maximum: Int { operation == .feather ? 250 : 500 }
+    private var maximum: Int {
+        operation == .feather ? 250 : operation == .smooth ? 100 : operation == .border ? 200 : 500
+    }
     private var amount: Int? {
         guard let value = Int(input.trimmingCharacters(in: .whitespacesAndNewlines)),
               (1...maximum).contains(value) else { return nil }

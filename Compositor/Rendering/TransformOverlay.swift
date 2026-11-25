@@ -244,11 +244,25 @@ final class TransformOverlay: NSView {
         else if let line = gradientLine { drawGradientLine(line) }
         else { drawTransformHandles() }
         drawSelection()
+        drawQuickMask()
         drawLassoDraft()
         drawVectorPaths()
         drawSnapGuides()
         drawDistances()
         drawDragOutSize()
+    }
+
+    /// Draws the translucent ruby Quick Mask (`Q`) overlay over masked/unselected document pixels.
+    private func drawQuickMask() {
+        guard let overlay = session.quickMask?.overlayImage, let document = session.document,
+              let docToView = documentToView, let context = NSGraphicsContext.current?.cgContext else { return }
+        let dest = CGRect(origin: .zero, size: document.size).applying(docToView)
+        context.saveGState()
+        // CGContext.draw expects bottom-up y, whereas TransformOverlay is flipped top-down.
+        context.translateBy(x: dest.minX, y: dest.maxY)
+        context.scaleBy(x: 1, y: -1)
+        context.draw(overlay, in: CGRect(origin: .zero, size: dest.size))
+        context.restoreGState()
     }
 
     /// Draws active/visible Bézier vector paths, anchors, and control handles in native screen resolution.

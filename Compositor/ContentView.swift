@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var filterPanel = FloatingPanelController(name: "filterPanel", sharing: "editPanel")
     @State private var effectsPanel = FloatingPanelController(name: "effectsPanel", sharing: "editPanel")
     @State private var blendIfPanel = FloatingPanelController(name: "blendIfPanel", sharing: "editPanel")
+    @State private var selectAndMaskPanel = FloatingPanelController(name: "selectAndMaskPanel", sharing: "editPanel")
     @State private var isDropTargeted = false
     /// The window's width, so the tab strip can use the toolbar's free space.
     @State private var windowWidth: CGFloat = 1180
@@ -106,9 +107,19 @@ struct ContentView: View {
                         ZStack {
                             EditorCanvas(session: session)
                             if session.document == nil { welcome }
-                            if session.maskAloneLayer != nil || ((session.proofsColors || session.showsGamutWarning) && session.document != nil) {
+                            if session.isInQuickMaskMode || session.maskAloneLayer != nil || ((session.proofsColors || session.showsGamutWarning) && session.document != nil) {
                                 // At the foot of the canvas, clear of the transform box's rotation handle.
                                 VStack(spacing: 8) {
+                                    if session.isInQuickMaskMode {
+                                        HStack(spacing: 8) {
+                                            Circle().fill(Color.red).frame(width: 8, height: 8)
+                                            Text("Quick Mask · Paint white to select, black to mask · Press Q to exit")
+                                                .font(.caption.weight(.medium))
+                                            Button("Exit") { session.toggleQuickMask() }.controlSize(.mini)
+                                        }
+                                        .padding(.horizontal, 12).padding(.vertical, 6)
+                                        .background(.regularMaterial, in: Capsule())
+                                    }
                                     if session.proofsColors { ProofBadge(session: session).fixedSize() }
                                     if session.showsGamutWarning { ProofBadge(session: session, gamut: true).fixedSize() }
                                     if let layer = session.maskAloneLayer { MaskAloneBadge(session: session, layer: layer).fixedSize() }
@@ -290,6 +301,12 @@ struct ContentView: View {
                 blendIfPanel.onClose = { session.cancelBlendIf() }
                 blendIfPanel.show(title: L10n.text("Blending Options"), content: BlendIfSheet(session: session))
             } else { blendIfPanel.close() }
+        }
+        .onChange(of: session.selectAndMask != nil) { _, open in
+            if open {
+                selectAndMaskPanel.onClose = { session.cancelSelectAndMask() }
+                selectAndMaskPanel.show(title: L10n.text("Select and Mask"), content: SelectAndMaskSheet(session: session))
+            } else { selectAndMaskPanel.close() }
         }
         .onChange(of: session.document?.layers) { _, layers in
             if let editing = session.effectsEditing,

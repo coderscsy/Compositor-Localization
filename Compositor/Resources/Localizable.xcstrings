@@ -7082,6 +7082,50 @@
         }
       }
     },
+    "Border": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Border"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "边界"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "邊框"
+          }
+        }
+      }
+    },
+    "Border…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Border…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "边界…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "邊框…"
+          }
+        }
+      }
+    },
     "Both Ways": {
       "localizations": {
         "de": {
@@ -16922,6 +16966,28 @@
         }
       }
     },
+    "Decontaminate Colors": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decontaminate Colors"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "净化颜色"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "淨化顏色"
+          }
+        }
+      }
+    },
     "Decrease brush hardness": {
       "extractionState": "manual",
       "localizations": {
@@ -22230,6 +22296,28 @@
         }
       }
     },
+    "Edit in Quick Mask Mode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit in Quick Mask Mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以快速蒙版模式编辑"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以快速遮色片模式編輯"
+          }
+        }
+      }
+    },
     "Editable Photoshop text becomes pixels and can’t be retyped.": {
       "extractionState": "manual",
       "localizations": {
@@ -23351,6 +23439,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "排除"
+          }
+        }
+      }
+    },
+    "Exit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "離開"
           }
         }
       }
@@ -44224,6 +44334,28 @@
         }
       }
     },
+    "New Layer with Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Layer with Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "带有图层蒙版的新建图层"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增帶有遮色片的圖層"
+          }
+        }
+      }
+    },
     "New Path": {
       "localizations": {
         "en": {
@@ -46202,6 +46334,28 @@
         }
       }
     },
+    "On Black": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On Black"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黑底"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黑底"
+          }
+        }
+      }
+    },
     "On Path": {
       "localizations": {
         "en": {
@@ -46220,6 +46374,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "路徑文字"
+          }
+        }
+      }
+    },
+    "On White": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On White"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "白底"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "白底"
           }
         }
       }
@@ -47933,6 +48109,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "外發光"
+          }
+        }
+      }
+    },
+    "Output To": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Output To"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出到"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輸出至"
           }
         }
       }
@@ -51864,6 +52062,50 @@
         }
       }
     },
+    "Quick Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速蒙版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速遮色片"
+          }
+        }
+      }
+    },
+    "Quick Mask · Paint white to select, black to mask · Press Q to exit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick Mask · Paint white to select, black to mask · Press Q to exit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速蒙版 · 白色画笔增加选区，黑色画笔遮住 · 按 Q 退出"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速遮色片 · 白色筆刷增加選取，黑色筆刷遮住 · 按 Q 退出"
+          }
+        }
+      }
+    },
     "Quit and reopen Compositor to apply the language change.": {
       "localizations": {
         "de": {
@@ -53086,6 +53328,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "微調飽和度"
+          }
+        }
+      }
+    },
+    "Refined": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refined"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精修"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精修"
+          }
+        }
+      }
+    },
+    "Refined Selection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refined Selection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精修选区"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精修選取"
           }
         }
       }
@@ -57142,6 +57428,50 @@
         }
       }
     },
+    "Select and Mask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select and Mask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择并遮住"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選取並遮住"
+          }
+        }
+      }
+    },
+    "Select and Mask…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select and Mask…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择并遮住…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選取並遮住…"
+          }
+        }
+      }
+    },
     "Select everything except those colors, such as all but a green screen": {
       "localizations": {
         "de": {
@@ -60346,6 +60676,28 @@
         }
       }
     },
+    "Similar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Similar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选取相似"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選取相似"
+          }
+        }
+      }
+    },
     "Size": {
       "localizations": {
         "de": {
@@ -61086,6 +61438,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "平滑顆粒，會損失細節。"
+          }
+        }
+      }
+    },
+    "Smooth…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smooth…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "平滑…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "平滑…"
           }
         }
       }

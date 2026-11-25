@@ -490,6 +490,11 @@ final class EditorSession {
     var selectionAmountOperation: SelectionAmountOperation? { didSet { resumeFileRequests() } }
     /// Select > Color Range's panel is open; the selection shown is its preview until OK.
     var colorRange: ColorRangeEdit? { didSet { resumeFileRequests() } }
+    /// Interactive Quick Mask (`Q`) editing state.
+    var quickMask: QuickMaskState?
+    var quickMaskRevision: Int = 0
+    /// Floating Select & Mask refinement workspace state.
+    var selectAndMask: SelectAndMaskSession?
     /// The dialog whose color the picker is open on (`ColorPickerTarget.dialog`).
     @ObservationIgnored var dialogColorChange: ((PaletteColor) -> Void)?
     /// A dialog with its own zoomable preview (Export JPEG) is open: the View menu's zoom commands zoom that instead.

@@ -319,6 +319,19 @@ struct CompositorApp: App {
                         .disabled(!session.canModifySelection)
                     Button("Feather…") { session.promptSelectionAmount(.feather) }
                         .disabled(!session.canModifySelection)
+                    Button("Border…") { session.promptSelectionAmount(.border) }
+                        .disabled(!session.canModifySelection)
+                    Button("Smooth…") { session.promptSelectionAmount(.smooth) }
+                        .disabled(!session.canModifySelection)
+                    Button("Similar") { Task { await session.selectSimilar() } }
+                        .disabled(!session.canModifySelection)
+                    Divider()
+                    Button("Select and Mask…") { Task { await session.openSelectAndMask() } }
+                        .configuredKeyboardShortcut("r", modifiers: [.command, .option])
+                        .disabled(!session.canOpenSelectAndMask)
+                    Toggle("Edit in Quick Mask Mode", isOn: Binding(get: { session.isInQuickMaskMode },
+                                                                    set: { _ in session.toggleQuickMask() }))
+                        .disabled(session.document == nil || !session.canEditSelection)
                 }
                 CommandMenu("Image") {
                     Button("Curves…") { session.beginFilter(.curves) }
