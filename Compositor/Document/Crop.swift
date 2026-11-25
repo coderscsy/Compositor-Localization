@@ -232,7 +232,33 @@ extension EditorSession {
         default: return CropGeometry.ratio(cropRatioChoice)
         }
     }
-    func cancelCrop() { cropRect = nil }
+    var hasPendingCrop: Bool {
+        if cropPerspectiveMode { return perspectiveCropQuad?.isValid == true }
+        return cropRect != nil || abs(cropAngle) > 0.001
+    }
+
+    func cancelCrop() {
+        cropRect = nil
+        cropAngle = 0
+        cropStraightening = false
+        cropStraightenLine = nil
+        cropPerspectiveMode = false
+        perspectiveCropQuad = nil
+    }
+
+    func togglePerspectiveCrop() {
+        cropPerspectiveMode.toggle()
+        cropStraightening = false
+        cropStraightenLine = nil
+        if cropPerspectiveMode, let document {
+            let base = cropRect ?? CGRect(origin: .zero, size: document.size)
+            perspectiveCropQuad = CropPerspectiveQuad(rect: base)
+            cropAngle = 0
+        } else {
+            perspectiveCropQuad = nil
+        }
+    }
+
     func changeCropRatio() {
         guard let rect = visibleCropRect, let ratio = cropRatio else { return }
         let height = min(DocumentLimits.maxSideExtent, max(1, rect.width / ratio))
@@ -240,16 +266,37 @@ extension EditorSession {
         let next = CropGeometry.snapped(CGRect(x: rect.minX, y: rect.midY - height / 2, width: width, height: height))
         if CropGeometry.valid(next) { cropRect = next }
     }
+
     func commitCrop() async {
-        guard canStartProjectOperation, let rect = cropRect, CropGeometry.valid(rect),
-              let snapshot = projectSnapshot() else { return }
+        guard canStartProjectOperation, let document, let snapshot = projectSnapshot() else { return }
+        if cropPerspectiveMode {
+            guard let quad = perspectiveCropQuad, quad.isValid else { return }
+            isProjectBusy = true
+            defer { isProjectBusy = false }
+            do {
+                let result = try await CropProcessor.applyPerspectiveCrop(snapshot, quad: quad)
+                cancelCrop()
+                applyDocumentSize(result, actionName: "Perspective Crop")
+            } catch { cropError = error.localizedDescription }
+            return
+        }
+        let targetRect: CGRect
+        if let rect = cropRect {
+            targetRect = rect
+        } else if abs(cropAngle) > 0.001 {
+            targetRect = CGRect(origin: .zero, size: document.size)
+        } else {
+            return
+        }
+        guard CropGeometry.valid(targetRect) else { return }
+        let angle = cropAngle
+        let deletePixels = deleteCroppedPixels
         isProjectBusy = true
         defer { isProjectBusy = false }
         do {
-            let result = try await CanvasResizer.shared.resize(snapshot,
-                to: CanvasSizeOptions(width: Int(rect.width), height: Int(rect.height),
-                    contentOffset: CGPoint(x: -rect.minX, y: -rect.minY)))
-            cropRect = nil
+            let result = try await CropProcessor.applyCrop(snapshot, rect: targetRect, angleDegrees: angle,
+                                                           deleteCroppedPixels: deletePixels)
+            cancelCrop()
             applyDocumentSize(result, actionName: "Crop")
         } catch { cropError = error.localizedDescription }
     }

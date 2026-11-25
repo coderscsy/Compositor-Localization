@@ -99,6 +99,8 @@ final class CanvasView: NSView {
     private var cropDrag: CropDrag? {
         didSet { if cropDrag == nil { releaseDragCursor() } }
     }
+    /// Index (0…3) of the Perspective Crop corner being dragged, if any.
+    private var perspectiveCropCornerDrag: Int?
     private var guideDragging = false {
         didSet { if !guideDragging { releaseDragCursor() } }
     }
@@ -733,6 +735,11 @@ final class CanvasView: NSView {
         // Observe selection only for the lightweight handles overlay.
         _ = session.activeLayerID
         _ = session.cropRect
+        _ = session.cropOverlayStyle
+        _ = session.cropAngle
+        _ = session.cropStraightenLine
+        _ = session.cropPerspectiveMode
+        _ = session.perspectiveCropQuad
         _ = session.document?.paths
         _ = session.activePathID
         _ = session.selectedAnchor
@@ -2188,6 +2195,18 @@ final class CanvasView: NSView {
             synchronizeDisplay()
             return
         }
+        if var line = session.cropStraightenLine, let document = session.document {
+            line.end = session.viewport.documentPoint(from: point, documentSize: document.size)
+            session.cropStraightenLine = line
+            transformOverlay.needsDisplay = true
+            return
+        }
+        if let idx = perspectiveCropCornerDrag, var quad = session.perspectiveCropQuad, let document = session.document {
+            quad.corners[idx] = session.viewport.documentPoint(from: point, documentSize: document.size)
+            session.perspectiveCropQuad = quad
+            transformOverlay.needsDisplay = true
+            return
+        }
         if session.penDrag != nil, let document = session.document {
             let docPt = session.viewport.documentPoint(from: point, documentSize: document.size)
             session.penMouseDragged(to: docPt, option: event.modifierFlags.contains(.option), shift: event.modifierFlags.contains(.shift))
@@ -2403,6 +2422,16 @@ final class CanvasView: NSView {
         if gradientDrag != nil {
             gradientDrag = nil
             session.endGradientDrag()
+        }
+        if let line = session.cropStraightenLine {
+            session.cropAngle = line.angleDegrees
+            session.cropStraightenLine = nil
+            session.cropStraightening = false
+            transformOverlay.needsDisplay = true
+        }
+        if perspectiveCropCornerDrag != nil {
+            perspectiveCropCornerDrag = nil
+            transformOverlay.needsDisplay = true
         }
         if session.penDrag != nil {
             session.penMouseUp()
@@ -2866,6 +2895,22 @@ final class CanvasView: NSView {
     private func beginCropDrag(at point: CGPoint) {
         guard let document = session.document else { return }
         let pixel = session.viewport.documentPoint(from: point, documentSize: document.size)
+        if session.cropStraightening {
+            session.cropStraightenLine = CropStraightenLine(start: pixel, end: pixel)
+            transformOverlay.needsDisplay = true
+            return
+        }
+        if session.cropPerspectiveMode {
+            let quad = session.perspectiveCropQuad ?? CropPerspectiveQuad(rect: CGRect(origin: .zero, size: document.size))
+            session.perspectiveCropQuad = quad
+            // Hit-test the 4 corners in view coordinates.
+            let viewCorners = quad.corners.map { session.viewport.viewPoint(from: $0, documentSize: document.size) }
+            if let idx = viewCorners.indices.min(by: { hypot(viewCorners[$0].x - point.x, viewCorners[$0].y - point.y) < hypot(viewCorners[$1].x - point.x, viewCorners[$1].y - point.y) }),
+               hypot(viewCorners[idx].x - point.x, viewCorners[idx].y - point.y) <= 18 {
+                perspectiveCropCornerDrag = idx
+            }
+            return
+        }
         let rect = session.visibleCropRect ?? CGRect(origin: pixel, size: .zero)
         let mode: CropDrag.Mode
         if let region = transformOverlay.cropResizeRegions.first(where: { $0.rect.contains(point) }) {

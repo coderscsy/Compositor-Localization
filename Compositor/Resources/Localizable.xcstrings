@@ -15517,6 +15517,50 @@
         }
       }
     },
+    "Crop composition overlay guides": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crop composition overlay guides"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裁剪构图参考线"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裁切構圖參考線"
+          }
+        }
+      }
+    },
+    "Crop rotation angle (-45° to 45°)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crop rotation angle (-45° to 45°)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裁剪旋转角度（-45° 至 45°）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裁切旋轉角度（-45° 至 45°）"
+          }
+        }
+      }
+    },
     "Crop tool": {
       "extractionState": "manual",
       "localizations": {
@@ -17317,6 +17361,28 @@
         }
       }
     },
+    "Delete Cropped Pixels": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Cropped Pixels"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除裁剪的像素"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除裁切的像素"
+          }
+        }
+      }
+    },
     "Delete Frame": {
       "localizations": {
         "de": {
@@ -18333,6 +18399,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "顯影“%@”"
+          }
+        }
+      }
+    },
+    "Diagonal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagonal"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对角线"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "對角線"
           }
         }
       }
@@ -19820,6 +19908,28 @@
         }
       }
     },
+    "Drag 4 corners to rectify perspective distortion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag 4 corners to rectify perspective distortion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖动四个角点校正透视变形"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖曳四個角點校正透視變形"
+          }
+        }
+      }
+    },
     "Drag a color in the picture. Nearby color families move together.": {
       "localizations": {
         "de": {
@@ -20002,6 +20112,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "拖動建立文字框 · 點按文字以編輯 · 拖動控制點調整大小 · ⌘回車完成 · Esc 取消"
+          }
+        }
+      }
+    },
+    "Drag along a tilted horizon or vertical edge to straighten": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag along a tilted horizon or vertical edge to straighten"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沿倾斜的地平线或垂直边缘拖移以自动拉直"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沿傾斜的地平線或垂直邊緣拖曳以自動拉直"
           }
         }
       }
@@ -27615,6 +27747,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "輝光"
+          }
+        }
+      }
+    },
+    "Golden Ratio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Golden Ratio"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黄金比例"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黃金比例"
           }
         }
       }
@@ -48915,6 +49069,28 @@
         }
       }
     },
+    "Perspective Crop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perspective Crop"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "透视裁剪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "透視裁切"
+          }
+        }
+      }
+    },
     "Perspective allows stronger keystone. Rectilinear keeps the warp gentler.": {
       "localizations": {
         "de": {
@@ -55284,6 +55460,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "圓度"
+          }
+        }
+      }
+    },
+    "Rule of Thirds": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rule of Thirds"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三分法"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "三分法"
           }
         }
       }
@@ -62262,6 +62460,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "結束單獨檢視遮色片"
+          }
+        }
+      }
+    },
+    "Straighten": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Straighten"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拉直"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拉直"
           }
         }
       }
@@ -70587,6 +70807,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "更新內容"
+          }
+        }
+      }
+    },
+    "When unchecked, cropped pixels outside the canvas stay intact for later adjustment": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When unchecked, cropped pixels outside the canvas stay intact for later adjustment"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消勾选时保留画布外的裁剪像素以便后续微调"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消勾選時保留畫布外的裁切像素以便後續微調"
           }
         }
       }

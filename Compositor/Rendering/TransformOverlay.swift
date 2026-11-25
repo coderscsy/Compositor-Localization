@@ -652,24 +652,123 @@ final class TransformOverlay: NSView {
     }
 
     private func drawCrop() {
-        guard let rect = cropViewRect, let context = NSGraphicsContext.current?.cgContext else { return }
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        // Perspective Crop mode: 4-corner draggable quad with 3×3 perspective grid.
+        if session.cropPerspectiveMode, let quad = session.perspectiveCropQuad, quad.corners.count == 4,
+           let docToView = documentToView {
+            let pts = quad.corners.map { $0.applying(docToView) }
+            context.saveGState()
+            let outer = CGMutablePath()
+            outer.addRect(bounds)
+            let quadPath = CGMutablePath()
+            quadPath.addLines(between: pts)
+            quadPath.closeSubpath()
+            outer.addPath(quadPath)
+            context.addPath(outer)
+            context.setFillColor(NSColor.black.withAlphaComponent(0.6).cgColor)
+            context.drawPath(using: .eoFill)
+
+            context.setStrokeColor(NSColor.white.cgColor)
+            context.setLineWidth(1.2)
+            context.addPath(quadPath)
+            context.strokePath()
+
+            // 3x3 perspective-interpolated composition mesh inside the quad.
+            context.setStrokeColor(NSColor.white.withAlphaComponent(0.45).cgColor)
+            context.setLineWidth(1)
+            func lerp(_ a: CGPoint, _ b: CGPoint, _ t: CGFloat) -> CGPoint {
+                CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
+            }
+            for step in 1...2 {
+                let t = CGFloat(step) / 3
+                context.move(to: lerp(pts[0], pts[1], t))
+                context.addLine(to: lerp(pts[3], pts[2], t))
+                context.move(to: lerp(pts[0], pts[3], t))
+                context.addLine(to: lerp(pts[1], pts[2], t))
+            }
+            context.strokePath()
+
+            context.setFillColor(NSColor.white.cgColor)
+            context.setStrokeColor(NSColor.black.cgColor)
+            for pt in pts {
+                let handle = CGRect(x: pt.x - 5, y: pt.y - 5, width: 10, height: 10)
+                context.fill(handle)
+                context.stroke(handle)
+            }
+            context.restoreGState()
+            return
+        }
+
+        guard let rect = cropViewRect else { return }
         context.saveGState()
+
+        let angleRad = CGFloat(session.cropAngle * .pi / 180.0)
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        var rotPath: CGPath = CGPath(rect: rect, transform: nil)
+        if abs(angleRad) > 0.0001 {
+            var t = CGAffineTransform(translationX: center.x, y: center.y)
+                .rotated(by: angleRad)
+                .translatedBy(x: -center.x, y: -center.y)
+            rotPath = CGPath(rect: rect, transform: &t)
+        }
+
         context.addRect(bounds)
-        context.addRect(rect)
+        context.addPath(rotPath)
         context.setFillColor(NSColor.black.withAlphaComponent(0.6).cgColor)
         context.drawPath(using: .eoFill)
+
+        if abs(angleRad) > 0.0001 {
+            context.translateBy(x: center.x, y: center.y)
+            context.rotate(by: angleRad)
+            context.translateBy(x: -center.x, y: -center.y)
+        }
+
         context.setStrokeColor(NSColor.white.cgColor)
         context.setLineWidth(1)
         context.stroke(rect)
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.4).cgColor)
-        for index in 1...2 {
-            let fraction = CGFloat(index) / 3
-            context.move(to: CGPoint(x: rect.minX + rect.width * fraction, y: rect.minY))
-            context.addLine(to: CGPoint(x: rect.minX + rect.width * fraction, y: rect.maxY))
-            context.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * fraction))
-            context.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * fraction))
+
+        // Composition overlay guides.
+        context.setStrokeColor(NSColor.white.withAlphaComponent(0.45).cgColor)
+        switch session.cropOverlayStyle {
+        case .ruleOfThirds:
+            for index in 1...2 {
+                let f = CGFloat(index) / 3
+                context.move(to: CGPoint(x: rect.minX + rect.width * f, y: rect.minY))
+                context.addLine(to: CGPoint(x: rect.minX + rect.width * f, y: rect.maxY))
+                context.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * f))
+                context.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * f))
+            }
+        case .goldenRatio:
+            let ratios: [CGFloat] = [0.381966, 0.618034]
+            for f in ratios {
+                context.move(to: CGPoint(x: rect.minX + rect.width * f, y: rect.minY))
+                context.addLine(to: CGPoint(x: rect.minX + rect.width * f, y: rect.maxY))
+                context.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * f))
+                context.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * f))
+            }
+        case .diagonal:
+            let short = min(rect.width, rect.height)
+            context.move(to: CGPoint(x: rect.minX, y: rect.minY))
+            context.addLine(to: CGPoint(x: rect.minX + short, y: rect.minY + short))
+            context.move(to: CGPoint(x: rect.maxX, y: rect.minY))
+            context.addLine(to: CGPoint(x: rect.maxX - short, y: rect.minY + short))
+            context.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            context.addLine(to: CGPoint(x: rect.minX + short, y: rect.maxY - short))
+            context.move(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            context.addLine(to: CGPoint(x: rect.maxX - short, y: rect.maxY - short))
+        case .grid:
+            for index in 1...5 {
+                let f = CGFloat(index) / 6
+                context.move(to: CGPoint(x: rect.minX + rect.width * f, y: rect.minY))
+                context.addLine(to: CGPoint(x: rect.minX + rect.width * f, y: rect.maxY))
+                context.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * f))
+                context.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * f))
+            }
+        case .none:
+            break
         }
         context.strokePath()
+
         context.setFillColor(NSColor.white.cgColor)
         context.setStrokeColor(NSColor.black.cgColor)
         for point in cropHandles {
@@ -678,5 +777,18 @@ final class TransformOverlay: NSView {
             context.stroke(handle)
         }
         context.restoreGState()
+
+        // Interactive Straighten horizon line.
+        if let line = session.cropStraightenLine, let docToView = documentToView {
+            let a = line.start.applying(docToView), b = line.end.applying(docToView)
+            context.saveGState()
+            context.setStrokeColor(NSColor.black.withAlphaComponent(0.6).cgColor)
+            context.setLineWidth(3)
+            context.move(to: a); context.addLine(to: b); context.strokePath()
+            context.setStrokeColor(NSColor.systemYellow.cgColor)
+            context.setLineWidth(1.5)
+            context.move(to: a); context.addLine(to: b); context.strokePath()
+            context.restoreGState()
+        }
     }
 }

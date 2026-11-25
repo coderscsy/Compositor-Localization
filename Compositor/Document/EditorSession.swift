@@ -323,6 +323,13 @@ final class EditorSession {
     var layerTypeFilter: Set<LayerType> = []
     var cropRect: CGRect?
     var cropRatioChoice = "Free"
+    var cropOverlayStyle = CropOverlayStyle.ruleOfThirds
+    var cropAngle: Double = 0
+    var deleteCroppedPixels = false
+    var cropStraightening = false
+    var cropStraightenLine: CropStraightenLine?
+    var cropPerspectiveMode = false
+    var perspectiveCropQuad: CropPerspectiveQuad?
     var cropError: String?
     var transformEdit: TransformEdit?
     @ObservationIgnored var distortPreviewCache: [UUID: DistortPreviewCache] = [:]
