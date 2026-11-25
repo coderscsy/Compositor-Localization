@@ -42,6 +42,15 @@ struct BrushControls: View {
                         }
                         .pickerStyle(.segmented).labelsHidden().fixedSize()
                         .help("Liquify pushes pixels · Blur softens · Smudge drags color · Sharpen crisps edges")
+                        if session.blurMode == .liquify {
+                            Picker("Liquify Brush", selection: $session.liquifyMode) {
+                                ForEach(LiquifyBrushMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                            }
+                            .pickerStyle(.menu).labelsHidden().fixedSize()
+                            if session.hasLiquifyFreezeMask {
+                                Button("Clear Mask") { session.clearLiquifyFreezeMask() }
+                            }
+                        }
                     }
                     if session.tool == .tone {
                         Picker("Mode", selection: $session.toneSettings.mode) {
@@ -65,11 +74,24 @@ struct BrushControls: View {
                         }
                     }
                     if session.tool == .spotHealing {
-                        Picker("Type", selection: $session.spotHealingMode) {
-                            ForEach(SpotHealingMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                        Picker("Healing Mode", selection: $session.healingToolMode) {
+                            ForEach(HealingToolMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
                         }
                         .pickerStyle(.segmented).labelsHidden().fixedSize()
-                        .accessibilityIdentifier("spotHealingType")
+                        if session.healingToolMode == .spot {
+                            Picker("Type", selection: $session.spotHealingMode) {
+                                ForEach(SpotHealingMode.allCases, id: \.self) { Text(L10n.text($0.rawValue)).tag($0) }
+                            }
+                            .pickerStyle(.segmented).labelsHidden().fixedSize()
+                            .accessibilityIdentifier("spotHealingType")
+                        } else {
+                            Toggle("Aligned", isOn: $session.cloneSettings.aligned)
+                            Picker("Sample", selection: $session.cloneSettings.sampleAllLayers) {
+                                Text("This Layer").tag(false)
+                                Text("All Layers").tag(true)
+                            }
+                            .pickerStyle(.segmented).labelsHidden().fixedSize()
+                        }
                     }
                     if session.tool == .cloneStamp {
                         Toggle("Aligned", isOn: $session.cloneSettings.aligned)

@@ -20,4 +20,9 @@ void heal_coverage_bounds(const uint8_t *gray, size_t width, size_t height, size
 void heal_membrane(float *value, const uint8_t *role, long w, long h, int depth);
 int spot_heal(uint8_t *rgba, const uint8_t *coverage, size_t width, size_t height, size_t stride,
               float opacity, int mode, uint32_t seed);
+// Manual-sample Healing Brush: blends texture from `source` (premultiplied RGBA, same size and stride as `rgba`)
+// into `rgba` where `coverage > 0`, solving a smooth tonal membrane from the boundary ring so source texture
+// matches destination color and lighting seamlessly. Returns 0 on success or -1 on allocation failure.
+int heal_sampled(uint8_t *rgba, const uint8_t *source, const uint8_t *coverage,
+                 size_t width, size_t height, size_t stride, float opacity);
 #endif

@@ -286,3 +286,99 @@ done:
     free(value);
     return status;
 }
+
+int heal_sampled(uint8_t *rgba, const uint8_t *source, const uint8_t *coverage,
+                 size_t width, size_t height, size_t stride, float opacity) {
+    if (!rgba || !source || !coverage || width == 0 || height == 0) return 0;
+    long bounds[4] = {0, 0, 0, 0};
+    heal_coverage_bounds(coverage, width, height, width, bounds);
+    if (bounds[2] <= bounds[0] || bounds[3] <= bounds[1]) return 0;
+
+    long W = (long)width, H = (long)height;
+    long pad = 4;
+    long wx0 = bounds[0] - pad; if (wx0 < 0) wx0 = 0;
+    long wy0 = bounds[1] - pad; if (wy0 < 0) wy0 = 0;
+    long wx1 = bounds[2] + pad; if (wx1 > W) wx1 = W;
+    long wy1 = bounds[3] + pad; if (wy1 > H) wy1 = H;
+    long ww = wx1 - wx0, wh = wy1 - wy0;
+    long wn = ww * wh;
+    if (wn <= 0) return 0;
+
+    uint8_t *role = calloc((size_t)wn, 1);
+    float *value = calloc((size_t)wn * 4, sizeof(float));
+    if (!role || !value) {
+        free(role);
+        free(value);
+        return -1;
+    }
+
+    for (long y = 0; y < wh; ++y) {
+        for (long x = 0; x < ww; ++x) {
+            if (coverage[(size_t)(wy0 + y) * width + (size_t)(wx0 + x)] > 0) {
+                role[y * ww + x] = HOLE;
+            }
+        }
+    }
+
+    // Mark 1-pixel ring outside the hole as fixed boundary constraints.
+    long ringCount = 0;
+    double mean[4] = {0, 0, 0, 0};
+    for (long y = 0; y < wh; ++y) {
+        for (long x = 0; x < ww; ++x) {
+            long p = y * ww + x;
+            if (role[p] != OUTSIDE) continue;
+            int adjacent = 0;
+            if (x > 0 && role[p - 1] == HOLE) adjacent = 1;
+            else if (x + 1 < ww && role[p + 1] == HOLE) adjacent = 1;
+            else if (y > 0 && role[p - ww] == HOLE) adjacent = 1;
+            else if (y + 1 < wh && role[p + ww] == HOLE) adjacent = 1;
+            if (!adjacent) continue;
+            role[p] = RING;
+            long ix = wx0 + x, iy = wy0 + y;
+            const uint8_t *t = rgba + (size_t)iy * stride + (size_t)ix * 4;
+            const uint8_t *s = source + (size_t)iy * stride + (size_t)ix * 4;
+            for (int c = 0; c < 4; ++c) {
+                float diff = (float)t[c] - (float)s[c];
+                value[p * 4 + c] = diff;
+                mean[c] += diff;
+            }
+            ringCount += 1;
+        }
+    }
+
+    if (ringCount > 0) {
+        for (int c = 0; c < 4; ++c) mean[c] /= (double)ringCount;
+        for (long p = 0; p < wn; ++p) {
+            if (role[p] == HOLE) {
+                for (int c = 0; c < 4; ++c) value[p * 4 + c] = (float)mean[c];
+            }
+        }
+        heal_membrane(value, role, ww, wh, 0);
+    }
+
+    for (long y = 0; y < wh; ++y) {
+        for (long x = 0; x < ww; ++x) {
+            long p = y * ww + x;
+            if (role[p] != HOLE) continue;
+            long ix = wx0 + x, iy = wy0 + y;
+            uint8_t *t = rgba + (size_t)iy * stride + (size_t)ix * 4;
+            const uint8_t *s = source + (size_t)iy * stride + (size_t)ix * 4;
+            double amount = (coverage[(size_t)iy * width + (size_t)ix] / 255.0) * (double)opacity;
+            double out[4];
+            for (int c = 0; c < 4; ++c) {
+                double healed = (double)s[c] + (double)value[p * 4 + c];
+                out[c] = (double)t[c] + (healed - (double)t[c]) * amount;
+            }
+            double alpha = out[3] < 0 ? 0 : out[3] > 255 ? 255 : out[3];
+            t[3] = (uint8_t)lround(alpha);
+            for (int c = 0; c < 3; ++c) {
+                double v = out[c] < 0 ? 0 : out[c] > t[3] ? t[3] : out[c];
+                t[c] = (uint8_t)lround(v);
+            }
+        }
+    }
+
+    free(role);
+    free(value);
+    return 0;
+}

@@ -14,12 +14,35 @@ nonisolated enum BlurToolMode: String, CaseIterable, Sendable {
     case sharpen = "Sharpen"
 }
 
+/// Photoshop-style Liquify sub-brushes.
+nonisolated enum LiquifyBrushMode: String, CaseIterable, Sendable {
+    case forwardWarp = "Forward Warp"
+    case bloat = "Bloat"
+    case pucker = "Pucker"
+    case twirlCW = "Twirl CW"
+    case twirlCCW = "Twirl CCW"
+    case pushLeft = "Push Left"
+    case reconstruct = "Reconstruct"
+    case freeze = "Freeze Mask"
+    case thaw = "Thaw Mask"
+
+    var isMaskTool: Bool { self == .freeze || self == .thaw }
+    var appliesOnClick: Bool { self != .forwardWarp && self != .pushLeft }
+}
+
+/// Spot Healing (automatic) vs manual-sample Healing Brush (Option-click source).
+nonisolated enum HealingToolMode: String, CaseIterable, Sendable {
+    case spot = "Spot Healing"
+    case manual = "Healing Brush"
+}
+
 /// A Smudge or Liquify stroke in progress. It works on the active layer as the canvas shows it, at document size,
 /// changing it dab by dab; the canvas shows that working copy in place of the layer. When the stroke ends, the result
 /// is painted into the layer's own pixels along the stroke's path (see `EditorSession.finishWarp`).
 final class WarpStroke {
     let layer: ImageLayer
     let mode: BlurToolMode
+    let liquifyMode: LiquifyBrushMode
     let diameter: CGFloat
     let hardness: CGFloat
     let strength: CGFloat
@@ -45,19 +68,35 @@ final class WarpStroke {
     /// Smudge: the color the brush carries, a (2r+1)² RGBA square.
     private var carried: [Float] = []
     private var scratch: [Float] = []
+    /// Multi-brush Liquify state: untouched source pixels, per-pixel displacement offsets, and optional freeze mask (0…255).
+    private var originalPixels: [UInt8] = []
+    private var offsets: [SIMD2<Float>] = []
+    private(set) var freezeMask: [UInt8] = []
+    private var usesAdvancedLiquify: Bool {
+        mode == .liquify && (liquifyMode != .forwardWarp || !freezeMask.isEmpty)
+    }
 
     /// `deep`: a 16-bit layer's 16-bit pixels (`DeepLayer`). With the GPU the working copy is then 16-bit too, so the
     /// stroke keeps the layer's precision; the CPU dabs work at 8 bits.
     init(layer: ImageLayer, image: CGImage, deep: CGImage? = nil, transform: LayerTransform, canvas: CGSize, mode: BlurToolMode,
+         liquifyMode: LiquifyBrushMode = .forwardWarp, freezeMask: [UInt8]? = nil,
          settings: BrushSettings, useGPU: Bool = true) throws {
         self.layer = layer
         self.mode = mode
+        self.liquifyMode = liquifyMode
         diameter = max(2, settings.diameter)
         hardness = min(0.98, max(0, settings.hardness))
         strength = min(1, max(0.01, settings.opacity))
         width = Int(canvas.width); height = Int(canvas.height)
+        if let mask = freezeMask, mask.count == width * height {
+            self.freezeMask = mask
+        } else if mode == .liquify && liquifyMode.isMaskTool {
+            self.freezeMask = [UInt8](repeating: 0, count: width * height)
+        }
+        let advanced = mode == .liquify && (liquifyMode != .forwardWarp || !self.freezeMask.isEmpty)
+        let allowGPU = useGPU && !advanced
         var gpu: MetalWarp?
-        if useGPU, let deep, MetalWarp.pipelines != nil {
+        if allowGPU, let deep, MetalWarp.pipelines != nil {
             let wide = try DeepLayer.context(width: width, height: height, hdr: DeepLayer.isHDR(deep))
             LayerRenderer.draw(deep, transform: transform, center: transform.center, in: wide)
             gpu = MetalWarp(pixels: wide)
@@ -65,7 +104,7 @@ final class WarpStroke {
         } else {
             context = try BrushRaster.context(width: width, height: height, mask: false)
             LayerRenderer.draw(image, transform: transform, center: transform.center, in: context)
-            if useGPU { gpu = MetalWarp(pixels: context) }
+            if allowGPU { gpu = MetalWarp(pixels: context) }
         }
         if gpu == nil, context.bitsPerComponent != 8 {
             context = try BrushRaster.context(width: width, height: height, mask: false)
@@ -75,6 +114,10 @@ final class WarpStroke {
         guard let data = context.data else { throw ExportError.render }
         // Top-left rows: a document point's row is its y. Only the CPU dabs use these, on an 8-bit copy.
         pixels = data.bindMemory(to: UInt8.self, capacity: width * height * 4)
+        if advanced {
+            originalPixels = Array(UnsafeBufferPointer(start: pixels, count: width * height * 4))
+            offsets = [SIMD2<Float>](repeating: .zero, count: width * height)
+        }
         cpuImage = context.makeImage()
     }
 
@@ -94,13 +137,14 @@ final class WarpStroke {
             last = point
             if mode == .smudge {
                 if let gpu { gpu.pickUp(at: point, radius: radius); gpu.commit() } else { pickUp(at: point) }
+            } else if usesAdvancedLiquify, liquifyMode.appliesOnClick {
+                applyAdvancedLiquify(from: point, to: point)
+                points.append(point)
+                cpuImage = context.makeImage()
             }
             return
         }
         let distance = hypot(point.x - from.x, point.y - from.y)
-        // Smudge drags the pixels one dab's spacing at a time and mixes them with what's there: spaced widely, each step
-        // left a faint copy of what it dragged, echoes along the stroke. A pixel apart (a little more for a huge brush)
-        // the steps run together into one smear, as Photoshop's does.
         let spacing = max(1, diameter * (mode == .smudge ? 0.005 : 0.025))
         guard distance >= spacing else { return }
         let steps = Int((distance / spacing).rounded(.up))
@@ -111,7 +155,13 @@ final class WarpStroke {
             if let gpu {
                 if mode == .smudge { gpu.smudge(at: next, radius: radius, diameter: diameter, hardness: hardness, strength: strength) }
                 else { gpu.push(from: previous, to: next, radius: radius, diameter: diameter, hardness: hardness, strength: strength) }
-            } else if mode == .smudge { smudge(at: next) } else { push(from: previous, to: next) }
+            } else if mode == .smudge {
+                smudge(at: next)
+            } else if usesAdvancedLiquify {
+                applyAdvancedLiquify(from: previous, to: next)
+            } else {
+                push(from: previous, to: next)
+            }
             points.append(next)
             previous = next
         }
@@ -121,6 +171,142 @@ final class WarpStroke {
             cpuImage = nil
         } else {
             cpuImage = context.makeImage()
+        }
+    }
+
+    private func sampleOriginal(x sx: Float, y sy: Float, into dst: UnsafeMutablePointer<UInt8>) {
+        let cx = min(Float(width - 1), max(0, sx))
+        let cy = min(Float(height - 1), max(0, sy))
+        let x0 = Int(cx), y0 = Int(cy)
+        let x1 = min(width - 1, x0 + 1), y1 = min(height - 1, y0 + 1)
+        let fx = cx - Float(x0), fy = cy - Float(y0)
+        let p00 = (y0 * width + x0) * 4, p10 = (y0 * width + x1) * 4
+        let p01 = (y1 * width + x0) * 4, p11 = (y1 * width + x1) * 4
+        for k in 0..<4 {
+            let top = Float(originalPixels[p00 + k]) + (Float(originalPixels[p10 + k]) - Float(originalPixels[p00 + k])) * fx
+            let bot = Float(originalPixels[p01 + k]) + (Float(originalPixels[p11 + k]) - Float(originalPixels[p01 + k])) * fx
+            dst[k] = UInt8(max(0, min(255, (top + (bot - top) * fy).rounded())))
+        }
+    }
+
+    private func applyAdvancedLiquify(from a: CGPoint, to b: CGPoint) {
+        let r = radius
+        let cx = Int(b.x.rounded()), cy = Int(b.y.rounded())
+        let invR = 1 / Float(diameter / 2)
+        let s = Float(strength)
+        let x0 = max(0, cx - r), x1 = min(width - 1, cx + r)
+        let y0 = max(0, cy - r), y1 = min(height - 1, cy + r)
+        guard x0 <= x1, y0 <= y1 else { return }
+
+        if liquifyMode.isMaskTool {
+            if freezeMask.count != width * height { freezeMask = [UInt8](repeating: 0, count: width * height) }
+            let freezing = liquifyMode == .freeze
+            for y in y0...y1 {
+                for x in x0...x1 {
+                    let dx = Float(x) - Float(b.x), dy = Float(y) - Float(b.y)
+                    let w = weight(hypotf(dx, dy) * invR)
+                    guard w > 0 else { continue }
+                    let idx = y * width + x
+                    let current = Float(freezeMask[idx]) / 255.0
+                    let next = freezing ? min(1, current + w * s) : max(0, current - w * s)
+                    freezeMask[idx] = UInt8((next * 255).rounded())
+                    // Tint frozen mask area softly in ruby on the preview buffer so the user sees it live.
+                    let p = idx * 4
+                    let origR = Float(originalPixels[p]), origG = Float(originalPixels[p + 1]), origB = Float(originalPixels[p + 2]), origA = Float(originalPixels[p + 3])
+                    let overlay = next * 0.45
+                    pixels[p] = UInt8(min(255, origR * (1 - overlay) + 230 * overlay))
+                    pixels[p + 1] = UInt8(min(255, origG * (1 - overlay) + 40 * overlay))
+                    pixels[p + 2] = UInt8(min(255, origB * (1 - overlay) + 50 * overlay))
+                    pixels[p + 3] = UInt8(max(origA, overlay * 255))
+                }
+            }
+            return
+        }
+
+        let move = SIMD2<Float>(Float(b.x - a.x), Float(b.y - a.y))
+        let leftPerp = SIMD2<Float>(move.y, -move.x) // 90° counterclockwise (left of stroke travel in screen y-down coords)
+        let hasFreeze = freezeMask.count == width * height
+
+        // Snapshot offsets in the dab area so updates don't feed back within the same dab.
+        let cw = x1 - x0 + 1, ch = y1 - y0 + 1
+        var oldOffsets = [SIMD2<Float>](repeating: .zero, count: cw * ch)
+        for y in 0..<ch {
+            for x in 0..<cw {
+                oldOffsets[y * cw + x] = offsets[(y + y0) * width + (x + x0)]
+            }
+        }
+        let sampleOffset: (Float, Float) -> SIMD2<Float> = { sx, sy in
+            let cx = min(Float(self.width - 1), max(0, sx))
+            let cy = min(Float(self.height - 1), max(0, sy))
+            let ix0 = Int(cx), iy0 = Int(cy)
+            let ix1 = min(self.width - 1, ix0 + 1), iy1 = min(self.height - 1, iy0 + 1)
+            let fx = cx - Float(ix0), fy = cy - Float(iy0)
+            let read: (Int, Int) -> SIMD2<Float> = { rx, ry in
+                if rx >= x0 && rx <= x1 && ry >= y0 && ry <= y1 {
+                    return oldOffsets[(ry - y0) * cw + (rx - x0)]
+                }
+                return self.offsets[ry * self.width + rx]
+            }
+            let v00 = read(ix0, iy0), v10 = read(ix1, iy0)
+            let v01 = read(ix0, iy1), v11 = read(ix1, iy1)
+            let top = v00 + (v10 - v00) * fx
+            let bot = v01 + (v11 - v01) * fx
+            return top + (bot - top) * fy
+        }
+
+        for y in y0...y1 {
+            for x in x0...x1 {
+                let dx = Float(x) - Float(b.x), dy = Float(y) - Float(b.y)
+                let dist = hypotf(dx, dy)
+                let w0 = weight(dist * invR)
+                guard w0 > 0 else { continue }
+                let idx = y * width + x
+                let unfreeze: Float = hasFreeze ? (1 - Float(freezeMask[idx]) / 255.0) : 1
+                let w = w0 * unfreeze
+                guard w > 0.0001 else { continue }
+
+                let cur = oldOffsets[(y - y0) * cw + (x - x0)]
+                var step = SIMD2<Float>.zero
+                switch liquifyMode {
+                case .forwardWarp:
+                    step = -move * (w * s)
+                case .pushLeft:
+                    step = -leftPerp * (w * s)
+                case .bloat:
+                    // Outward expansion: pull source coordinate smoothly toward brush center without overshooting.
+                    step = SIMD2<Float>(-dx, -dy) * (w * s * 0.18)
+                case .pucker:
+                    // Inward contraction: push source coordinate smoothly away from brush center.
+                    step = SIMD2<Float>(dx, dy) * (w * s * 0.18)
+                case .twirlCW, .twirlCCW:
+                    let angle = (liquifyMode == .twirlCW ? -1.0 as Float : 1.0 as Float) * w * s * 0.30
+                    let ca = cosf(angle), sa = sinf(angle)
+                    let rx = dx * ca - dy * sa
+                    let ry = dx * sa + dy * ca
+                    step = SIMD2<Float>(rx - dx, ry - dy)
+                case .reconstruct:
+                    let next = cur * max(0, 1 - w * s * 0.6)
+                    offsets[idx] = next
+                    sampleOriginal(x: Float(x) + next.x, y: Float(y) + next.y, into: pixels + idx * 4)
+                    continue
+                case .freeze, .thaw:
+                    continue
+                }
+
+                // Prevent unfrozen pixels from dragging frozen source pixels out of a frozen region.
+                if hasFreeze {
+                    let sx = max(0, min(width - 1, Int((Float(x) + step.x).rounded())))
+                    let sy = max(0, min(height - 1, Int((Float(y) + step.y).rounded())))
+                    let srcUnfreeze = 1 - Float(freezeMask[sy * width + sx]) / 255.0
+                    step *= srcUnfreeze
+                }
+
+                // Compose the incremental warp step with the existing displacement field.
+                let prev = sampleOffset(Float(x) + step.x, Float(y) + step.y)
+                let nextOffset = step + prev
+                offsets[idx] = nextOffset
+                sampleOriginal(x: Float(x) + nextOffset.x, y: Float(y) + nextOffset.y, into: pixels + idx * 4)
+            }
         }
     }
 
@@ -223,9 +409,13 @@ extension EditorSession {
         guard let image = layer.asset?.image else { return }
         finishOpacityEdit()
         do {
+            let mask: [UInt8]? = (blurMode == .liquify && liquifyFreezeMaskSize.map { $0.0 == document.width && $0.1 == document.height } == true)
+                ? liquifyFreezeMask : nil
             let stroke = try WarpStroke(layer: layer, image: image, deep: try layer.asset.flatMap { try DeepLayer.flattened($0) },
                                         transform: displayedTransform(for: layer),
-                                        canvas: document.size, mode: blurMode, settings: brushSettings)
+                                        canvas: document.size, mode: blurMode,
+                                        liquifyMode: liquifyMode, freezeMask: mask,
+                                        settings: brushSettings)
             stroke.append(point)
             warpStroke = stroke
             lastBrushPoint = (point, layer.id, false)
@@ -233,11 +423,27 @@ extension EditorSession {
         } catch { brushError = error.localizedDescription }
     }
 
+    func clearLiquifyFreezeMask() {
+        liquifyFreezeMask = nil
+        liquifyFreezeMaskSize = nil
+        brushRevision += 1
+    }
+
     /// Paints the finished Smudge or Liquify result into the layer's pixels along the stroke, as one undo step.
     func finishWarp() {
         guard let warp = warpStroke else { return }
         warpStroke = nil
         brushRevision += 1
+        if warp.mode == .liquify, warp.liquifyMode.isMaskTool {
+            if warp.freezeMask.contains(where: { $0 > 0 }) {
+                liquifyFreezeMask = warp.freezeMask
+                liquifyFreezeMaskSize = (warp.width, warp.height)
+            } else {
+                liquifyFreezeMask = nil
+                liquifyFreezeMaskSize = nil
+            }
+            return
+        }
         guard !warp.points.isEmpty, let result = warp.image,
               let current = document?.layers.first(where: { $0.id == warp.layer.id }),
               pixelEditTargetMatches(current, original: warp.layer) else { return }
@@ -247,12 +453,19 @@ extension EditorSession {
             settings.diameter = warp.diameter + 4
             settings.hardness = 1
             settings.opacity = 1
+            settings.flow = 1
+            settings.airbrush = false
+            settings.blendMode = .normal
+            settings.roundness = 1
+            settings.angle = 0
+            settings.spacing = 0
+            settings.scatter = 0
             let stroke = try makeRasterEdit(for: current, settings: settings)
             stroke.clone = (result, CGRect(x: 0, y: 0, width: result.width, height: result.height), false)
             // A 16-bit working copy goes into the layer's 16-bit pixels.
             if result.bitsPerComponent == 16 { stroke.deepClone = stroke.clone }
             stroke.replacesWithClone = true
-            stroke.editName = warp.mode.rawValue
+            stroke.editName = warp.mode == .liquify && warp.liquifyMode != .forwardWarp ? warp.liquifyMode.rawValue : warp.mode.rawValue
             // The tip is solid and a little wider than the brush, so a point every twentieth of its width covers what
             // every dab did: a big brush on a big canvas lays thousands of dabs, and replaying each one stalled the release.
             let spacing = max(1, warp.diameter * 0.05)

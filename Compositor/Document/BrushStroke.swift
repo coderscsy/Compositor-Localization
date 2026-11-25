@@ -207,6 +207,8 @@ final class BrushStroke {
     /// in the stroke's own pixel grid: the layer's own pixels at their own resolution, so a layer scaled down and
     /// painted keeps its detail when it's scaled back up.
     var clone: (image: CGImage, placed: CGRect, inGrid: Bool)? { didSet { clonePieces = [:] } }
+    /// Manual Healing Brush: sampled source texture blended seamlessly via `heal_sampled` on stroke end.
+    var healingSource: (image: CGImage, placed: CGRect, inGrid: Bool)?
     /// Makes part of `clone`'s image, given a rect of its pixels (top-left rows), in place of cropping it: Blur softens
     /// the layer a piece at a time as the brush first reaches it, rather than all of it before the first dab.
     var cloneRender: ((CGRect) -> CGImage?)? { didSet { clonePieces = [:] } }
@@ -1207,10 +1209,30 @@ final class BrushStroke {
             BrushRaster.draw(image, in: tile.rect.offsetBy(dx: -region.minX, dy: -region.minY), mask: true, context: painting)
         }
         guard let rgba = pixels.data, let gray = painting.data else { throw ExportError.render }
-        let mode = Int32(SpotHealingMode.allCases.firstIndex(of: settings.healingMode) ?? 0)
-        guard spot_heal(rgba.assumingMemoryBound(to: UInt8.self), gray.assumingMemoryBound(to: UInt8.self), w, h,
-                        pixels.bytesPerRow, Float(settings.opacity), mode, UInt32.random(in: .min ... .max)) == 0 else {
-            throw ProjectError.tooLarge
+        if let healingSource {
+            // Manual-sample Healing Brush: render the shifted source patch aligned to `region` and blend via Poisson membrane.
+            let srcCtx = try BrushRaster.context(width: w, height: h, mask: false)
+            srcCtx.clear(CGRect(x: 0, y: 0, width: w, height: h))
+            srcCtx.saveGState()
+            srcCtx.translateBy(x: -region.minX, y: -region.minY)
+            if !healingSource.inGrid { srcCtx.concatenate(pixelToDocument.inverted()) }
+            let sp = healingSource.placed
+            srcCtx.translateBy(x: sp.minX, y: sp.maxY)
+            srcCtx.scaleBy(x: 1, y: -1)
+            srcCtx.draw(healingSource.image, in: CGRect(origin: .zero, size: sp.size))
+            srcCtx.restoreGState()
+            guard let srcBytes = srcCtx.data?.assumingMemoryBound(to: UInt8.self) else { throw ExportError.render }
+            guard heal_sampled(rgba.assumingMemoryBound(to: UInt8.self), srcBytes,
+                               gray.assumingMemoryBound(to: UInt8.self), w, h,
+                               pixels.bytesPerRow, Float(settings.opacity)) == 0 else {
+                throw ProjectError.tooLarge
+            }
+        } else {
+            let mode = Int32(SpotHealingMode.allCases.firstIndex(of: settings.healingMode) ?? 0)
+            guard spot_heal(rgba.assumingMemoryBound(to: UInt8.self), gray.assumingMemoryBound(to: UInt8.self), w, h,
+                            pixels.bytesPerRow, Float(settings.opacity), mode, UInt32.random(in: .min ... .max)) == 0 else {
+                throw ProjectError.tooLarge
+            }
         }
         guard let healed = pixels.makeImage() else { throw ExportError.render }
         for key in coverage.keys {

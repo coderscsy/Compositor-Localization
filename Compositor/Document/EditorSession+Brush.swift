@@ -82,9 +82,12 @@ extension EditorSession {
         guard tool == .brush || tool == .blur || (tool.isBrushTool && !isMaskSelected) else { return }
         guard canPaint, let layer = activeLayer, let document else { brushError = paintRefusal; return }
         var sourceOffset: CGSize?
-        if tool == .cloneStamp {
+        let isManualHeal = tool == .spotHealing && healingToolMode == .manual
+        if tool == .cloneStamp || isManualHeal {
             guard let offset = cloneStrokeOffset(at: point) else {
-                brushError = L10n.text("Option-click where Clone Stamp should copy from first.")
+                brushError = L10n.text(isManualHeal
+                    ? "Option-click where Healing Brush should sample from first."
+                    : "Option-click where Clone Stamp should copy from first.")
                 return
             }
             sourceOffset = offset
@@ -120,7 +123,12 @@ extension EditorSession {
             if let offset = sourceOffset {
                 guard let sample = cloneSample(document, for: stroke, offset: offset) else { return }
                 cloneOffset = offset
-                stroke.clone = sample
+                if isManualHeal {
+                    stroke.healingSource = sample
+                    stroke.editName = "Healing Brush"
+                } else {
+                    stroke.clone = sample
+                }
             }
             // Blur softens and Sharpen crisps a lazy copy of the layer through the brush tip.
             if tool == .blur {
@@ -263,6 +271,7 @@ extension EditorSession {
         let fresh = try makeRasterEdit(for: layer, settings: stroke.settings, growsMask: tool == .brush, useGPU: onGPU)
         fresh.originalLayer = stroke.originalLayer
         fresh.clone = stroke.clone
+        fresh.healingSource = stroke.healingSource
         fresh.cloneRender = stroke.cloneRender
         fresh.deepClone = stroke.deepClone
         fresh.deepCloneRender = stroke.deepCloneRender

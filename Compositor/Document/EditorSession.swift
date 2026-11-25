@@ -360,6 +360,11 @@ final class EditorSession {
     var brushSettings = BrushSettings() { didSet { refreshGradient() } }
     var spotHealingMode: SpotHealingMode = .contentAware
     var blurMode: BlurToolMode = .liquify
+    var liquifyMode: LiquifyBrushMode = .forwardWarp
+    var healingToolMode: HealingToolMode = .spot
+    var liquifyFreezeMask: [UInt8]? = nil
+    @ObservationIgnored var liquifyFreezeMaskSize: (Int, Int)? = nil
+    var hasLiquifyFreezeMask: Bool { liquifyFreezeMask != nil }
     var toneSettings = ToneToolSettings()
     /// The Brush's two modes: Paint lays down the foreground color, Erase clears pixels away (B and E).
     var brushMode: BrushToolMode = .paint

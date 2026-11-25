@@ -2024,8 +2024,9 @@ final class CanvasView: NSView {
             NSCursor.closedHand.set()
         } else if session.tool.isBrushTool, let document = session.document {
             let pixel = session.viewport.documentPoint(from: point, documentSize: document.size)
-            // Option-click with Clone Stamp sets where it copies from (with the other brushes it samples a color).
-            if session.tool == .cloneStamp, event.modifierFlags.contains(.option) {
+            // Option-click with Clone Stamp or manual Healing Brush sets where it copies/samples from.
+            if (session.tool == .cloneStamp || (session.tool == .spotHealing && session.healingToolMode == .manual)),
+               event.modifierFlags.contains(.option) {
                 session.setCloneSource(pixel)
                 updateBrushCursor()
                 window?.invalidateCursorRects(for: self)
